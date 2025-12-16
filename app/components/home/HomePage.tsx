@@ -1,15 +1,19 @@
+/* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @next/next/no-img-element */
 import { motion } from "framer-motion";
 import { Award, CheckCircle2, ChevronRight, FileCheck, Gift, HeartHandshake, List, ListChecks, Lock, MapPin, Moon, Quote, Shield, ShieldCheck, Signal, Sparkles, Activity } from "lucide-react";
 import { useState } from "react";
 import ReasonItem from "../ReasonItem";
 import AccordionItem from "../AccordionItem";
+import CertModal from "../layout/CertModal";
 
 export default function HomePage({ onNavigate }: { onNavigate: (p: string) => void }){
   const [expandedReason, setExpandedReason] = useState<number | null>(null);
+  const [showCertModal, setShowCertModal] = useState(false);
 
   return (
     <div className="overflow-x-hidden bg-[#F7FAFC]">
+      {showCertModal && <CertModal onClose={() => setShowCertModal(false)} />}
       {/* Hero */}
       {/* Reduced vertical padding on mobile (sm:pt-20 sm:pb-20) and fixed image sizing */}
       <section className="relative pt-6 pb-16 lg:pt-48 lg:pb-32 px-6 overflow-hidden">
@@ -198,12 +202,15 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
                 />
                 
                 {/* Certifications Badge - STATIC on mobile, FLOAT on large screens */}
-                <div className="md:absolute md:-bottom-10 md:-right-10 bg-white text-[#2D3748] p-6 rounded-2xl shadow-xl max-w-xs mx-auto mt-8 md:mt-0 md:mx-0">
+                <div 
+                  className="md:absolute md:-bottom-10 md:-right-10 bg-white text-[#2D3748] p-6 rounded-2xl shadow-xl max-w-xs mx-auto mt-8 md:mt-0 md:mx-0 cursor-pointer hover:scale-105 transition-transform"
+                  onClick={() => setShowCertModal(true)}
+                >
                   <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
                     <Award className="w-6 h-6 text-[#0E79B2]" />
                     <span className="font-bold text-lg">Certified Expert</span>
                   </div>
-                  <ul className="space-y-2">
+                  <ul className="space-y-2 pointer-events-none">
                     <li className="flex items-center gap-2 text-sm font-medium text-slate-700">
                       <FileCheck className="w-4 h-4 text-[#2E8B57]" />
                       Hikvision Security Associate
@@ -213,6 +220,9 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
                       System Surveyor
                     </li>
                   </ul>
+                  <div className="text-center mt-3">
+                     <span className="text-xs text-[#0E79B2] font-semibold underline">View Certificate</span>
+                  </div>
                 </div>
               </div>
             </div>

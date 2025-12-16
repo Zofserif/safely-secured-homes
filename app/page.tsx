@@ -3,10 +3,9 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import posthog from './posthog';
 import { sendLeadEmail } from './lib/email';
 
-// import posthog from 'posthog-js'; // Commented out for preview environment
-// import emailjs from '@emailjs/browser'; // Uncomment this in your local project
 
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -15,13 +14,7 @@ import WizardForm from './components/form/WizardForm';
 import ResultsPage from './components/results/ResultsPage';
 import { FormData, CalculationResult } from './lib/types';
 import { estimateCameraPlan } from './lib/calculations';
-import posthog from './posthog';
-
-// --- CONFIGURATION ---
-// REPLACE THESE with your EmailJS credentials
-const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
+import { send } from '@emailjs/browser';
 
 // --- COLORS CONSTANTS (For Reference) ---
 // Primary: #0E79B2
@@ -42,19 +35,8 @@ const emailjs = {
   }
 };
 
-
 // --- API Interactions ---
-
 const submitToEmail = async (data: FormData, result: CalculationResult) => {
-  if (EMAILJS_SERVICE_ID === "YOUR_SERVICE_ID") {
-    console.warn("EmailJS submission skipped: No credentials configured. Please set EMAILJS_SERVICE_ID, TEMPLATE_ID, and PUBLIC_KEY.");
-    console.log("Mock Email Data:", {
-      to_email: data.email,
-      firstname: data.first_name,
-      // ... other data
-    });
-    return;
-  }
 
   try {
     const templateParams = {
@@ -68,12 +50,7 @@ const submitToEmail = async (data: FormData, result: CalculationResult) => {
       recommendations: result.recommendations.join(", ")
     };
 
-    await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      EMAILJS_TEMPLATE_ID,
-      templateParams,
-      EMAILJS_PUBLIC_KEY
-    );
+    await sendLeadEmail(templateParams);
     console.log("Email sent successfully via EmailJS");
   } catch (error) {
     console.error("Email submission failed:", error);

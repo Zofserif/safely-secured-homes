@@ -16,6 +16,8 @@ import { FormData, CalculationResult } from './lib/types';
 import { estimateCameraPlan } from './lib/calculations';
 import { send } from '@emailjs/browser';
 
+
+
 // --- COLORS CONSTANTS (For Reference) ---
 // Primary: #0E79B2
 // Secondary: #BEE9E8
@@ -26,16 +28,10 @@ import { send } from '@emailjs/browser';
 // Light: #F7FAFC
 // Dark: #2D3748
 
-// --- MOCK EMAILJS (For Preview Only) ---
-// This mimics the structure of the real emailjs library
-const emailjs = {
-  send: async (serviceId: string, templateId: string, templateParams: any, publicKey: string) => {
-    console.log("[EmailJS Mock] Sending email:", { serviceId, templateId, templateParams });
-    return new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-};
+const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT;
 
 // --- API Interactions ---
+// Submit lead data to EmailJS
 const submitToEmail = async (data: FormData, result: CalculationResult) => {
 
   try {
@@ -57,6 +53,56 @@ const submitToEmail = async (data: FormData, result: CalculationResult) => {
   }
 };
 
+// Submit lead data to Formspree
+const submitToFormspree = async (data: FormData, result: CalculationResult) => {
+  // Construct the payload with all form data and calculated results
+  const payload = {
+    ...data,
+    // Add special Formspree subject field
+    _subject: `New Lead: ${data.first_name} ${data.last_name} [${result.leadTier}]`,
+    // Include calculated insights
+    summary_camera_count: result.cameraCount,
+    summary_nvr_channel: result.nvrChannel,
+    summary_lead_score: result.leadScore,
+    summary_lead_tier: result.leadTier,
+    summary_recommendations: result.recommendations.join(", ")
+  };
+
+  console.log("Attempting to send data to Formspree...", payload);
+
+  if (!FORMSPREE_ENDPOINT) {
+    console.warn("⚠️ FORMSPREE_ENDPOINT is not configured. Please set NEXT_PUBLIC_FORMSPREE_ENDPOINT in your environment variables.");
+    return;
+  }
+
+  try {
+    const response = await fetch(FORMSPREE_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      console.log("✅ Formspree submission successful!");
+    } else {
+      const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+      console.error("❌ Formspree submission failed:", errorData);
+      
+      // If using the placeholder URL, warn the user
+      if (FORMSPREE_ENDPOINT.includes("YOUR_FORMSPREE_ID")) {
+        console.warn("⚠️ It looks like you're using the placeholder Formspree URL. Please update FORMSPREE_ENDPOINT in the configuration.");
+      }
+    }
+  } catch (error) {
+    console.error("❌ Network error during Formspree submission:", error);
+  }
+};
+
+
+// Submit lead data to Supabase
 const submitLeadToSupabase = async (data: FormData, result: CalculationResult) => {
   return new Promise(resolve => setTimeout(resolve, 800)); 
 };
@@ -94,6 +140,7 @@ export default function App() {
     // 2. Submit to email (Formspree) AND Supabase (if configured)
     await Promise.all([
       submitToEmail(data, calcResult),
+      submitToFormspree(data, calcResult),
       submitLeadToSupabase(data, calcResult)
     ]);
 

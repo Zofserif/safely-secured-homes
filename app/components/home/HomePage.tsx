@@ -41,7 +41,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
                   e.currentTarget.src = "https://images.pexels.com/photos/4609033/pexels-photo-4609033.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
                 }}
               />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 lg:p-8">
+              <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-4 lg:p-8">
                 <div className="flex items-center gap-2 text-white/90 font-medium text-sm">
                   <ShieldCheck className="w-4 h-4 text-[#2E8B57]" /> 100% Secure & Private
                 </div>

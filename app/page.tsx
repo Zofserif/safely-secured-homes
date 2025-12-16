@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,16 +15,13 @@ import WizardForm from './components/form/WizardForm';
 import ResultsPage from './components/results/ResultsPage';
 import { FormData, CalculationResult } from './lib/types';
 import { estimateCameraPlan } from './lib/calculations';
+import posthog from './posthog';
 
 // --- CONFIGURATION ---
 // REPLACE THESE with your EmailJS credentials
 const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
 const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
 const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
-
-
-const POSTHOG_KEY = "phc_REPLACE_WITH_YOUR_ACTUAL_KEY"; 
-const POSTHOG_HOST = "https://us.i.posthog.com"; 
 
 // --- COLORS CONSTANTS (For Reference) ---
 // Primary: #0E79B2
@@ -33,14 +32,6 @@ const POSTHOG_HOST = "https://us.i.posthog.com";
 // Danger: #E53E3E
 // Light: #F7FAFC
 // Dark: #2D3748
-
-// --- MOCK POSTHOG (For Preview Only) ---
-const posthog = {
-  init: (key: string, config: any) => console.log("[PostHog Mock] Initialized", key),
-  capture: (event: string, props?: any) => console.log(`[PostHog Mock] Captured: ${event}`, props),
-  identify: (id: string, props?: any) => console.log(`[PostHog Mock] Identified: ${id}`, props),
-  debug: () => console.log("[PostHog Mock] Debug mode enabled")
-};
 
 // --- MOCK EMAILJS (For Preview Only) ---
 // This mimics the structure of the real emailjs library
@@ -100,22 +91,6 @@ export default function App() {
   const [view, setView] = useState<'home' | 'form' | 'results' | 'thankyou'>('home');
   const [formData, setFormData] = useState<FormData | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
-
-  // Initialize PostHog
-  useEffect(() => {
-    // Only init if window is available (client-side)
-    if (typeof window !== 'undefined') {
-      posthog.init(POSTHOG_KEY, {
-        api_host: POSTHOG_HOST,
-        // person_profiles: 'identified_only', // Removed for mock compatibility
-        // loaded: (posthog) => {
-        //   if (process.env.NODE_ENV === 'development') posthog.debug();
-        // }
-      });
-      // Call debug manually for mock
-      posthog.debug();
-    }
-  }, []);
 
   // Track page view changes manually since this is a single-page simulation
   useEffect(() => {

@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Award, CheckCircle2, ChevronRight, FileCheck, Gift, HeartHandshake, List, ListChecks, Lock, MapPin, Moon, Quote, Shield, ShieldCheck, Signal, Sparkles, Activity } from "lucide-react";
+import { Award, CheckCircle2, ChevronRight, FileCheck, Gift, HeartHandshake, List, ListChecks, Lock, MapPin, Moon, Shield, ShieldCheck, Signal, Sparkles, Activity } from "lucide-react";
 import { useState } from "react";
 import ReasonItem from "../ReasonItem";
 import AccordionItem from "../AccordionItem";
@@ -142,7 +142,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-[#F7FAFC] border-b border-slate-200">
+      {/* <section className="py-20 bg-[#F7FAFC] border-b border-slate-200">
         <div className="container mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-[#2D3748] mb-4">What Our Clients Say</h2>
@@ -182,7 +182,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* About Section - Luxury Style with Certifications */}
       <section className="py-32 bg-[#2D3748] text-white relative overflow-hidden">
@@ -213,7 +213,15 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
                   <ul className="space-y-2 pointer-events-none">
                     <li className="flex items-center gap-2 text-sm font-medium text-slate-700">
                       <FileCheck className="w-4 h-4 text-[#2E8B57]" />
-                      Hikvision Security Associate
+                      Security CCTV Solution & Integrator
+                    </li>
+                    <li className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                      <FileCheck className="w-4 h-4 text-[#2E8B57]" />
+                      Smart Home Access Control Specialist
+                    </li>
+                    <li className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                      <FileCheck className="w-4 h-4 text-[#2E8B57]" />
+                      Security & Smart Home Maintenance
                     </li>
                     <li className="flex items-center gap-2 text-sm font-medium text-slate-700">
                       <FileCheck className="w-4 h-4 text-[#2E8B57]" />
@@ -245,6 +253,14 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
                 </div>
                 <p>
                   Hi I’m <strong>Troy</strong>, founder of Safely Secured Homes. Growing up, my parents were often away for work, and as the eldest I looked after my younger brother. That responsibility shaped my mission: make home safety simple, reliable, and stress-free.
+                </p>
+                <div className="pl-6 border-l-4 border-[#0E79B2] my-8">
+                  <p className="text-white text-xl italic font-serif">
+                    &quot;So let me personally help you secure what matters most.&quot;
+                  </p>
+                </div>
+                <p>
+                  Because every family deserves to feel safe and in control of their home. My team and I are ready to do the same for you. We’ve helped families and business owners sleep better at night and we’re dedicated to your complete satisfaction.
                 </p>
               </div>
             </div>
@@ -282,9 +298,9 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
           <h2 className="text-3xl md:text-5xl font-bold mb-20 text-[#2D3748]">3 Simple Steps to be &quot;Smart and Safe&quot;</h2>
           <div className="grid md:grid-cols-3 gap-12">
             {[
-              { img: "/assets/img/Simple Step Assets/Step 1.webp", title: "Step 1: Consult with us", desc: "Get a free consultation on-the-go or contact us for via phone." },
-              { img: "/assets/img/Simple Step Assets/Step 2.webp", title: "Step 2: On-site checkup", desc: "We visit your home to assess coverage and connectivity." },
-              { img: "/assets/img/Simple Step Assets/Step 3.webp", title: "Step 3: Install & protect", desc: "We set up, secure, and teach you how everything works." },
+              { img: "/assets/img/3 Simple Steps/Step 1.png", title: "Step 1: Consult with us", desc: "Get a free consultation on-the-go or contact us for via phone." },
+              { img: "/assets/img/3 Simple Steps/Step 2.png", title: "Step 2: On-site checkup", desc: "We visit your home to assess coverage and connectivity." },
+              { img: "/assets/img/3 Simple Steps/Step 3.png", title: "Step 3: Install & protect", desc: "We set up, secure, and teach you how everything works." },
             ].map((step, i) => (
               <div key={i} className="group cursor-default">
                 <div className="mb-8 relative rounded-3xl overflow-hidden shadow-2xl shadow-slate-200 group-hover:shadow-[#0E79B2]/20 transition-all duration-500 aspect-square border-4 border-white">

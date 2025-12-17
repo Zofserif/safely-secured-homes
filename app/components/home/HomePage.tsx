@@ -1,5 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Award, CheckCircle2, ChevronRight, FileCheck, Gift, HeartHandshake, List, ListChecks, Lock, MapPin, Moon, Quote, Shield, ShieldCheck, Signal, Sparkles, Activity } from "lucide-react";
 import { useState } from "react";
@@ -31,15 +32,14 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
             className="block relative lg:order-last" // Order-last on desktop puts it right, default first on mobile
           >
             <div className="absolute inset-0 bg-linear-to-tr from-[#2D3748]/10 to-transparent rounded-4xl transform rotate-3 lg:rotate-6 scale-105 z-0"></div>
-            <div className="relative rounded-4xl overflow-hidden shadow-2xl border-4 border-white z-10">
-              <img 
-                src="/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg" 
-                alt="Happy Family in Secure Home" 
-                // UPDATED: Fixed height h-64 for mobile to be compact
-                className="w-full h-64 lg:h-[600px] object-cover hover:scale-105 transition-transform duration-700" 
-                onError={(e) => {
-                  e.currentTarget.src = "https://images.pexels.com/photos/4609033/pexels-photo-4609033.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                }}
+            <div className="relative rounded-4xl overflow-hidden shadow-2xl border-4 border-white z-10 h-64 lg:h-[600px]">
+              <Image
+                src="/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg"
+                alt="Happy Family in Secure Home"
+                fill
+                priority
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover transition-transform duration-700 hover:scale-105"
               />
               <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-4 lg:p-8">
                 <div className="flex items-center gap-2 text-white/90 font-medium text-sm">

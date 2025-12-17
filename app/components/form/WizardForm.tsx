@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import posthog from "posthog-js";
@@ -37,7 +38,7 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
-  const updateField = (field: keyof FormData, value: any) => {
+  const updateField = (field: keyof FormData, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error for this field
     if (errors[field]) {

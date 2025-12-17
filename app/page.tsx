@@ -53,8 +53,8 @@ export default function App() {
 
     // 2. Submit to email (Formspree) AND Supabase (if configured)
     await Promise.all([
-      // submitToEmail(data, calcResult),
-      // submitToFormspree(data, calcResult),
+      submitToEmail(data, calcResult),
+      submitToFormspree(data, calcResult),
       submitLeadToSupabase(data, calcResult),
     ]);
 

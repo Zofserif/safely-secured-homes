@@ -211,6 +211,24 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
           ))}
         </div>
       </div>
+      <div className="rounded-xl border border-slate-200 p-4">
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-5 w-5 rounded text-[#0E79B2]"
+            checked={Boolean(formData.smart_home_interest)}
+            onChange={(e) =>
+              updateField("smart_home_interest", e.target.checked ? "Yes" : "")
+            }
+          />
+          <div>
+            <span className="text-sm font-medium">Interested in smart home integration</span>
+            <p className="text-xs text-slate-500">
+              Lighting, locks, sensors, and automation.
+            </p>
+          </div>
+        </label>
+      </div>
       <div>
         <label className="block text-sm font-medium mb-2">Budget Zone</label>
         <select className="w-full p-3 rounded-xl border border-slate-300"

@@ -63,21 +63,21 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
             </div>
             
             <h1 className="text-4xl lg:text-7xl font-bold text-[#2D3748] mb-6 lg:mb-8 leading-[1.1] tracking-tight">
-              Your Safer, <br/>
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-[#2D3748] via-[#0E79B2] to-[#2D3748] decoration-[#0E79B2] decoration-4 underline underline-offset-4">Smarter Home</span> <span className="text-[#0E79B2] font-serif italic">Today</span>
+              Your Dream Home<br/>
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-[#2D3748] via-[#0E79B2] to-[#2D3748] decoration-[#0E79B2] decoration-4 underline underline-offset-4">Secured and Smart</span>
+              <span className="text-[#0E79B2] font-serif italic"> Today</span>
             </h1>
             
             <p className="text-slate-600 text-lg lg:text-xl leading-relaxed mb-8 lg:mb-10 max-w-lg">
-              In just 60 seconds, get a <strong>FREE, no-obligation security plan</strong> tailored to your home layout and family needs. See your personal plan and price instantly.
+              In just 60 seconds, get a <strong>FREE security plan</strong> tailored to your home and family. Whether you're checking on the baby, monitoring pets, or securing the perimeter, we install a privacy-first system designed for Filipino families.
             </p>
-            
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               <button 
                 onClick={() => onNavigate('form')}
                 className="bg-[#0E79B2] hover:bg-[#0b5e8b] text-white text-lg px-8 py-4 rounded-xl font-bold shadow-xl shadow-[#0E79B2]/20 transition-all hover:-translate-y-1 hover:shadow-2xl flex items-center justify-center gap-2 group w-full sm:w-auto"
               >
                 GET MY FREE PLAN NOW 
-                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
               
               {/* Lead Magnet Badge - Keep visible */}
@@ -87,7 +87,8 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-[#0E79B2] uppercase tracking-wider">Free Bonus Included</span>
-                  <span className="text-xs font-bold text-[#2D3748]">"5 Secrets to a Panatag Home" PDF</span>
+                  <span className="text-xs font-bold text-[#2D3748]">5 Secrets to a Panatag Home:</span>
+                  <span className="text-xs font-bold text-[#2D3748]">The Smart Home Security Checklist</span>
                 </div>
               </div>
             </div>
@@ -121,8 +122,8 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
           
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { icon: MapPin, title: "Away But Unsure", desc: "When you’re not home, you can’t confidently tell if everything’s ok. You keep refreshing apps, texting neighbors, and hoping you didn’t miss an alert." },
-              { icon: Moon, title: "Restless Nights", desc: "You lie awake listening for every creak, worrying about doors, windows, and blind spots instead of sleeping peacefully." },
+              { icon: MapPin, title: "Away But Unsure", desc: "Stuck in traffic on EDSA or SLEX? Stop guessing if you locked the gate or if the kids got home safe. Know instantly with a single glance at your phone" },
+              { icon: Moon, title: "The \"Silent\" Worry", desc: "From a toddler sleeping in the other room to elderly parents moving around downstairs. You shouldn't have to constantly patrol your own house to know everyone is okay" },
               { icon: Activity, title: "Always On Alert", desc: "You double-check locks and you’re never fully present during family time because safety is always on your mind." }
             ].map((item, i) => (
               <motion.div 
@@ -331,15 +332,15 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
           <div className="space-y-4">
             {[
               { title: "Get a Perfect, Personalized Plan", desc: "We recognize that every home and family is unique. Our experts take the time to understand your specific needs and lifestyle, then design a custom security and smart home plan just for you." },
-              { title: "Effortless, Bundled Packages", desc: "Whether you live in an apartment or a mansion, we have designed security bundles that offer incredible value. Each bundle clearly lists the features and house size it's designed for." },
-              { title: "Free Consultation & Transparent Quotes", desc: "We begin with a complimentary consultation. Then, our experts design a personalized plan and provide a transparent, itemized quote. No hidden fees, no pressure." },
               { title: "Complete Worry-Free Solutions", desc: "From the initial 1-on-1 site visit and consultation to expert installation, ongoing maintenance, and all-day support, we handle everything. We protect homes, not just sell and forget." },
-              { title: "Exclusive \"Home Protect Pro\" Monitoring", desc: "Go beyond DIY monitoring. Our team actively helps you monitor your home, filtering false alarms and sending only critical alerts. Limited capacity to ensure premium service." },
-              { title: "Unbeatable Value", desc: "Our prices are final and transparent, covering top-tier equipment, professional installation, and robust after-sales support. Premium security without the premium price tag." },
-              { title: "Priority Support (10AM-7PM)", desc: "Feel confident with daily access to our security experts via chat, call, email, or video for inquiries, guidance, or troubleshooting." },
-              { title: "Exclusive Freebies for Immediate Action", desc: "We have a limited stock of freebies (like first aid kits, smoke detectors, and padlocks) with every purchase. Act now to secure your spot." },
+              { title: "Effortless, Bundled Packages", desc: "Whether you live in an apartment or a mansion, we have designed security bundles that offer incredible value. Each bundle clearly lists the features and house size it's designed for." },
               { title: "Seamless Smart Home Integration", desc: "Control your lights, locks, and more from your phone. We make it easy to integrate smart home devices that offer convenience and additional safety." },
-              { title: "\"One Weekend Wonder\" Install Promise", desc: "For our standard installation, if we don't finish within one week, you don't pay the rest of the installation fee. We are committed to minimal disruption." }
+              { title: "Wife & Lola-Friendly Interface", desc: "f it’s too hard to use, it’s useless. We set up simple, one-tap dashboards that everyone from the kids to the grandparents can understand." },
+              { title: "Work-From-Home Optimized", desc: "We configure cameras to ensure 24/7 recording doesn’t choke your bandwidth during your Zoom or Teams meetings." },
+              { title: "Transparent, \"No-Surprise\" Quotes", desc: "What we quote is what you pay. No hidden cable fees or \"extra labor\" charges on the day of install." },
+              { title: "The \"One Weekend Wonder\" Promise", desc: "We respect your time. We aim to finish installation in one weekend. If we don't, you don't pay the balance." },
+              { title: "Proactive Health Checks", desc: "We monitor the health of your system (not your video feeds). If a camera goes offline, we know before you do." },
+              { title: "Direct-to-Human Support", desc: "No chatbots. You get a direct line to a specialist who knows your specific home layout." },
             ].map((reason, i) => (
               <ReasonItem 
                 key={i} 
@@ -381,6 +382,9 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
         <div className="container mx-auto px-6 max-w-3xl">
           <h2 className="text-3xl md:text-5xl font-bold text-center mb-16 text-[#2D3748]">Frequently Asked Questions</h2>
           <div className="space-y-4">
+            <AccordionItem title="Is it safe? I don't want people watching my kids.">
+              This is our top priority. We specialize in local storage options, meaning your footage stays in your house, not on a random server abroad. We also provide physical privacy shutters for indoor cameras for 100% certainty.
+            </AccordionItem>
             <AccordionItem title="This seems expensive. I can probably find cheaper cameras online.">
               That's a common concern, and it's true, you can find standalone devices. But you're not just buying a camera, you're investing in your safety and security. We provide free consultation and site visits to really tailor-fit your needs. Plus our service doesn't end there, we provide support for your inquiries because we believe that a happy client is a long-time partner. A cheap camera that fails or is too complicated to use costs you more eventually. We guarantee your peace of mind is worth it.
             </AccordionItem>
@@ -414,7 +418,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
             <div className="relative z-10 max-w-3xl mx-auto">
               <h2 className="text-4xl md:text-6xl font-bold text-white mb-8">Ready for a Panatag Home?</h2>
               <p className="text-slate-300 text-xl mb-12">
-                Consult now and get a <span className="text-[#63B3ED] font-bold">FREE Bonus</span>: "5 Must-Have Secrets to a Panatag Home" PDF Guide.
+                Consult now and get a <span className="text-[#63B3ED] font-bold">FREE Bonus</span>: 5 Secrets to a Panatag Home: The Smart Home Security Checklist.
               </p>
               <button 
                 onClick={() => onNavigate('form')}

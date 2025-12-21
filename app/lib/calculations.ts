@@ -20,8 +20,6 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
 
   // Scoring Logic
   let score = 0;
-  if (["Night", "24/7", "When I'm traveling"].includes(data.risk_window)) score += 2;
-  if (data.night_lighting === "Pretty dark") score += 1;
   if (areas.length >= 3 || areas.includes("Whole perimeter (360°)")) score += 2;
   if (data.features_must.some(f => f.includes("ColorVu") || f.includes("AcuSense"))) score += 1;
   
@@ -29,7 +27,6 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   if (data.current_setup === "No, this is a new installation" || data.current_setup.includes("broken/old")) score += 1;
   if (data.budget_band.includes("All I can need") || data.budget_band.includes("Feature Rich")) score += 2;
   if (data.timeline.includes("ASAP") || data.timeline.includes("This Week")) score += 3;
-  if (data.decision_makers === "Me") score += 1;
   if (data.safety_level <= 3) score += 1;
 
   let tier: LeadTier = 'Nurture';
@@ -39,7 +36,6 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   // Recommendations
   const recs = [];
   if (areas.includes("Gate/Driveway")) recs.push("Varifocal cameras for plate recognition");
-  if (data.night_lighting === "Pretty dark") recs.push("ColorVu technology for low-light color imaging");
   if (data.features_must.some(f => f.includes("AcuSense"))) recs.push("AcuSense for human/vehicle filtering");
   
   return {

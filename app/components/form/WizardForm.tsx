@@ -12,26 +12,16 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
     property_type: '', 
     home_size: '', 
     floors: '', 
-    neighborhood_context: [],
-    home_stage: '', 
-    goals: [], 
     main_goal: '', 
-    risk_window: '', 
     priority_areas: [],
-    night_lighting: '', 
     current_setup: '',
-    // wireless_devices removed
     safety_level: 5,
     features_must: [], 
-    notifications: '', 
     smart_home_interest: '',
     budget_band: '', 
     timeline: '', 
-    decision_makers: '', 
-    incident_notes: '',
     first_name: '', 
     last_name: '', 
-    full_name: '', 
     email: '', 
     mobile: ''
   });
@@ -108,7 +98,7 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
       ))}
     </div>,
 
-    // 2. Current Setup (Modified - Removed Wireless Devices Question)
+    // 2. Current Setup
     <div key="setup" className="space-y-6">
       <h3 className="text-xl font-bold text-center text-[#2D3748]">Current Setup</h3>
       <div>
@@ -197,7 +187,7 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
     <div key="tech" className="space-y-6">
       <h3 className="text-xl font-bold text-center text-[#2D3748]">System Preferences</h3>
       <div>
-        <label className="block text-sm font-medium mb-2">Must-have Features (Pick up to 3)</label>
+        <label className="block text-sm font-medium mb-2">Must-have Features</label>
         <div className="space-y-2">
           {['Color at night (ColorVu)', 'Human/Vehicle Alerts', 'Two-way Audio', 'Mobile App Access', '24/7 Recording'].map(feat => (
             <label key={feat} className="flex items-center space-x-2">
@@ -234,10 +224,10 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
         <select className="w-full p-3 rounded-xl border border-slate-300"
           value={formData.budget_band} onChange={e => updateField('budget_band', e.target.value)}>
           <option value="">Select range</option>
-          <option>Basic Starter</option>
-          <option>All I can need (Best Value)</option>
-          <option>Feature Rich</option>
-          <option>Premium / Enterprise</option>
+          <option>Basic Starter (&lt; ₱30,000)</option>
+          <option>All I can need (Best Value ₱30K - ₱50K) </option>
+          <option>Feature Rich (₱50K - ₱75K)</option>
+          <option>Premium / Enterprise (₱75K+) </option>
         </select>
       </div>
       <button onClick={nextStep} disabled={!formData.budget_band}
@@ -265,7 +255,7 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
     // 8. Final Details
     <div key="final" className="space-y-4">
       <h3 className="text-xl font-bold text-center text-[#2D3748]">Almost done!</h3>
-      <p className="text-center text-sm text-slate-500">Where should we send your custom plan?</p>
+      <p className="text-center text-sm text-slate-500">Where should we send your free Checklist?</p>
       
       <div className="flex gap-4">
         <input type="text" placeholder="First Name" className="w-1/2 p-3 rounded-xl border border-slate-300"
@@ -300,7 +290,7 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
         disabled={!formData.email || !formData.first_name || !formData.last_name || isSubmitting}
         className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 shadow-lg shadow-[#0E79B2]/30 flex justify-center items-center gap-2"
       >
-        {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Generating Plan...</> : 'Generate My Plan'}
+        {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Generating Plan...</> : 'Generate My FREE Plan'}
       </button>
     </div>
   ];

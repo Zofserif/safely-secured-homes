@@ -1,8 +1,11 @@
 /* eslint-disable react/no-unescaped-entities */
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import posthog from "posthog-js";
 import { useState } from "react";
+import {
+  trackFormStepCompleted,
+  trackFormSubmissionStarted,
+} from "../../lib/analytics";
 import { FormData } from "../../lib/types";
 
 export default function WizardForm({ onComplete }: { onComplete: (data: FormData) => void }) {
@@ -49,7 +52,7 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
   };
 
   const nextStep = () => {
-    posthog.capture('form_step_completed', { step_index: step, step_name: ['intro', 'property', 'setup', 'goal', 'areas', 'tech', 'timeline', 'contact'][step] });
+    trackFormStepCompleted(step);
     setStep(s => s + 1);
   };
   
@@ -74,7 +77,7 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
   const handleFinalSubmit = () => {
     if (validateContactInfo()) {
       setIsSubmitting(true);
-      posthog.capture('form_submission_started');
+      trackFormSubmissionStarted(formData);
       onComplete(formData);
     }
   };

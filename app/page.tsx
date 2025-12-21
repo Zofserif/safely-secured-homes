@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import posthog, { initPostHog } from "./posthog";
+import { initPostHog } from "./posthog";
 
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
@@ -14,13 +14,17 @@ import {
   submitToEmail,
   submitToFormspree,
 } from "./lib/leads";
+import {
+  identifyLead,
+  trackLeadGenerated,
+  trackPageView,
+  type AppView,
+} from "./lib/analytics";
 
 // --- Main App ---
 
 export default function App() {
-  const [view, setView] = useState<"home" | "form" | "results" | "thankyou">(
-    "home"
-  );
+  const [view, setView] = useState<AppView>("home");
   const [formData, setFormData] = useState<FormData | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
 
@@ -31,9 +35,7 @@ export default function App() {
 
   // Track page view changes manually since this is a single-page simulation
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      posthog.capture("$pageview", { path: `/${view}` });
-    }
+    trackPageView(view);
   }, [view]);
 
   const handleFormComplete = async (data: FormData) => {
@@ -43,13 +45,8 @@ export default function App() {
     setResult(calcResult);
 
     // Track the generated lead
-    posthog.identify(data.email, { name: data.first_name, phone: data.mobile }); // Using first_name here as a simple identifier for now
-    posthog.capture("lead_generated", {
-      tier: calcResult.leadTier,
-      score: calcResult.leadScore,
-      camera_count: calcResult.cameraCount,
-      property_type: data.property_type,
-    });
+    identifyLead(data);
+    trackLeadGenerated(data, calcResult);
 
     // 2. Submit to email (Formspree) AND Supabase (if configured)
     await Promise.all([
@@ -63,7 +60,7 @@ export default function App() {
   };
 
   const handleNavigation = (page: string) => {
-    setView(page as "home" | "form" | "results" | "thankyou");
+    setView(page as AppView);
   };
 
   return (

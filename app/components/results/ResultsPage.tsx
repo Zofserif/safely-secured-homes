@@ -84,7 +84,14 @@ export default function ResultsPage({ result, data }: { result: CalculationResul
 
   return (
     <div className="min-h-screen bg-[#F7FAFC] py-20 px-4">
-      {showDIY && <DIYView onBack={() => setShowDIY(false)} onCall={() => window.location.href = "tel:09959959229"} />}
+      {showDIY && (
+        <DIYView
+          onBack={() => setShowDIY(false)}
+          onCall={() => window.location.href = "tel:09959959229"}
+          result={result}
+          data={data}
+        />
+      )}
       
       <div className="container mx-auto max-w-3xl">
         <motion.div 

@@ -67,10 +67,10 @@ export default function CertModal ({ onClose }: { onClose: () => void }){
                                         aria-label="Open certificate PDF in a new tab"
                                     >
                                         <Image
-                                            src="/assets/img/Certifications/Certified%20HCSA%20-%20Security%20CCTV%20Solution%20%26%20Integrator.jpeg"
+                                            src="/assets/img/Certifications/optimized/Certified%20HCSA%20-%20Security%20CCTV%20Solution%20%26%20Integrator.jpg"
                                             alt="Certified HCSA - Security CCTV Solution & Integrator"
                                             fill
-                                            sizes="(min-width: 1024px) 50vw, 100vw"
+                                            sizes="(min-width: 768px) 480px, 90vw"
                                             className="object-contain"
                                         />
                                     </a>
@@ -112,10 +112,10 @@ export default function CertModal ({ onClose }: { onClose: () => void }){
                                         aria-label="Open certificate PDF in a new tab"
                                     >
                                         <Image
-                                            src="/assets/img/Certifications/Certified HCSA - Security Access Control.jpeg"
+                                            src="/assets/img/Certifications/optimized/Certified%20HCSA%20-%20Security%20Access%20Control.jpg"
                                             alt="Certified HCSA - Security CCTV Solution & Integrator"
                                             fill
-                                            sizes="(min-width: 1024px) 50vw, 100vw"
+                                            sizes="(min-width: 768px) 480px, 90vw"
                                             className="object-contain"
                                         />
                                     </a>
@@ -157,10 +157,10 @@ export default function CertModal ({ onClose }: { onClose: () => void }){
                                         aria-label="Open certificate PDF in a new tab"
                                     >
                                         <Image
-                                            src="/assets/img/Certifications/Certified HCSA - Security Maintenance.jpeg"
+                                            src="/assets/img/Certifications/optimized/Certified%20HCSA%20-%20Security%20Maintenance.jpg"
                                             alt="Certified HCSA - Security CCTV Solution & Integrator"
                                             fill
-                                            sizes="(min-width: 1024px) 50vw, 100vw"
+                                            sizes="(min-width: 768px) 480px, 90vw"
                                             className="object-contain"
                                         />
                                     </a>
@@ -202,10 +202,10 @@ export default function CertModal ({ onClose }: { onClose: () => void }){
                                         aria-label="Open certificate PDF in a new tab"
                                     >
                                         <Image
-                                            src="/assets/img/Certifications/Certified Residential System Surveyor.jpeg"
+                                            src="/assets/img/Certifications/optimized/Certified%20Residential%20System%20Surveyor.jpg"
                                             alt="Certified HCSA - Security CCTV Solution & Integrator"
                                             fill
-                                            sizes="(min-width: 1024px) 50vw, 100vw"
+                                            sizes="(min-width: 768px) 480px, 90vw"
                                             className="object-contain"
                                         />
                                     </a>

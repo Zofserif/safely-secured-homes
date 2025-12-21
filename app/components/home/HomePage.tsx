@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Award, CheckCircle2, ChevronRight, FileCheck, Gift, HeartHandshake, List, ListChecks, Lock, MapPin, Moon, Shield, ShieldCheck, Signal, Sparkles, Activity } from "lucide-react";
+import { Award, CheckCircle2, ChevronRight, FileCheck, Gift, HeartHandshake, List, ListChecks, Lock, MapPin, Moon, Shield, ShieldCheck, Signal, Sparkles, Activity, ShieldUser} from "lucide-react";
 import { useState } from "react";
 import ReasonItem from "../ReasonItem";
 import AccordionItem from "../AccordionItem";
@@ -123,7 +123,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
             {[
               { icon: MapPin, title: "Away But Unsure", desc: "When you’re not home, you can’t confidently tell if everything’s ok. You keep refreshing apps, texting neighbors, and hoping you didn’t miss an alert." },
               { icon: Moon, title: "Restless Nights", desc: "You lie awake listening for every creak, worrying about doors, windows, and blind spots instead of sleeping peacefully." },
-              { icon: Activity, title: "Always On Alert", desc: "You double-check locks and cameras during family time — you’re never fully present because safety is always on your mind." }
+              { icon: Activity, title: "Always On Alert", desc: "You double-check locks and you’re never fully present during family time because safety is always on your mind." }
             ].map((item, i) => (
               <motion.div 
                 key={i}
@@ -274,10 +274,11 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
           <div className="text-center mb-20">
             <h2 className="text-3xl md:text-5xl font-bold text-[#2D3748]">Why trust us with your purchase?</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-4 gap-8">
             {[
               { icon: ListChecks, title: "Only what you need", desc: "Honest recommendations that respect your budget." },
               { icon: Lock, title: "Privacy first", desc: "Secure setups so you control who sees what, from anywhere." },
+              { icon: ShieldUser, title: "For Filipino Family", desc: "Personalized solutions tailored for Filipino families." },
               { icon: HeartHandshake, title: "We’re here after install", desc: "Friendly training and responsive support when you need it." },
             ].map((item, i) => (
               <div key={i} className="flex flex-col items-center text-center p-8 bg-white rounded-3xl shadow-sm border border-transparent hover:border-[#BEE9E8] transition-all">

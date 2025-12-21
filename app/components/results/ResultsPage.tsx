@@ -14,8 +14,11 @@ export default function ResultsPage({ result, data }: { result: CalculationResul
     };
 
     const handleBookVisit = () => {
-      // In a real app, this would open a calendly link or similar
-      alert("Opening booking calendar..."); 
+      const url = "https://calendly.com/vallarta-troy/30min";
+      const newWindow = window.open(url, "_blank", "noopener,noreferrer");
+      if (!newWindow) {
+        window.location.href = url;
+      }
     };
 
     const CommonDIYButton = () => (

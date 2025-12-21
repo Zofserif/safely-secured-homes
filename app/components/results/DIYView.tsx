@@ -307,7 +307,7 @@ export default function DIYView({
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
+      .replace(/\"/g, "&quot;")
       .replace(/'/g, "&#39;");
 
   useEffect(() => {
@@ -368,7 +368,7 @@ export default function DIYView({
                 <ul class="list">
                   <li>Choose turret style for outdoor if you want a less intimidating look.</li>
                   <li>Choose bullet style for outdoor if you want a more visible deterrent.</li>
-                  <li>Choose dome style for indoor areas where you want a low profile camera.</li>
+                  <li>Choose dome style for indoor if you want a low profile camera.</li>
                 </ul>
               </div>
               <div class="subsection">
@@ -787,6 +787,7 @@ export default function DIYView({
               We do not sell products. We focus on serving our customers first and only suggest brands that fit your needs.
             </p>
           </div>
+          <div class="footer">Created by Safely Secured Homes</div>
           <script>
             (() => {
               let printed = false;
@@ -828,7 +829,7 @@ export default function DIYView({
         <button onClick={onBack} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
           <X className="w-6 h-6" />
         </button>
-        
+
         <div className="max-h-[85vh] overflow-y-auto p-6">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-[#BEE9E8] rounded-full flex items-center justify-center mx-auto mb-4">

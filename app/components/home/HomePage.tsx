@@ -57,7 +57,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
           >
             <div className="inline-flex items-center gap-2 bg-white border border-[#BEE9E8] rounded-full px-4 py-1.5 mb-6 lg:mb-8 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-[#2E8B57] animate-pulse"></span>
-              <span className="text-[#2D3748] font-semibold text-[10px] uppercase tracking-wide">
+              <span className="text-[#2D3748] font-semibold text-xs uppercase tracking-wide">
                 For Families Who Want Protection Without Losing Comfort
               </span>
             </div>

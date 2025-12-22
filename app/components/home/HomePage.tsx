@@ -17,12 +17,12 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
       {showCertModal && <CertModal onClose={() => setShowCertModal(false)} />}
       {/* Hero */}
       {/* Reduced vertical padding on mobile (sm:pt-20 sm:pb-20) and fixed image sizing */}
-      <section className="relative pt-6 pb-16 lg:pt-48 lg:pb-32 px-6 overflow-hidden">
+      <section className="relative pt-4 pb-10 sm:pt-6 sm:pb-14 lg:pt-48 lg:pb-32 px-6 overflow-hidden">
         {/* Background elements - Secondary color used subtly */}
         <div className="absolute top-0 right-0 -mr-40 -mt-40 w-[800px] h-[800px] bg-[#BEE9E8]/40 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 -ml-40 -mb-40 w-[600px] h-[600px] bg-[#BEE9E8]/30 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
 
-        <div className="container mx-auto grid lg:grid-cols-2 gap-8 lg:gap-16 items-center relative z-10">
+        <div className="container mx-auto grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-16 items-center relative z-10">
           
           {/* UPDATED: Hero Image is now FIRST on mobile, but smaller */}
           <motion.div 
@@ -62,13 +62,13 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
               </span>
             </div>
             
-            <h1 className="text-4xl lg:text-7xl font-bold text-[#2D3748] mb-6 lg:mb-8 leading-[1.1] tracking-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-7xl font-bold text-[#2D3748] mb-4 sm:mb-6 lg:mb-8 leading-[1.1] tracking-tight">
               Your Dream Home<br/>
               <span className="text-transparent bg-clip-text bg-linear-to-r from-[#2D3748] via-[#0E79B2] to-[#2D3748] decoration-[#0E79B2] decoration-4 underline underline-offset-4">Secured and Smart</span>
               <span className="text-[#0E79B2] font-serif italic"> Today</span>
             </h1>
             
-            <p className="text-slate-600 text-lg lg:text-xl leading-relaxed mb-8 lg:mb-10 max-w-lg">
+            <p className="text-slate-600 text-base sm:text-lg lg:text-xl leading-relaxed mb-6 sm:mb-8 lg:mb-10 max-w-lg">
               In just 60 seconds, get a <strong>FREE security plan</strong> tailored to your home and family. Whether you're checking on the baby, monitoring pets, or securing the perimeter, we install a privacy-first system designed for Filipino families.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">

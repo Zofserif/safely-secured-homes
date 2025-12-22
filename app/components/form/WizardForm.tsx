@@ -192,7 +192,7 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
       <div>
         <label className="block text-sm font-medium mb-2">Must-have Features</label>
         <div className="space-y-2">
-          {['Color at night (ColorVu)', 'Human/Vehicle Alerts', 'Two-way Audio', 'Mobile App Access', '24/7 Recording'].map(feat => (
+          {['Color at night', 'Human/Vehicle Alerts', 'Two-way Audio', 'Mobile App Access', '24/7 Recording'].map(feat => (
             <label key={feat} className="flex items-center space-x-2">
               <input type="checkbox" 
                 checked={formData.features_must.includes(feat)}

@@ -21,7 +21,7 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   // Scoring Logic
   let score = 0;
   if (areas.length >= 3 || areas.includes("Whole perimeter (360°)")) score += 2;
-  if (data.features_must.some(f => f.includes("ColorVu") || f.includes("AcuSense"))) score += 1;
+  if (data.features_must.some(f => f.includes("Color at night") || f.includes("Human/Vehicle Alerts"))) score += 1;
   
   // Updated logic for new fields
   if (data.current_setup === "No, this is a new installation" || data.current_setup.includes("broken/old")) score += 1;

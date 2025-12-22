@@ -6,16 +6,16 @@ export default function LocalBusinessJsonLd() {
     "@type": "LocalBusiness",
     name: siteName,
     url: siteUrl,
-    image: `${siteUrl}/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg`,
+    image: `${siteUrl}/assets/img/Logo/Black Header.png`,
     description: siteDescription,
     telephone: "+63 995 995 9229",
     areaServed: {
       "@type": "City",
-      name: "Manila",
+      name: "Candelaria",
     },
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Manila",
+      addressLocality: "Candelaria",
       addressCountry: "PH",
     },
     sameAs: [

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import AppShell from "../components/AppShell";
-import { siteName, siteUrl } from "../lib/site";
+import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 
 export const metadata: Metadata = {
   title: `Get Your Free Plan | ${siteName}`,
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg",
+        url: ogImageUrl,
         width: 1260,
         height: 750,
         alt: "Safely Secured Homes - Happy family in a secure home",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     title: `Get Your Free Plan | ${siteName}`,
     description:
       "Answer a few quick questions to receive a personalized home security plan tailored to your home.",
-    images: ["/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg"],
+    images: [ogImageUrl],
   },
 };
 

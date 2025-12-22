@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { siteDescription, siteName, siteUrl } from "./lib/site";
+import { ogImageUrl, siteDescription, siteName, siteUrl } from "./lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     locale: "en_PH",
     images: [
       {
-        url: "/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg",
+        url: ogImageUrl,
         width: 1260,
         height: 750,
         alt: "Safely Secured Homes - Happy family in a secure home",
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteName,
     description: siteDescription,
-    images: ["/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg"],
+    images: [ogImageUrl],
   },
   icons: {
     icon: [{ url: "/favicon.ico" }],

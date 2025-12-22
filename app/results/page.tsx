@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import AppShell from "../components/AppShell";
-import { siteName, siteUrl } from "../lib/site";
+import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 
 export const metadata: Metadata = {
   title: `Your Security Plan Results | ${siteName}`,
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg",
+        url: ogImageUrl,
         width: 1260,
         height: 750,
         alt: "Safely Secured Homes - Happy family in a secure home",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     title: `Your Security Plan Results | ${siteName}`,
     description:
       "Review your personalized home security plan, recommended setup, and next steps.",
-    images: ["/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg"],
+    images: [ogImageUrl],
   },
 };
 

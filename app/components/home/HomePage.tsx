@@ -32,7 +32,7 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
             className="block relative lg:order-last" // Order-last on desktop puts it right, default first on mobile
           >
             <div className="absolute inset-0 bg-linear-to-tr from-[#2D3748]/10 to-transparent rounded-4xl transform rotate-3 lg:rotate-6 scale-105 z-0"></div>
-            <div className="relative rounded-4xl overflow-hidden shadow-2xl border-4 border-white z-10 h-64 lg:h-[600px]">
+            <div className="relative rounded-4xl overflow-hidden shadow-2xl border-4 border-white z-10 h-48 sm:h-56 lg:h-[600px]">
               <Image
                 src="/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg"
                 alt="Happy Family in Secure Home"

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { siteDescription, siteName, siteUrl } from "./lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,19 +13,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteName = "Safely Secured Homes";
-const description =
-  "Custom home security and smart home solutions in Manila. Get a free personalized security plan tailored to your home in 60 seconds.";
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: siteName,
     template: `%s | ${siteName}`,
   },
-  description,
+  description: siteDescription,
   applicationName: siteName,
   keywords: [
     "home security",
@@ -40,7 +35,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: siteName,
-    description,
+    description: siteDescription,
     url: siteUrl,
     siteName,
     type: "website",
@@ -57,18 +52,15 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: siteName,
-    description,
+    description: siteDescription,
     images: ["/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg"],
   },
   icons: {
-    icon: [
-      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
+    icon: [{ url: "/favicon.ico" }],
     shortcut: ["/favicon.ico"],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
   },
-  manifest: "/site.webmanifest",
+  manifest: "/manifest.json",
   appleWebApp: {
     title: "SSH",
     capable: true,

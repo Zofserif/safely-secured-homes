@@ -54,9 +54,19 @@ export default function AppShell({
   initialView?: AppView;
 }) {
   const router = useRouter();
-  const [view, setView] = useState<AppView>(initialView);
-  const [formData, setFormData] = useState<FormData | null>(null);
-  const [result, setResult] = useState<CalculationResult | null>(null);
+  const [storedLead] = useState(() => readStoredLead());
+  const [view, setView] = useState<AppView>(() => {
+    if (initialView === "results" && !storedLead) {
+      return "form";
+    }
+    return initialView;
+  });
+  const [formData, setFormData] = useState<FormData | null>(
+    storedLead?.formData ?? null
+  );
+  const [result, setResult] = useState<CalculationResult | null>(
+    storedLead?.result ?? null
+  );
 
   useEffect(() => {
     initPostHog();
@@ -67,17 +77,10 @@ export default function AppShell({
   }, [view]);
 
   useEffect(() => {
-    const stored = readStoredLead();
-    if (stored?.formData && stored?.result) {
-      setFormData(stored.formData);
-      setResult(stored.result);
-    }
-
-    if (initialView === "results" && !stored) {
-      setView("form");
+    if (initialView === "results" && !storedLead) {
       router.replace("/form");
     }
-  }, [initialView, router]);
+  }, [initialView, router, storedLead]);
 
   const handleFormComplete = async (data: FormData) => {
     const calcResult = estimateCameraPlan(data);

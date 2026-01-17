@@ -124,10 +124,10 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
       <p className="text-center text-sm text-slate-500 mb-4">Select the most important one</p>
       <div className="space-y-3">
         {[
-          { label: '✈️ Monitoring while traveling', value: 'Traveling' },
-          { label: '👶 Keeping an eye on kids/elderly/pets', value: 'Family' },
-          { label: '🛡️ Deterring theft/burglary', value: 'Security' },
-          { label: '🌙 Sleeping soundly at night', value: 'Peace of Mind' }
+          { label: '🏠 General peace of mind', value: 'Peace of Mind' },
+          { label: '👶 Checking my family while at work or away', value: 'Family' },
+          { label: '🛡️ Scaring off intruders and preventing break-ins', value: 'Security' },
+          { label: '🎥 Capturing video evidence for police or insurance', value: 'Recording' }
         ].map((opt) => (
           <button key={opt.value} onClick={() => { updateField('main_goal', opt.value); nextStep(); }}
             className={`w-full p-4 rounded-xl border text-left hover:border-[#0E79B2] transition-all ${formData.main_goal === opt.value ? 'border-[#0E79B2] bg-[#0E79B2]/5 ring-1 ring-[#0E79B2]' : 'border-slate-200'}`}>
@@ -172,7 +172,7 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
       <h3 className="text-xl font-bold text-center text-[#2D3748]">Where do you need eyes?</h3>
       <p className="text-center text-sm text-slate-500 mb-4">Select all that apply</p>
       <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto">
-        {['Front door/porch', 'Gate/Driveway', 'Garage interior', 'Backyard/Patio', 'Side gates/Fence line', 'Street view/Plates', 'Living room', 'Whole perimeter (360°)'].map(area => (
+        {['General Indoor Living Areas', 'Monitor my child/elderly/pets', 'Main Entrance/Front Door', 'Home Office Security', 'Outdoor Gate/Driveway Entrance','Parcel & Mail Drop-off','Side Entrance/Backdoor','Whole Backyard/Front yard coverage','Street View/Outside Perimeter','Indoor Garage','Actively Monitoring Outside','Multiple Floor Security','No Internet/Electricity Remote Property'].map(area => (
           <label key={area} className={`flex items-center p-4 border rounded-xl cursor-pointer ${formData.priority_areas.includes(area) ? 'border-[#0E79B2] bg-[#0E79B2]/5' : 'border-slate-200'}`}>
             <input type="checkbox" className="w-5 h-5 text-[#0E79B2] rounded mr-3"
               checked={formData.priority_areas.includes(area)}
@@ -192,7 +192,7 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
       <div>
         <label className="block text-sm font-medium mb-2">Must-have Features</label>
         <div className="space-y-2">
-          {['Color at night', 'Human/Vehicle Alerts', 'Two-way Audio', 'Mobile App Access', '24/7 Recording'].map(feat => (
+          {['Human/Vehicle Alert','Two-way Audio','Colored Capture at night','Mobile App Access','24/7 Recording'].map(feat => (
             <label key={feat} className="flex items-center space-x-2">
               <input type="checkbox" 
                 checked={formData.features_must.includes(feat)}

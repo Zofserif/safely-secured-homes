@@ -63,13 +63,13 @@ export default function HomePage({ onNavigate }: { onNavigate: (p: string) => vo
             </div>
             
             <h1 className="text-3xl sm:text-4xl lg:text-7xl font-bold text-[#2D3748] mb-4 sm:mb-6 lg:mb-8 leading-[1.1] tracking-tight">
-              Your Dream Home<br/>
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-[#2D3748] via-[#0E79B2] to-[#2D3748] decoration-[#0E79B2] decoration-4 underline underline-offset-4">Secured and Smart</span>
+              A Panatag Family<br/>
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-[#2D3748] via-[#0E79B2] to-[#2D3748] decoration-[#0E79B2] decoration-4 underline underline-offset-4">Safe and Smart Plan</span>
               <span className="text-[#0E79B2] font-serif italic"> Today</span>
             </h1>
             
             <p className="text-slate-600 text-base sm:text-lg lg:text-xl leading-relaxed mb-6 sm:mb-8 lg:mb-10 max-w-lg">
-              In just 60 seconds, get a <strong>FREE security plan</strong> tailored to your home and family. Whether you're checking on the baby, monitoring pets, or securing the perimeter, we install a privacy-first system designed for Filipino families.
+              In 60 seconds, get a <strong>FREE home security plan</strong> so you know your family is safe, even when you’re away. Designed for Filipino homes: check on your kids, your entrance, or your whole house—without sacrificing comfort.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               <button 

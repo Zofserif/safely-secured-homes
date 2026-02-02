@@ -8,35 +8,45 @@ import {
 } from "../../lib/analytics";
 import { FormData } from "../../lib/types";
 
-export default function WizardForm({ onComplete }: { onComplete: (data: FormData) => void }) {
+export default function WizardForm({
+  onComplete,
+}: {
+  onComplete: (data: FormData) => void;
+}) {
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    property_type: '', 
-    home_size: '', 
-    floors: '', 
-    main_goal: '', 
+    property_type: "",
+    home_size: "",
+    floors: "",
+    main_goal: "",
     priority_areas: [],
-    current_setup: '',
-    safety_level: 5,
-    features_must: [], 
-    smart_home_interest: '',
-    budget_band: '', 
-    timeline: '', 
-    first_name: '', 
-    last_name: '', 
-    email: '', 
-    mobile: ''
+    current_setup: "",
+    safety_gate_entry: null,
+    safety_blindspots: null,
+    safety_side_back_entry: null,
+    safety_windows_terrace: null,
+    safety_driveway_garage: null,
+    safety_indoor_choke_points: null,
+    safety_emergency_readiness: null,
+    features_must: [],
+    smart_home_interest: "",
+    budget_band: "",
+    timeline: "",
+    first_name: "",
+    last_name: "",
+    email: "",
+    mobile: "",
   });
 
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const updateField = (field: keyof FormData, value: unknown) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error for this field
     if (errors[field]) {
-      setErrors(prev => {
-        const newErrors = {...prev};
+      setErrors((prev) => {
+        const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
       });
@@ -46,20 +56,20 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
   const toggleArrayField = (field: keyof FormData, value: string) => {
     const current = formData[field] as string[];
     const updated = current.includes(value)
-      ? current.filter(i => i !== value)
+      ? current.filter((i) => i !== value)
       : [...current, value];
-    setFormData(prev => ({ ...prev, [field]: updated }));
+    setFormData((prev) => ({ ...prev, [field]: updated }));
   };
 
   const nextStep = () => {
     trackFormStepCompleted(step);
-    setStep(s => s + 1);
+    setStep((s) => s + 1);
   };
-  
-  const prevStep = () => setStep(s => s - 1);
+
+  const prevStep = () => setStep((s) => s - 1);
 
   const validateContactInfo = () => {
-    const newErrors: {[key: string]: string} = {};
+    const newErrors: { [key: string]: string } = {};
     const mobileRegex = /^09\d{9}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -82,20 +92,127 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
     }
   };
 
+  type SafetyField =
+    | "safety_gate_entry"
+    | "safety_blindspots"
+    | "safety_side_back_entry"
+    | "safety_windows_terrace"
+    | "safety_driveway_garage"
+    | "safety_indoor_choke_points"
+    | "safety_emergency_readiness";
+
+  const safetySections: Array<{
+    id: SafetyField;
+    title: string;
+    prompts: string[];
+  }> = [
+    {
+      id: "safety_gate_entry",
+      title: "Main Gate + Front Entry",
+      prompts: [
+        "Gate/lock easily reachable from outside?",
+        "Entry area bright at night (no dark approach)?",
+        "Clear view of gate + walkway/approach path?",
+      ],
+    },
+    {
+      id: "safety_blindspots",
+      title: "Blindspots (Corners & Shadows)",
+      prompts: [
+        "Any corner/shadow you can't see from inside your home?",
+        "Trees/Vehicles/Gate blocking visibility?",
+        "Has lights implemented to dark zones?",
+      ],
+    },
+    {
+      id: "safety_side_back_entry",
+      title: "Side & Back Entry",
+      prompts: [
+        "Side/Back gate sometimes left unlocked?",
+        "Side/Back path hidden from neighbors view?",
+        "Side/Back entry easy to access by strangers?",
+      ],
+    },
+    {
+      id: "safety_windows_terrace",
+      title: "Windows + Terrace",
+      prompts: [
+        "Windows without locks or loose grills?",
+        "Climb aids nearby (bins, ladders, ledges)?",
+        "Valuables visible from outside at night?",
+      ],
+    },
+    {
+      id: "safety_driveway_garage",
+      title: "Driveway or Garage",
+      prompts: [
+        "Garage-to-house door unsecured?",
+        "Garage/Driveway dark with hiding spots?",
+        "Tools/bikes/items visible and easy to grab?",
+      ],
+    },
+    {
+      id: "safety_indoor_choke_points",
+      title: "Indoor Entry Choke Points (Halls/Stairs)",
+      prompts: [
+        "Halls/Stairs have night light?",
+        "Has multiple entry points?",
+        "Easy to navigate in case of emergency for exit/entry?",
+      ],
+    },
+    {
+      id: "safety_emergency_readiness",
+      title: "Emergency Readiness Home",
+      prompts: [
+        "Is your family ready on what to do in case of fire?",
+        "Does your home have medicine on-site?",
+        "Has your family planned an emergency evacuation route?",
+      ],
+    },
+  ];
+
+  const safetyFields = safetySections.map((section) => section.id);
+  const isSafetyComplete = safetyFields.every(
+    (field) => typeof formData[field] === "number"
+  );
+
   const steps = [
     // 0. Intro
     <div key="start" className="text-center py-10">
-      <h2 className="text-2xl font-bold mb-4 text-[#2D3748]">Let's shape your plan.</h2>
-      <p className="text-slate-600 mb-8">A few quick questions to design the perfect security system for your home.</p>
-      <button onClick={nextStep} className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold">Start</button>
+      <h2 className="text-2xl font-bold mb-4 text-[#2D3748]">
+        Let's shape your plan.
+      </h2>
+      <p className="text-slate-600 mb-8">
+        A few quick questions to design the perfect security system for your
+        home.
+      </p>
+      <button
+        onClick={nextStep}
+        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold"
+      >
+        Start
+      </button>
     </div>,
 
     // 1. Property Type
     <div key="prop" className="space-y-4">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">Our place is a...</h3>
-      {['Single-family house', 'Townhouse / Duplex', 'Condo / Apartment', 'Other'].map(opt => (
-        <button key={opt} onClick={() => { updateField('property_type', opt); nextStep(); }}
-          className={`w-full p-4 rounded-xl border text-left hover:border-[#0E79B2] transition-all ${formData.property_type === opt ? 'border-[#0E79B2] bg-[#0E79B2]/5 ring-1 ring-[#0E79B2]' : 'border-slate-200'}`}>
+      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+        Our place is a...
+      </h3>
+      {[
+        "Single-family house",
+        "Townhouse / Duplex",
+        "Condo / Apartment",
+        "Other",
+      ].map((opt) => (
+        <button
+          key={opt}
+          onClick={() => {
+            updateField("property_type", opt);
+            nextStep();
+          }}
+          className={`w-full p-4 rounded-xl border text-left hover:border-[#0E79B2] transition-all ${formData.property_type === opt ? "border-[#0E79B2] bg-[#0E79B2]/5 ring-1 ring-[#0E79B2]" : "border-slate-200"}`}
+        >
           {opt}
         </button>
       ))}
@@ -103,34 +220,65 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
 
     // 2. Current Setup
     <div key="setup" className="space-y-6">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">Current Setup</h3>
+      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+        Current Setup
+      </h3>
       <div>
-        <label className="block text-sm font-medium mb-2 text-slate-700 mt-4">Do you currently have a security system?</label>
-        <select className="w-full p-3 rounded-xl border border-slate-300" 
-          value={formData.current_setup} onChange={e => updateField('current_setup', e.target.value)}>
+        <label className="block text-sm font-medium mb-2 text-slate-700 mt-4">
+          Do you currently have a security system?
+        </label>
+        <select
+          className="w-full p-3 rounded-xl border border-slate-300"
+          value={formData.current_setup}
+          onChange={(e) => updateField("current_setup", e.target.value)}
+        >
           <option value="">Select status</option>
           <option>No, this is a new installation</option>
           <option>Yes, but it's broken/old (Needs replacement)</option>
           <option>Yes, looking to expand/upgrade</option>
         </select>
       </div>
-      <button onClick={nextStep} disabled={!formData.current_setup}
-        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-4">Next</button>
+      <button
+        onClick={nextStep}
+        disabled={!formData.current_setup}
+        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-4"
+      >
+        Next
+      </button>
     </div>,
 
     // 3. Goals
     <div key="goals" className="space-y-4">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">What is your main goal?</h3>
-      <p className="text-center text-sm text-slate-500 mb-4">Select the most important one</p>
+      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+        What is your main goal?
+      </h3>
+      <p className="text-center text-sm text-slate-500 mb-4">
+        Select the most important one
+      </p>
       <div className="space-y-3">
         {[
-          { label: '🏠 General peace of mind', value: 'Peace of Mind' },
-          { label: '👶 Checking my family while at work or away', value: 'Family' },
-          { label: '🛡️ Scaring off intruders and preventing break-ins', value: 'Security' },
-          { label: '🎥 Capturing video evidence for police or insurance', value: 'Recording' }
+          { label: "🏠 General peace of mind", value: "Peace of Mind" },
+          {
+            label: "👶 Checking my family while at work or away",
+            value: "Family",
+          },
+          {
+            label: "🛡️ Scaring off intruders and preventing break-ins",
+            value: "Security",
+          },
+          {
+            label: "🎥 Capturing video evidence for police or insurance",
+            value: "Recording",
+          },
         ].map((opt) => (
-          <button key={opt.value} onClick={() => { updateField('main_goal', opt.value); nextStep(); }}
-            className={`w-full p-4 rounded-xl border text-left hover:border-[#0E79B2] transition-all ${formData.main_goal === opt.value ? 'border-[#0E79B2] bg-[#0E79B2]/5 ring-1 ring-[#0E79B2]' : 'border-slate-200'}`}>
+          <button
+            key={opt.value}
+            onClick={() => {
+              updateField("main_goal", opt.value);
+              nextStep();
+            }}
+            className={`w-full p-4 rounded-xl border text-left hover:border-[#0E79B2] transition-all ${formData.main_goal === opt.value ? "border-[#0E79B2] bg-[#0E79B2]/5 ring-1 ring-[#0E79B2]" : "border-slate-200"}`}
+          >
             {opt.label}
           </button>
         ))}
@@ -139,11 +287,18 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
 
     // 4. Size & Floors
     <div key="size" className="space-y-6">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">Home Details</h3>
+      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+        Home Details
+      </h3>
       <div>
-        <label className="block text-sm font-medium mb-2 text-slate-700">Lot Size</label>
-        <select className="w-full p-3 rounded-xl border border-slate-300" 
-          value={formData.home_size} onChange={e => updateField('home_size', e.target.value)}>
+        <label className="block text-sm font-medium mb-2 text-slate-700">
+          Lot Size
+        </label>
+        <select
+          className="w-full p-3 rounded-xl border border-slate-300"
+          value={formData.home_size}
+          onChange={(e) => updateField("home_size", e.target.value)}
+        >
           <option value="">Select size</option>
           <option>Small (≤120 sqm)</option>
           <option>Medium (121-250 sqm)</option>
@@ -152,51 +307,155 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium mb-2 text-slate-700">Floors</label>
+        <label className="block text-sm font-medium mb-2 text-slate-700">
+          Floors
+        </label>
         <div className="flex gap-2">
-          {['1', '2', '3+'].map(f => (
-            <button key={f} type="button" 
-              onClick={() => updateField('floors', f)}
-              className={`flex-1 py-3 rounded-xl border ${formData.floors === f ? 'bg-[#0E79B2] text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>
+          {["1", "2", "3+"].map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => updateField("floors", f)}
+              className={`flex-1 py-3 rounded-xl border ${formData.floors === f ? "bg-[#0E79B2] text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
+            >
               {f}
             </button>
           ))}
         </div>
       </div>
-      <button onClick={nextStep} disabled={!formData.home_size || !formData.floors}
-        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-4">Next</button>
+      <button
+      onClick={nextStep}
+        disabled={!formData.home_size || !formData.floors}
+        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-4"
+      >
+        Next
+      </button>
     </div>,
 
-    // 5. Priority Areas
+    // 5. Safety Check
+    <div key="safety-check" className="space-y-4">
+      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+        Home Safety Check
+      </h3>
+      <p className="text-center text-sm text-slate-500">
+        Legend: Choose one score appropriate to your home safety level (0 = very
+        safe, 5 = not safe at all).
+      </p>
+
+      <div className="space-y-5 max-h-[480px] overflow-y-auto pr-1">
+        {safetySections.map((section) => (
+          <div
+            key={section.id}
+            className="rounded-2xl border border-slate-200 p-5 space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-[#2D3748] text-base">
+                {section.title}
+              </h4>
+              <span className="text-sm text-slate-400">0–5</span>
+            </div>
+            <ul className="list-disc pl-4 text-sm text-slate-500 space-y-2">
+              {section.prompts.map((prompt) => (
+                <li key={prompt}>{prompt}</li>
+              ))}
+            </ul>
+            <div className="grid grid-cols-6 gap-3">
+              {[0, 1, 2, 3, 4, 5].map((value) => {
+                const selected = formData[section.id] === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => updateField(section.id, value)}
+                    className={`rounded-xl border py-2.5 text-sm font-semibold transition-all ${selected ? "border-[#0E79B2] bg-[#0E79B2]/10 text-[#0E79B2]" : "border-slate-200 text-slate-600 hover:border-[#0E79B2]/50"}`}
+                  >
+                    {value}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={nextStep}
+        disabled={!isSafetyComplete}
+        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-2"
+      >
+        Next
+      </button>
+    </div>,
+
+    // 6. Priority Areas
     <div key="areas" className="space-y-4">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">Where do you need eyes?</h3>
-      <p className="text-center text-sm text-slate-500 mb-4">Select all that apply</p>
+      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+        Where do you need eyes?
+      </h3>
+      <p className="text-center text-sm text-slate-500 mb-4">
+        Select all that apply
+      </p>
       <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto">
-        {['General Indoor Living Areas', 'Monitor my child/elderly/pets', 'Main Entrance/Front Door', 'Home Office Security', 'Outdoor Gate/Driveway Entrance','Parcel & Mail Drop-off','Side Entrance/Backdoor','Whole Backyard/Front yard coverage','Street View/Outside Perimeter','Indoor Garage','Actively Monitoring Outside','Multiple Floor Security','No Internet/Electricity Remote Property'].map(area => (
-          <label key={area} className={`flex items-center p-4 border rounded-xl cursor-pointer ${formData.priority_areas.includes(area) ? 'border-[#0E79B2] bg-[#0E79B2]/5' : 'border-slate-200'}`}>
-            <input type="checkbox" className="w-5 h-5 text-[#0E79B2] rounded mr-3"
+        {[
+          "General Indoor Living Areas",
+          "Monitor my child/elderly/pets",
+          "Main Entrance/Front Door",
+          "Home Office Security",
+          "Outdoor Gate/Driveway Entrance",
+          "Parcel & Mail Drop-off",
+          "Side Entrance/Backdoor",
+          "Whole Backyard/Front yard coverage",
+          "Street View/Outside Perimeter",
+          "Indoor Garage",
+          "Actively Monitoring Outside",
+          "Multiple Floor Security",
+          "No Internet/Electricity Remote Property",
+        ].map((area) => (
+          <label
+            key={area}
+            className={`flex items-center p-4 border rounded-xl cursor-pointer ${formData.priority_areas.includes(area) ? "border-[#0E79B2] bg-[#0E79B2]/5" : "border-slate-200"}`}
+          >
+            <input
+              type="checkbox"
+              className="w-5 h-5 text-[#0E79B2] rounded mr-3"
               checked={formData.priority_areas.includes(area)}
-              onChange={() => toggleArrayField('priority_areas', area)}
+              onChange={() => toggleArrayField("priority_areas", area)}
             />
             {area}
           </label>
         ))}
       </div>
-      <button onClick={nextStep} disabled={formData.priority_areas.length === 0}
-        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-4">Next</button>
+      <button
+        onClick={nextStep}
+        disabled={formData.priority_areas.length === 0}
+        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-4"
+      >
+        Next
+      </button>
     </div>,
 
-    // 6. Tech Prefs
+    // 7. Tech Prefs
     <div key="tech" className="space-y-6">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">System Preferences</h3>
+      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+        System Preferences
+      </h3>
       <div>
-        <label className="block text-sm font-medium mb-2">Must-have Features</label>
+        <label className="block text-sm font-medium mb-2">
+          Must-have Features
+        </label>
         <div className="space-y-2">
-          {['Human/Vehicle Alert','Two-way Audio','Colored Capture at night','Mobile App Access','24/7 Recording'].map(feat => (
+          {[
+            "Human/Vehicle Alert",
+            "Two-way Audio",
+            "Colored Capture at night",
+            "Mobile App Access",
+            "24/7 Recording",
+          ].map((feat) => (
             <label key={feat} className="flex items-center space-x-2">
-              <input type="checkbox" 
+              <input
+                type="checkbox"
                 checked={formData.features_must.includes(feat)}
-                onChange={() => toggleArrayField('features_must', feat)}
+                onChange={() => toggleArrayField("features_must", feat)}
                 className="rounded text-[#0E79B2]"
               />
               <span className="text-sm">{feat}</span>
@@ -215,7 +474,9 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
             }
           />
           <div>
-            <span className="text-sm font-medium">Interested in smart home integration</span>
+            <span className="text-sm font-medium">
+              Interested in smart home integration
+            </span>
             <p className="text-xs text-slate-500">
               Lighting, locks, sensors, and automation.
             </p>
@@ -224,8 +485,11 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
       </div>
       <div>
         <label className="block text-sm font-medium mb-2">Budget Zone</label>
-        <select className="w-full p-3 rounded-xl border border-slate-300"
-          value={formData.budget_band} onChange={e => updateField('budget_band', e.target.value)}>
+        <select
+          className="w-full p-3 rounded-xl border border-slate-300"
+          value={formData.budget_band}
+          onChange={(e) => updateField("budget_band", e.target.value)}
+        >
           <option value="">Select range</option>
           <option>Basic Starter (&lt; ₱30,000)</option>
           <option>All I can need (Best Value ₱30K - ₱50K) </option>
@@ -233,94 +497,145 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
           <option>Premium / Enterprise (₱75K+) </option>
         </select>
       </div>
-      <button onClick={nextStep} disabled={!formData.budget_band}
-        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-4">Next</button>
+      <button
+        onClick={nextStep}
+        disabled={!formData.budget_band}
+        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-4"
+      >
+        Next
+      </button>
     </div>,
 
-    // 7. Timeline
+    // 8. Timeline
     <div key="timeline" className="space-y-4">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">When do you need this?</h3>
+      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+        When do you need this?
+      </h3>
       <div className="space-y-3">
         {[
-          { label: '🔥 ASAP / This Week', value: 'ASAP' },
-          { label: '📅 Within this month', value: 'This Month' },
-          { label: '🏠 Before I move in / renovations finish', value: 'Before Move-in' },
-          { label: '👀 Just researching for now', value: 'Researching' }
+          { label: "🔥 ASAP / This Week", value: "ASAP" },
+          { label: "📅 Within this month", value: "This Month" },
+          {
+            label: "🏠 Before I move in / renovations finish",
+            value: "Before Move-in",
+          },
+          { label: "👀 Just researching for now", value: "Researching" },
         ].map((opt) => (
-          <button key={opt.value} onClick={() => { updateField('timeline', opt.value); nextStep(); }}
-            className={`w-full p-4 rounded-xl border text-left hover:border-[#0E79B2] transition-all ${formData.timeline === opt.value ? 'border-[#0E79B2] bg-[#0E79B2]/5 ring-1 ring-[#0E79B2]' : 'border-slate-200'}`}>
+          <button
+            key={opt.value}
+            onClick={() => {
+              updateField("timeline", opt.value);
+              nextStep();
+            }}
+            className={`w-full p-4 rounded-xl border text-left hover:border-[#0E79B2] transition-all ${formData.timeline === opt.value ? "border-[#0E79B2] bg-[#0E79B2]/5 ring-1 ring-[#0E79B2]" : "border-slate-200"}`}
+          >
             {opt.label}
           </button>
         ))}
       </div>
     </div>,
 
-    // 8. Final Details
+    // 9. Final Details
     <div key="final" className="space-y-4">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">Almost done!</h3>
-      <p className="text-center text-sm text-slate-500">Where should we send your free Checklist?</p>
-      
+      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+        Almost done!
+      </h3>
+      <p className="text-center text-sm text-slate-500">
+        Where should we send your free Checklist?
+      </p>
+
       <div className="flex gap-4">
-        <input type="text" placeholder="First Name" className="w-1/2 p-3 rounded-xl border border-slate-300"
-          value={formData.first_name} onChange={e => updateField('first_name', e.target.value)} />
-        <input type="text" placeholder="Last Name" className="w-1/2 p-3 rounded-xl border border-slate-300"
-          value={formData.last_name} onChange={e => updateField('last_name', e.target.value)} />
-      </div>
-      
-      <div>
-        <input type="email" placeholder="Email Address" 
-          className={`w-full p-3 rounded-xl border ${errors.email ? 'border-red-500' : 'border-slate-300'}`}
-          value={formData.email} onChange={e => updateField('email', e.target.value)} />
-        {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-      </div>
-        
-      <div>
-        <input type="tel" placeholder="Mobile Number (09xxxxxxxxx)" 
-          className={`w-full p-3 rounded-xl border ${errors.mobile ? 'border-red-500' : 'border-slate-300'}`}
-          value={formData.mobile} onChange={e => updateField('mobile', e.target.value)} />
-        {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
+        <input
+          type="text"
+          placeholder="First Name"
+          className="w-1/2 p-3 rounded-xl border border-slate-300"
+          value={formData.first_name}
+          onChange={(e) => updateField("first_name", e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Last Name"
+          className="w-1/2 p-3 rounded-xl border border-slate-300"
+          value={formData.last_name}
+          onChange={(e) => updateField("last_name", e.target.value)}
+        />
       </div>
 
-      <div className="pt-4">
-        <label className="block text-sm font-medium mb-2">Current Safety Level (1-10)</label>
-        <input type="range" min="1" max="10" className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-          value={formData.safety_level} onChange={e => updateField('safety_level', parseInt(e.target.value))} />
-        <div className="text-center text-[#0E79B2] font-bold mt-1">{formData.safety_level}/10</div>
+      <div>
+        <input
+          type="email"
+          placeholder="Email Address"
+          className={`w-full p-3 rounded-xl border ${errors.email ? "border-red-500" : "border-slate-300"}`}
+          value={formData.email}
+          onChange={(e) => updateField("email", e.target.value)}
+        />
+        {errors.email && (
+          <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+        )}
       </div>
 
-      <button 
-        onClick={handleFinalSubmit} 
-        disabled={!formData.email || !formData.first_name || !formData.last_name || isSubmitting}
+      <div>
+        <input
+          type="tel"
+          placeholder="Mobile Number (09xxxxxxxxx)"
+          className={`w-full p-3 rounded-xl border ${errors.mobile ? "border-red-500" : "border-slate-300"}`}
+          value={formData.mobile}
+          onChange={(e) => updateField("mobile", e.target.value)}
+        />
+        {errors.mobile && (
+          <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>
+        )}
+      </div>
+
+      <button
+        onClick={handleFinalSubmit}
+        disabled={
+          !formData.email ||
+          !formData.first_name ||
+          !formData.last_name ||
+          isSubmitting
+        }
         className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 shadow-lg shadow-[#0E79B2]/30 flex justify-center items-center gap-2"
       >
-        {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Generating Plan...</> : 'Generate My FREE Plan'}
+        {isSubmitting ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" /> Generating Plan...
+          </>
+        ) : (
+          "Generate My FREE Plan"
+        )}
       </button>
-    </div>
+    </div>,
   ];
 
   return (
     <div className="min-h-screen bg-[#F7FAFC] flex items-center justify-center p-4">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white w-full max-w-md p-8 rounded-3xl shadow-xl relative"
       >
-        {step > 0 && (
-          <button onClick={prevStep} className="absolute top-8 left-8 text-slate-400 hover:text-slate-600">
-            <ChevronLeft />
-          </button>
-        )}
-        
-        <div className="mb-8 flex justify-center">
-          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-            <div 
+        <div className="mb-8 flex items-center gap-4">
+          {step > 0 ? (
+            <button
+              onClick={prevStep}
+              className="text-slate-400 hover:text-slate-600"
+              aria-label="Go back"
+            >
+              <ChevronLeft />
+            </button>
+          ) : (
+            <div className="h-6 w-6" aria-hidden="true" />
+          )}
+          <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
+            <div
               className="h-full bg-[#0E79B2] transition-all duration-500 ease-out"
               style={{ width: `${(step / (steps.length - 1)) * 100}%` }}
             />
           </div>
         </div>
 
-        <AnimatePresence mode='wait'>
+        <AnimatePresence mode="wait">
           <motion.div
             key={step}
             initial={{ opacity: 0, x: 20 }}
@@ -334,4 +649,4 @@ export default function WizardForm({ onComplete }: { onComplete: (data: FormData
       </motion.div>
     </div>
   );
-};
+}

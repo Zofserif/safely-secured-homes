@@ -180,7 +180,10 @@ export default function AppShell({
   return (
     <div className="font-sans text-[#2D3748]">
       {view !== "form" && (
-        <Navbar onNavigate={handleNavigation} hideCta={reportsSoldOut} />
+        <Navbar
+          onNavigate={handleNavigation}
+          hideCta={reportsSoldOut || view === "results"}
+        />
       )}
 
       {view === "home" && (

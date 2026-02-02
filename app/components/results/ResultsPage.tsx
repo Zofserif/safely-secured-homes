@@ -6,6 +6,16 @@ import DIYView from "./DIYView";
 
 export default function ResultsPage({ result, data }: { result: CalculationResult, data: FormData }) {
   const [showDIY, setShowDIY] = useState(false);
+  const safetyTotal = [
+    data.safety_gate_entry,
+    data.safety_blindspots,
+    data.safety_side_back_entry,
+    data.safety_windows_terrace,
+    data.safety_driveway_garage,
+    data.safety_indoor_choke_points,
+    data.safety_emergency_readiness,
+  ].reduce((sum: number, value) => (typeof value === "number" ? sum + value : sum), 0);
+  const safetyMax = 35;
 
   // Function to determine buttons based on Lead Priority (Hot/Warm/Nurture)
   const renderActionButtons = () => {
@@ -109,7 +119,7 @@ export default function ResultsPage({ result, data }: { result: CalculationResul
 
           <div className="p-8 space-y-8">
             {/* Core Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center">
                 <Video className="w-8 h-8 mx-auto text-[#0E79B2] mb-2" />
                 <div className="text-2xl font-bold text-[#2D3748]">{result.cameraCount}</div>
@@ -127,6 +137,13 @@ export default function ResultsPage({ result, data }: { result: CalculationResul
               </div>
               <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center">
                 <ShieldCheck className="w-8 h-8 mx-auto text-[#FFB300] mb-2" />
+                <div className="text-2xl font-bold text-[#2D3748]">
+                  {safetyTotal}/{safetyMax}
+                </div>
+                <div className="text-xs text-slate-500 uppercase tracking-wider">Safety Total</div>
+              </div>
+              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center">
+                <ShieldCheck className="w-8 h-8 mx-auto text-[#0E79B2] mb-2" />
                 <div className="text-2xl font-bold text-[#2D3748]">{result.leadTier}</div>
                 <div className="text-xs text-slate-500 uppercase tracking-wider">Priority</div>
               </div>

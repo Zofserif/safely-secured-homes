@@ -27,7 +27,19 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   if (data.current_setup === "No, this is a new installation" || data.current_setup.includes("broken/old")) score += 1;
   if (data.budget_band.includes("All I can need") || data.budget_band.includes("Feature Rich")) score += 2;
   if (data.timeline.includes("ASAP") || data.timeline.includes("This Week")) score += 3;
-  if (data.safety_level <= 3) score += 1;
+  const safetyScores = [
+    data.safety_gate_entry,
+    data.safety_blindspots,
+    data.safety_side_back_entry,
+    data.safety_windows_terrace,
+    data.safety_driveway_garage,
+    data.safety_indoor_choke_points,
+    data.safety_emergency_readiness,
+  ].filter((value): value is number => typeof value === "number");
+  const safetyAverage = safetyScores.length
+    ? safetyScores.reduce((sum, value) => sum + value, 0) / safetyScores.length
+    : 0;
+  if (safetyAverage >= 3) score += 1;
 
   let tier: LeadTier = 'Nurture';
   if (score >= 12) tier = 'Hot';

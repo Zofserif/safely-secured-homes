@@ -6,6 +6,8 @@ const FORM_STEPS = [
   { id: "property_type", label: "Property type" },
   { id: "current_setup", label: "Current setup" },
   { id: "main_goal", label: "Main goal" },
+  { id: "home_details", label: "Home details" },
+  { id: "safety_check", label: "Safety check" },
   { id: "priority_areas", label: "Priority areas" },
   { id: "system_preferences", label: "System preferences" },
   { id: "timeline", label: "Timeline" },
@@ -56,7 +58,26 @@ const formProps = (data: FormData): EventProps => ({
   priority_areas: safeArray(data.priority_areas),
   priority_areas_count: data.priority_areas.length,
   current_setup: normalizeString(data.current_setup),
-  safety_level: data.safety_level,
+  safety_gate_entry: data.safety_gate_entry,
+  safety_blindspots: data.safety_blindspots,
+  safety_side_back_entry: data.safety_side_back_entry,
+  safety_windows_terrace: data.safety_windows_terrace,
+  safety_driveway_garage: data.safety_driveway_garage,
+  safety_indoor_choke_points: data.safety_indoor_choke_points,
+  safety_emergency_readiness: data.safety_emergency_readiness,
+  safety_score_avg: (() => {
+    const values = [
+      data.safety_gate_entry,
+      data.safety_blindspots,
+      data.safety_side_back_entry,
+      data.safety_windows_terrace,
+      data.safety_driveway_garage,
+      data.safety_indoor_choke_points,
+      data.safety_emergency_readiness,
+    ].filter((value): value is number => typeof value === "number");
+    if (values.length === 0) return undefined;
+    return values.reduce((sum, value) => sum + value, 0) / values.length;
+  })(),
   features_must: safeArray(data.features_must),
   features_must_count: data.features_must.length,
   smart_home_interest: Boolean(data.smart_home_interest),

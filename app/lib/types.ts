@@ -5,7 +5,13 @@ export type FormData = {
   main_goal: string;
   priority_areas: string[];
   current_setup: string;
-  safety_level: number;
+  safety_gate_entry: number | null;
+  safety_blindspots: number | null;
+  safety_side_back_entry: number | null;
+  safety_windows_terrace: number | null;
+  safety_driveway_garage: number | null;
+  safety_indoor_choke_points: number | null;
+  safety_emergency_readiness: number | null;
   features_must: string[];
   smart_home_interest: string;
   budget_band: string;

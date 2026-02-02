@@ -80,6 +80,20 @@ export async function submitLeadToSupabase(
   data: FormData,
   result: CalculationResult
 ) {
+  const safetyScores = {
+    gate_entry: data.safety_gate_entry,
+    blindspots: data.safety_blindspots,
+    side_back_entry: data.safety_side_back_entry,
+    windows_terrace: data.safety_windows_terrace,
+    driveway_garage: data.safety_driveway_garage,
+    indoor_choke_points: data.safety_indoor_choke_points,
+    emergency_readiness: data.safety_emergency_readiness,
+  };
+  const safetyScoreTotal = Object.values(safetyScores).reduce<number>(
+    (sum, value) => (typeof value === "number" ? sum + value : sum),
+    0
+  );
+
   try {
     const response = await fetch("/api/leads", {
       method: "POST",
@@ -92,7 +106,12 @@ export async function submitLeadToSupabase(
         tier: result.leadTier,
         score: result.leadScore,
         camera_count: result.cameraCount,
-        payload: data,
+        safety_score_total: safetyScoreTotal,
+        payload: {
+          ...data,
+          safety_scores: safetyScores,
+          safety_score_total: safetyScoreTotal,
+        },
       }),
     });
 

@@ -203,7 +203,7 @@ export default function HomePage({
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-stretch">
-              <div className="flex flex-col gap-2 w-full sm:flex-[3]">
+              <div className="flex flex-col gap-2 w-full sm:flex-3">
                 <button
                   onClick={() => onNavigate("form")}
                   disabled={reportsSoldOut}

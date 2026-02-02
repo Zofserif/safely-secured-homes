@@ -67,6 +67,10 @@ export default function AppShell({
   const [result, setResult] = useState<CalculationResult | null>(
     storedLead?.result ?? null
   );
+  const [reportsRemaining, setReportsRemaining] = useState<number | null>(null);
+  const [reportsLoading, setReportsLoading] = useState(true);
+  const [reportsError, setReportsError] = useState(false);
+  const [reportsWindowEndsAt, setReportsWindowEndsAt] = useState<number | null>(null);
 
   useEffect(() => {
     initPostHog();
@@ -81,6 +85,59 @@ export default function AppShell({
       router.replace("/form");
     }
   }, [initialView, router, storedLead]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const getThreeDayWindowEnd = () =>
+      Date.now() + 3 * 24 * 60 * 60 * 1000;
+
+    const fetchReportsRemaining = async () => {
+      try {
+        const response = await fetch("/api/reports-remaining", {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch reports remaining");
+        }
+        const data = await response.json();
+        const remaining = data?.remaining;
+        if (typeof remaining !== "number") {
+          throw new Error("Invalid reports remaining response");
+        }
+        const parsedWindowEndsAt =
+          typeof data?.windowEndsAt === "string"
+            ? Date.parse(data.windowEndsAt)
+            : Number.NaN;
+        const safeWindowEndsAt = Number.isNaN(parsedWindowEndsAt)
+          ? getThreeDayWindowEnd()
+          : parsedWindowEndsAt;
+        if (isMounted) {
+          setReportsRemaining(remaining);
+          setReportsWindowEndsAt(safeWindowEndsAt);
+          setReportsError(false);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setReportsRemaining(null);
+          setReportsWindowEndsAt(null);
+          setReportsError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setReportsLoading(false);
+        }
+      }
+    };
+
+    fetchReportsRemaining();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const reportsSoldOut = reportsRemaining !== null && reportsRemaining <= 0;
 
   const handleFormComplete = async (data: FormData) => {
     const calcResult = estimateCameraPlan(data);
@@ -122,9 +179,19 @@ export default function AppShell({
 
   return (
     <div className="font-sans text-[#2D3748]">
-      {view !== "form" && <Navbar onNavigate={handleNavigation} />}
+      {view !== "form" && (
+        <Navbar onNavigate={handleNavigation} hideCta={reportsSoldOut} />
+      )}
 
-      {view === "home" && <HomePage onNavigate={handleNavigation} />}
+      {view === "home" && (
+        <HomePage
+          onNavigate={handleNavigation}
+          reportsRemaining={reportsRemaining}
+          reportsLoading={reportsLoading}
+          reportsError={reportsError}
+          windowEndsAt={reportsWindowEndsAt}
+        />
+      )}
 
       {view === "form" && <WizardForm onComplete={handleFormComplete} />}
 

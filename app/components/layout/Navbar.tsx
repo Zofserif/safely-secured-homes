@@ -3,7 +3,13 @@ import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-export default function Navbar({ onNavigate }: { onNavigate: (page: string) => void }){
+export default function Navbar({
+  onNavigate,
+  hideCta = false,
+}: {
+  onNavigate: (page: string) => void;
+  hideCta?: boolean;
+}){
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -48,12 +54,14 @@ export default function Navbar({ onNavigate }: { onNavigate: (page: string) => v
         </div>
         
         <div className="hidden md:flex gap-8 items-center">
-          <button 
-            onClick={() => onNavigate('form')}
-            className="bg-[#0E79B2] hover:bg-[#0b5e8b] text-white px-8 py-3 rounded-full font-semibold shadow-xl shadow-[#0E79B2]/20 transition-all hover:scale-105 hover:shadow-2xl border border-transparent"
-          >
-            GET MY FREE PLAN
-          </button>
+          {!hideCta && (
+            <button 
+              onClick={() => onNavigate('form')}
+              className="bg-[#0E79B2] hover:bg-[#0b5e8b] text-white px-8 py-3 rounded-full font-semibold shadow-xl shadow-[#0E79B2]/20 transition-all hover:scale-105 hover:shadow-2xl border border-transparent"
+            >
+              GET MY FREE PLAN
+            </button>
+          )}
         </div>
 
         <div className="md:hidden">
@@ -70,12 +78,14 @@ export default function Navbar({ onNavigate }: { onNavigate: (page: string) => v
           className="md:hidden bg-white border-b shadow-2xl"
         >
           <div className="p-6 flex flex-col gap-6">
-            <button 
-              onClick={() => { onNavigate('form'); setIsOpen(false); }}
-              className="w-full bg-[#0E79B2] text-white py-4 rounded-xl font-bold shadow-lg text-lg"
-            >
-              Get Free Plan Now
-            </button>
+            {!hideCta && (
+              <button 
+                onClick={() => { onNavigate('form'); setIsOpen(false); }}
+                className="w-full bg-[#0E79B2] text-white py-4 rounded-xl font-bold shadow-lg text-lg"
+              >
+                Get Free Plan Now
+              </button>
+            )}
           </div>
         </motion.div>
       )}

@@ -201,7 +201,7 @@ export default function HomePage({
               for your layout. Privacy-first: We won’t recommend placements that
               make your family feel watched or uncomfortable.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               <div className="flex flex-col gap-2 w-full sm:w-auto">
                 <button
@@ -212,6 +212,29 @@ export default function HomePage({
                   GET MY FREE PLAN NOW
                   <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                 </button>
+                <div className="container mx-auto grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-16 justify-center items-center relative z-10">
+                  <div className="flex items-start gap-2 text-xs sm:text-sm text-slate-600">
+                    <span
+                      className="mt-1 h-2 w-2 rounded-full bg-[#E53E3E] animate-pulse"
+                      aria-hidden="true"
+                    ></span>
+                    <span>
+                      {reportsLoading && "Checking report availability..."}
+                      {!reportsLoading &&
+                        reportsError &&
+                        "Availability check failed. Please try again shortly."}
+                      {!reportsLoading && !reportsError && reportsSoldOut && (
+                        <>All 15 reports are claimed until{countdownLabel}.</>
+                      )}
+                      {!reportsLoading && !reportsError && !reportsSoldOut && (
+                        <>
+                          Only {reportsRemaining}/15 reports remaining until
+                          {countdownLabel}
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Lead Magnet Badge - Keep visible */}
@@ -238,30 +261,6 @@ export default function HomePage({
               </div>
             </div>
           </motion.div>
-        </div>
-        
-        <div className="container mx-auto grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-16 items-center relative z-10">
-          <div className="flex items-start gap-2 text-xs sm:text-sm text-slate-600">
-            <span
-              className="mt-1 h-2 w-2 rounded-full bg-[#E53E3E] animate-pulse"
-              aria-hidden="true"
-            ></span>
-            <span>
-              {reportsLoading && "Checking report availability..."}
-              {!reportsLoading &&
-                reportsError &&
-                "Availability check failed. Please try again shortly."}
-              {!reportsLoading && !reportsError && reportsSoldOut && (
-                <>All 15 reports are claimed until{countdownLabel}.</>
-              )}
-              {!reportsLoading && !reportsError && !reportsSoldOut && (
-                <>
-                  Only {reportsRemaining}/15 reports remaining until
-                  {countdownLabel}
-                </>
-              )}
-            </span>
-          </div>
         </div>
 
         {/* Trust Indicators */}

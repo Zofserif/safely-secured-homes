@@ -352,7 +352,7 @@ export default function WizardForm({
               <h4 className="font-semibold text-[#2D3748] text-base">
                 {section.title}
               </h4>
-              <span className="text-sm text-slate-400">0–5</span>
+              <span className="text-xs text-slate-400 shrink-0">0–5</span>
             </div>
             <ul className="list-disc pl-4 text-sm text-slate-500 space-y-2">
               {section.prompts.map((prompt) => (

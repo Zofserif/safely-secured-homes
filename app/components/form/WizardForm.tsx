@@ -343,39 +343,55 @@ export default function WizardForm({
       </p>
 
       <div className="space-y-5 max-h-[480px] overflow-y-auto pr-1">
-        {safetySections.map((section) => (
-          <div
-            key={section.id}
-            className="rounded-2xl border border-slate-200 p-5 space-y-4"
-          >
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-[#2D3748] text-base">
-                {section.title}
-              </h4>
-              <span className="text-xs text-slate-400 shrink-0">0–5</span>
+        {safetySections.map((section) => {
+          const hasScore = typeof formData[section.id] === "number";
+
+          return (
+            <div
+              key={section.id}
+              className="rounded-2xl border border-slate-200 p-5 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-[#2D3748] text-base">
+                  {section.title}
+                </h4>
+              </div>
+              <ul className="list-disc pl-4 text-sm text-slate-500 space-y-2">
+                {section.prompts.map((prompt) => (
+                  <li key={prompt}>{prompt}</li>
+                ))}
+              </ul>
+              <div className="space-y-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="1"
+                  value={formData[section.id] ?? 0}
+                  onChange={(e) => updateField(section.id, parseInt(e.target.value, 10))}
+                  onPointerDown={() => {
+                    if (typeof formData[section.id] !== "number") {
+                      updateField(section.id, 0);
+                    }
+                  }}
+                  onFocus={() => {
+                    if (typeof formData[section.id] !== "number") {
+                      updateField(section.id, 0);
+                    }
+                  }}
+                  className={`w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer ${hasScore ? "accent-[#0E79B2]" : "accent-slate-400"}`}
+                />
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span>0 Very safe</span>
+                  <span className="text-slate-600 font-semibold">
+                    {typeof formData[section.id] === "number" ? formData[section.id] : "—"}
+                  </span>
+                  <span>5 Not safe at all</span>
+                </div>
+              </div>
             </div>
-            <ul className="list-disc pl-4 text-sm text-slate-500 space-y-2">
-              {section.prompts.map((prompt) => (
-                <li key={prompt}>{prompt}</li>
-              ))}
-            </ul>
-            <div className="grid grid-cols-6 gap-3">
-              {[0, 1, 2, 3, 4, 5].map((value) => {
-                const selected = formData[section.id] === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => updateField(section.id, value)}
-                    className={`rounded-xl border py-2.5 text-sm font-semibold transition-all ${selected ? "border-[#0E79B2] bg-[#0E79B2]/10 text-[#0E79B2]" : "border-slate-200 text-slate-600 hover:border-[#0E79B2]/50"}`}
-                  >
-                    {value}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <button

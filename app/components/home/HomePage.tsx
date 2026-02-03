@@ -129,6 +129,7 @@ export default function HomePage({
   const countdownLabel = countdown ? ` (${countdown} left)` : "";
   const bonusCountdown =
     hasClock && bonusEndsAt !== null ? formatCountdown(bonusEndsAt, nowMs) : "";
+  const bonusExpired = hasClock && bonusEndsAt !== null && nowMs >= bonusEndsAt;
 
   return (
     <div className="overflow-x-hidden bg-[#F7FAFC]">
@@ -235,25 +236,26 @@ export default function HomePage({
                 </div>
               </div>
 
-              {/* Lead Magnet Badge - Keep visible */}
-              <div className="flex items-center gap-4 bg-white/90 backdrop-blur-sm p-2 sm:p-2 rounded-2xl border border-[#BEE9E8] shadow-xl animate-bounce-slow w-full sm:flex-2">
-                <div className="bg-[#BEE9E8]/60 p-1 rounded-xl text-[#0E79B2]">
-                  <Gift className="w-5 h-5" />
+              {!bonusExpired && (
+                <div className="flex items-center gap-4 bg-white/90 backdrop-blur-sm p-2 sm:p-2 rounded-2xl border border-[#BEE9E8] shadow-xl animate-bounce-slow w-full sm:flex-2">
+                  <div className="bg-[#BEE9E8]/60 p-1 rounded-xl text-[#0E79B2]">
+                    <Gift className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="text-[11px] font-extrabold text-[#0E79B2] uppercase tracking-widest">
+                      Free Bonus Included
+                    </p>
+                    <p className="text-sm font-extrabold text-[#2D3748]">
+                      5 Home Security Must-Have Secrets you can do Today!
+                    </p>
+                    <p className="text-xs font-semibold text-slate-500 pt-1">
+                      {bonusEndsAt === null && "Loading bonus timer..."}
+                      {bonusEndsAt !== null &&
+                        `Bonus Expires in ${bonusCountdown}`}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <p className="text-[11px] font-extrabold text-[#0E79B2] uppercase tracking-widest">
-                    Free Bonus Included
-                  </p>
-                  <p className="text-sm font-extrabold text-[#2D3748]">
-                    5 Home Security Must-Have Secrets you can do Today!
-                  </p>
-                  <p className="text-xs font-semibold text-slate-500 pt-1">
-                    {bonusEndsAt === null && "Loading bonus timer..."}
-                    {bonusEndsAt !== null &&
-                      `Bonus Expires in ${bonusCountdown}`}
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
           </motion.div>
         </div>

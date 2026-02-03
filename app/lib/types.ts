@@ -24,6 +24,28 @@ export type FormData = {
 
 export type LeadTier = 'Hot' | 'Warm' | 'Nurture';
 
+export type SeverityLevel = "low" | "medium" | "high";
+
+export type ResultsSummary = {
+  safetyTotal: number;
+  safetyMax: number;
+  safetyLevel: {
+    label: string;
+    range: string;
+    severity: SeverityLevel;
+  };
+  priority: {
+    label: string;
+    severity: SeverityLevel;
+  };
+  emergency: {
+    label: string;
+    severity: SeverityLevel;
+  };
+  emergencyReadinessScore: number;
+  panatagRating: number;
+};
+
 export type CalculationResult = {
   cameraCount: number;
   nvrChannel: number;

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
-import { AlertTriangle, Calendar, Camera, CheckCircle2, FileText, Gauge, HouseHeart, Phone, ShieldCheck, Siren, Video, X } from "lucide-react";
-import { ReactNode, useState } from "react";
+import { AlertTriangle, Calendar, Camera, CheckCircle2, FileText, Gauge, HouseHeart, Phone, ShieldCheck, Siren, X } from "lucide-react";
+import { ReactNode, useEffect, useState } from "react";
+import { getResultsSummary } from "../../lib/calculations";
 import { CalculationResult, FormData } from "../../lib/types";
 import DIYView from "./DIYView";
 
@@ -39,35 +40,12 @@ const MiniCheck = ({ text }: { text: string }) => (
 export default function ResultsPage({ result, data }: { result: CalculationResult, data: FormData }) {
   const [showDIY, setShowDIY] = useState(false);
   const [activeBlueprintId, setActiveBlueprintId] = useState<string | null>(null);
-  const safetyTotal = [
-    data.safety_gate_entry,
-    data.safety_blindspots,
-    data.safety_side_back_entry,
-    data.safety_windows_terrace,
-    data.safety_driveway_garage,
-    data.safety_indoor_choke_points,
-    data.safety_emergency_readiness,
-  ].reduce((sum: number, value) => (typeof value === "number" ? sum + value : sum), 0);
-  const safetyMax = 35;
-  const emergencyReadinessScore = typeof data.safety_emergency_readiness === "number" ? data.safety_emergency_readiness : 0;
-  const safetyLevel = safetyTotal <= 10
-    ? { label: "Protected", range: "0-10 Low", color: "text-[#2E8B57]" }
-    : safetyTotal <= 20
-      ? { label: "Alert", range: "11-20 Medium", color: "text-[#FFB300]" }
-      : { label: "Urgent Action", range: "21-35 High", color: "text-[#E53E3E]" };
-  const priorityInfo = result.leadTier === "Hot"
-    ? { label: "Emergency Secure", color: "text-[#E53E3E]" }
-    : result.leadTier === "Warm"
-      ? { label: "Book & Secure", color: "text-[#FFB300]" }
-      : { label: "Plan & Assess", color: "text-[#2E8B57]" };
-  const emergencyInfo = emergencyReadinessScore === 0
-    ? { label: "Good", color: "text-[#2E8B57]" }
-    : emergencyReadinessScore <= 3
-      ? { label: "Not There", color: "text-[#FFB300]" }
-      : { label: "Worse", color: "text-[#E53E3E]" };
-  const safetyRiskScore = Math.round((safetyTotal / safetyMax) * 10);
-  const priorityRisk = result.leadTier === "Hot" ? 2 : result.leadTier === "Warm" ? 1 : 0;
-  const panatagRating = Math.max(1, Math.min(10, 10 - (safetyRiskScore + priorityRisk)));
+  const { safetyLevel, priority, emergency, panatagRating } = getResultsSummary(data, result);
+  const severityColors = {
+    low: "text-[#2E8B57]",
+    medium: "text-[#FFB300]",
+    high: "text-[#E53E3E]",
+  } as const;
   const blueprintCards: BlueprintCard[] = [
     {
       id: "prevention",
@@ -131,7 +109,7 @@ export default function ResultsPage({ result, data }: { result: CalculationResul
     },
     {
       id: "awareness",
-      title: "Awareness, Evidence & Complete Peace of Mind",
+      title: "For Your Complete Peace of Mind",
       summary: "Goal: Detect threats early and respond faster without feeling watched.",
       featured: true,
       content: (
@@ -239,6 +217,17 @@ export default function ResultsPage({ result, data }: { result: CalculationResul
   ];
   const activeBlueprint = blueprintCards.find((card) => card.id === activeBlueprintId) ?? null;
 
+  useEffect(() => {
+    if (!activeBlueprintId) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setActiveBlueprintId(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeBlueprintId]);
+
   // Function to determine buttons based on Lead Priority (Hot/Warm/Nurture)
   const renderActionButtons = () => {
     const handleCallUs = () => {
@@ -342,30 +331,30 @@ export default function ResultsPage({ result, data }: { result: CalculationResul
           <div className="p-8 space-y-8">
             {/* Core Stats */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center">
-                <ShieldCheck className={`w-8 h-8 mx-auto mb-2 ${safetyLevel.color}`} />
-                <div className={`text-lg font-bold ${safetyLevel.color}`}>{safetyLevel.label}</div>
-                <div className="text-xs text-slate-500 uppercase tracking-wider">Safety Score</div>
+              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
+                <ShieldCheck className={`h-9 w-9 ${severityColors[safetyLevel.severity]}`} />
+                <div className={`text-xl font-bold leading-tight min-h-2.25rem ${severityColors[safetyLevel.severity]}`}>{safetyLevel.label}</div>
+                <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">Safety Score</div>
               </div>
-              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center">
-                <Gauge className={`w-8 h-8 mx-auto mb-2 ${priorityInfo.color}`} />
-                <div className={`text-lg font-bold ${priorityInfo.color}`}>{priorityInfo.label}</div>
-                <div className="text-xs text-slate-500 uppercase tracking-wider">Priority</div>
+              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
+                <Gauge className={`h-9 w-9 ${severityColors[priority.severity]}`} />
+                <div className={`text-xl font-bold leading-tight min-h-2.25rem ${severityColors[priority.severity]}`}>{priority.label}</div>
+                <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">Priority</div>
               </div>
-              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center">
-                <Video className="w-8 h-8 mx-auto text-[#0E79B2] mb-2" />
-                <div className="text-2xl font-bold text-[#2D3748]">{result.cameraCount}</div>
-                <div className="text-xs text-slate-500 uppercase tracking-wider">Security Cameras</div>
+              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
+                <Camera className="h-9 w-9 text-[#0E79B2]" />
+                <div className="text-xl font-bold leading-tight min-h-2.25rem text-[#2D3748]">{result.cameraCount}</div>
+                <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">Security Cameras</div>
               </div>
-              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center">
-                <Siren className={`w-8 h-8 mx-auto mb-2 ${emergencyInfo.color}`} />
-                <div className={`text-lg font-bold ${emergencyInfo.color}`}>{emergencyInfo.label}</div>
-                <div className="text-xs text-slate-500 uppercase tracking-wider">Emergency Readiness</div>
+              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
+                <Siren className={`h-9 w-9 ${severityColors[emergency.severity]}`} />
+                <div className={`text-xl font-bold leading-tight min-h-2.25rem ${severityColors[emergency.severity]}`}>{emergency.label}</div>
+                <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">Emergency Readiness</div>
               </div>
-              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center">
-                <HouseHeart className="w-8 h-8 mx-auto text-[#0E79B2] mb-2" />
-                <div className="text-2xl font-bold text-[#2D3748]">{panatagRating}/10</div>
-                <div className="text-xs text-slate-500 uppercase tracking-wider">Panatag Rating</div>
+              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
+                <HouseHeart className="h-9 w-9 text-[#0E79B2]" />
+                <div className="text-xl font-bold leading-tight min-h-2.25rem text-[#2D3748]">{panatagRating}/10</div>
+                <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">Panatag Rating</div>
               </div>
             </div>
 

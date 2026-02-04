@@ -54,19 +54,13 @@ export default function AppShell({
   initialView?: AppView;
 }) {
   const router = useRouter();
-  const [storedLead] = useState(() => readStoredLead());
-  const [view, setView] = useState<AppView>(() => {
-    if (initialView === "results" && !storedLead) {
-      return "form";
-    }
-    return initialView;
-  });
-  const [formData, setFormData] = useState<FormData | null>(
-    storedLead?.formData ?? null
+  const [storedLead, setStoredLead] = useState<StoredLead | null>(null);
+  const [storedLeadLoaded, setStoredLeadLoaded] = useState(false);
+  const [view, setView] = useState<AppView>(() =>
+    initialView === "results" ? "form" : initialView
   );
-  const [result, setResult] = useState<CalculationResult | null>(
-    storedLead?.result ?? null
-  );
+  const [formData, setFormData] = useState<FormData | null>(null);
+  const [result, setResult] = useState<CalculationResult | null>(null);
   const [reportsRemaining, setReportsRemaining] = useState<number | null>(null);
   const [reportsLoading, setReportsLoading] = useState(true);
   const [reportsError, setReportsError] = useState(false);
@@ -81,10 +75,28 @@ export default function AppShell({
   }, [view]);
 
   useEffect(() => {
-    if (initialView === "results" && !storedLead) {
+    const lead = readStoredLead();
+    setStoredLead(lead);
+    setStoredLeadLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storedLeadLoaded) return;
+
+    if (storedLead) {
+      setFormData(storedLead.formData);
+      setResult(storedLead.result);
+      if (initialView === "results") {
+        setView("results");
+      }
+      return;
+    }
+
+    if (initialView === "results") {
+      setView("form");
       router.replace("/form");
     }
-  }, [initialView, router, storedLead]);
+  }, [initialView, router, storedLead, storedLeadLoaded]);
 
   useEffect(() => {
     let isMounted = true;

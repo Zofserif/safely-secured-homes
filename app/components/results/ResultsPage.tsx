@@ -398,25 +398,31 @@ export default function ResultsPage({ result, data }: { result: CalculationResul
                   <button
                     type="button"
                     onClick={() => setActiveBlueprintId(null)}
-                    className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                    className="absolute inset-0 bg-slate-900/70 backdrop-blur-md"
                     aria-label="Close blueprint details"
                   />
                   <div
                     role="dialog"
                     aria-modal="true"
-                    className="relative w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl"
+                    className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-[0_30px_80px_-40px_rgba(15,23,42,0.6)] ring-1 ring-slate-200"
                   >
                     <button
                       type="button"
                       onClick={() => setActiveBlueprintId(null)}
-                      className="absolute right-4 top-4 z-10 rounded-full border border-slate-200 bg-white/90 p-2 text-slate-500 shadow-sm backdrop-blur hover:text-slate-700"
+                      className="absolute right-4 top-4 z-10 rounded-full bg-white/20 p-2 text-white shadow-sm backdrop-blur hover:bg-white/30"
                       aria-label="Close"
                     >
                       <X className="h-4 w-4" />
                     </button>
-                    <div className="max-h-[80vh] overflow-y-auto pr-6 pt-10">
-                      <h4 className="text-2xl font-bold text-slate-800">{activeBlueprint.title}</h4>
-                      <div className="mt-4">{activeBlueprint.content}</div>
+                    <div className="bg-linear-to-r from-[#0E79B2] via-[#1B8CCB] to-[#0E79B2] px-6 py-5 text-white">
+                      <p className="text-xs uppercase tracking-[0.2em] text-white/70">Your Home Safety Blueprint</p>
+                      <h4 className="mt-2 text-2xl font-bold">{activeBlueprint.title}</h4>
+                    </div>
+                    <div className="max-h-[70vh] overflow-y-auto bg-white px-6 py-6">
+                      <div className="rounded-2xl border border-slate-100 bg-[#F7FAFC] p-4 text-sm text-slate-600">
+                        Here is the exact checklist we recommend for this area.
+                      </div>
+                      <div className="mt-5">{activeBlueprint.content}</div>
                     </div>
                   </div>
                 </div>

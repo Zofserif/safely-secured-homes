@@ -6,6 +6,17 @@ import {
   trackFormStepCompleted,
   trackFormSubmissionStarted,
 } from "../../lib/analytics";
+import {
+  BUDGET_BAND_OPTIONS,
+  CURRENT_SETUP_VALUES,
+  FEATURE_OPTIONS,
+  FLOOR_OPTIONS,
+  HOME_SIZE_VALUES,
+  MAIN_GOAL_OPTIONS,
+  PRIORITY_AREAS,
+  PROPERTY_TYPES,
+  TIMELINE_OPTIONS,
+} from "../../lib/formOptions";
 import { FormData } from "../../lib/types";
 
 export default function WizardForm({
@@ -199,12 +210,7 @@ export default function WizardForm({
       <h3 className="text-xl font-bold text-center text-[#2D3748]">
         Our place is a...
       </h3>
-      {[
-        "Single-family house",
-        "Townhouse / Duplex",
-        "Condo / Apartment",
-        "Other",
-      ].map((opt) => (
+      {PROPERTY_TYPES.map((opt) => (
         <button
           key={opt}
           onClick={() => {
@@ -233,9 +239,9 @@ export default function WizardForm({
           onChange={(e) => updateField("current_setup", e.target.value)}
         >
           <option value="">Select status</option>
-          <option>No, this is a new installation</option>
-          <option>Yes, but it's broken/old (Needs replacement)</option>
-          <option>Yes, looking to expand/upgrade</option>
+          {CURRENT_SETUP_VALUES.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
         </select>
       </div>
       <button
@@ -256,21 +262,7 @@ export default function WizardForm({
         Select the most important one
       </p>
       <div className="space-y-3">
-        {[
-          { label: "🏠 General peace of mind", value: "Peace of Mind" },
-          {
-            label: "👶 Checking my family while at work or away",
-            value: "Family",
-          },
-          {
-            label: "🛡️ Scaring off intruders and preventing break-ins",
-            value: "Security",
-          },
-          {
-            label: "🎥 Capturing video evidence for police or insurance",
-            value: "Recording",
-          },
-        ].map((opt) => (
+        {MAIN_GOAL_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             onClick={() => {
@@ -300,10 +292,9 @@ export default function WizardForm({
           onChange={(e) => updateField("home_size", e.target.value)}
         >
           <option value="">Select size</option>
-          <option>Small (≤120 sqm)</option>
-          <option>Medium (121-250 sqm)</option>
-          <option>Large (251-450 sqm)</option>
-          <option>Extra Large (451+ sqm)</option>
+          {HOME_SIZE_VALUES.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
         </select>
       </div>
       <div>
@@ -311,7 +302,7 @@ export default function WizardForm({
           Floors
         </label>
         <div className="flex gap-2">
-          {["1", "2", "3+"].map((f) => (
+          {FLOOR_OPTIONS.map((f) => (
             <button
               key={f}
               type="button"
@@ -412,21 +403,7 @@ export default function WizardForm({
         Select all that apply
       </p>
       <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto">
-        {[
-          "General Indoor Living Areas",
-          "Monitor my child/elderly/pets",
-          "Main Entrance/Front Door",
-          "Home Office Security",
-          "Outdoor Gate/Driveway Entrance",
-          "Parcel & Mail Drop-off",
-          "Side Entrance/Backdoor",
-          "Whole Backyard/Front yard coverage",
-          "Street View/Outside Perimeter",
-          "Indoor Garage",
-          "Actively Monitoring Outside",
-          "Multiple Floor Security",
-          "No Internet/Electricity Remote Property",
-        ].map((area) => (
+        {PRIORITY_AREAS.map((area) => (
           <label
             key={area}
             className={`flex items-center p-4 border rounded-xl cursor-pointer ${formData.priority_areas.includes(area) ? "border-[#0E79B2] bg-[#0E79B2]/5" : "border-slate-200"}`}
@@ -460,13 +437,7 @@ export default function WizardForm({
           Must-have Features
         </label>
         <div className="space-y-2">
-          {[
-            "Human/Vehicle Alert",
-            "Two-way Audio",
-            "Colored Capture at night",
-            "Mobile App Access",
-            "24/7 Recording",
-          ].map((feat) => (
+          {FEATURE_OPTIONS.map((feat) => (
             <label key={feat} className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -507,10 +478,9 @@ export default function WizardForm({
           onChange={(e) => updateField("budget_band", e.target.value)}
         >
           <option value="">Select range</option>
-          <option>Basic Starter (&lt; ₱30,000)</option>
-          <option>All I can need (Best Value ₱30K - ₱50K) </option>
-          <option>Feature Rich (₱50K - ₱75K)</option>
-          <option>Premium / Enterprise (₱75K+) </option>
+          {BUDGET_BAND_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
         </select>
       </div>
       <button
@@ -528,15 +498,7 @@ export default function WizardForm({
         When do you need this?
       </h3>
       <div className="space-y-3">
-        {[
-          { label: "🔥 ASAP / This Week", value: "ASAP" },
-          { label: "📅 Within this month", value: "This Month" },
-          {
-            label: "🏠 Before I move in / renovations finish",
-            value: "Before Move-in",
-          },
-          { label: "👀 Just researching for now", value: "Researching" },
-        ].map((opt) => (
+        {TIMELINE_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             onClick={() => {

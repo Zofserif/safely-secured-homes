@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { AlertTriangle, Calendar, Camera, CheckCircle2, FileText, Gauge, HouseHeart, Phone, ShieldCheck, Siren, X } from "lucide-react";
+import { AlertTriangle, Calendar, Camera, CheckCircle2, FileText, Gauge, HouseHeart, Phone, ShieldCheck, Siren, Video, X } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { getResultsSummary } from "../../lib/calculations";
 import { CalculationResult, FormData } from "../../lib/types";
@@ -46,6 +46,12 @@ export default function ResultsPage({ result, data }: { result: CalculationResul
     medium: "text-[#FFB300]",
     high: "text-[#E53E3E]",
   } as const;
+  const panatagIconColor =
+    panatagRating <= 5
+      ? "text-[#E53E3E]"
+      : panatagRating <= 8
+        ? "text-[#F6C445]"
+        : "text-[#2E8B57]";
   const blueprintCards: BlueprintCard[] = [
     {
       id: "prevention",
@@ -333,26 +339,26 @@ export default function ResultsPage({ result, data }: { result: CalculationResul
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
                 <ShieldCheck className={`h-9 w-9 ${severityColors[safetyLevel.severity]}`} />
-                <div className={`text-xl font-bold leading-tight min-h-2.25rem ${severityColors[safetyLevel.severity]}`}>{safetyLevel.label}</div>
+                <div className="text-xl font-bold leading-tight min-h-2.25rem text-[#2D3748]">{safetyLevel.label}</div>
                 <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">Safety Score</div>
               </div>
               <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
                 <Gauge className={`h-9 w-9 ${severityColors[priority.severity]}`} />
-                <div className={`text-xl font-bold leading-tight min-h-2.25rem ${severityColors[priority.severity]}`}>{priority.label}</div>
+                <div className="text-xl font-bold leading-tight min-h-2.25rem text-[#2D3748]">{priority.label}</div>
                 <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">Priority</div>
               </div>
               <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
-                <Camera className="h-9 w-9 text-[#0E79B2]" />
+                <Video className="h-9 w-9 text-[#0E79B2]" />
                 <div className="text-xl font-bold leading-tight min-h-2.25rem text-[#2D3748]">{result.cameraCount}</div>
                 <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">Security Cameras</div>
               </div>
               <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
                 <Siren className={`h-9 w-9 ${severityColors[emergency.severity]}`} />
-                <div className={`text-xl font-bold leading-tight min-h-2.25rem ${severityColors[emergency.severity]}`}>{emergency.label}</div>
+                <div className="text-xl font-bold leading-tight min-h-2.25rem text-[#2D3748]">{emergency.label}</div>
                 <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">Emergency Readiness</div>
               </div>
               <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
-                <HouseHeart className="h-9 w-9 text-[#0E79B2]" />
+                <HouseHeart className={`h-9 w-9 ${panatagIconColor}`} />
                 <div className="text-xl font-bold leading-tight min-h-2.25rem text-[#2D3748]">{panatagRating}/10</div>
                 <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">Panatag Rating</div>
               </div>

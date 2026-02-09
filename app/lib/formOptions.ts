@@ -80,14 +80,12 @@ export const FEATURE_OPTIONS = [
 ] as const;
 
 export const BUDGET_BANDS = {
-  BASIC: "Basic Starter (< ₱30,000)",
-  BEST_VALUE: "All I can need (Best Value ₱30K - ₱50K) ",
-  FEATURE_RICH: "Feature Rich (₱50K - ₱75K)",
-  PREMIUM: "Premium / Enterprise (₱75K+) ",
+  BEST_VALUE: "Starter Value (₱30K - ₱50K) ",
+  FEATURE_RICH: "My Needed Features (₱50K - ₱75K)",
+  PREMIUM: "Premium Features (₱75K+) ",
 } as const;
 
 export const BUDGET_BAND_OPTIONS = [
-  BUDGET_BANDS.BASIC,
   BUDGET_BANDS.BEST_VALUE,
   BUDGET_BANDS.FEATURE_RICH,
   BUDGET_BANDS.PREMIUM,

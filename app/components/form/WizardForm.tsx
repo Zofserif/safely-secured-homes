@@ -480,7 +480,7 @@ export default function WizardForm({
               Lighting, locks, sensors, and automation.
             </p>
           </div>
-        </label>
+      </label>
       </div>
       <div>
         <label className="block text-sm font-medium mb-2">Budget Zone</label>
@@ -592,7 +592,7 @@ export default function WizardForm({
             <Loader2 className="w-5 h-5 animate-spin" /> Generating Plan...
           </>
         ) : (
-          "Generate My FREE Plan"
+          "Generate My FREE PLAN"
         )}
       </button>
     </div>,

@@ -22,7 +22,7 @@ export const MAIN_GOAL_OPTIONS = [
   { label: "🛡️ Prevent break-ins & eliminate blind spots", value: "Security" },
   { label: "🏠 Everyday home convinience & control", value: "Smart Home First" },
   { label: "🔓 Control access & track home entry", value: "Home Access Control" },
-  { label: "🎥 Emergency alert & Capturing video evidence for police or insurance", value: "Emergency Recording" },
+  { label: "🎥 Emergency alert & Capturing evidence for police/insurance", value: "Emergency Recording" },
 ] as const;
 
 export const HOME_SIZE_OPTIONS = {

@@ -336,7 +336,7 @@ export default function WizardForm({
         {safetySections.map((section) => {
           const hasScore = typeof formData[section.id] === "number";
           const storedValue = hasScore ? (formData[section.id] as number) : null;
-          const sliderValue = storedValue === null ? 5 : 5 - storedValue;
+          const sliderValue = storedValue === null ? 2.5 : 5 - storedValue;
           const fillPercent = hasScore ? (sliderValue / 5) * 100 : 0;
           const fillPalette = [
             "#ef4444",
@@ -376,21 +376,12 @@ export default function WizardForm({
                   type="range"
                   min="0"
                   max="5"
-                  step="1"
+                  step={hasScore ? 1 : 0.5}
                   value={sliderValue}
                   onChange={(e) => {
-                    const rawValue = parseInt(e.target.value, 10);
-                    updateField(section.id, 5 - rawValue);
-                  }}
-                  onPointerDown={() => {
-                    if (typeof formData[section.id] !== "number") {
-                      updateField(section.id, 0);
-                    }
-                  }}
-                  onFocus={() => {
-                    if (typeof formData[section.id] !== "number") {
-                      updateField(section.id, 0);
-                    }
+                    const rawValue = parseFloat(e.target.value);
+                    const snapped = Math.round(rawValue);
+                    updateField(section.id, 5 - snapped);
                   }}
                   style={sliderStyle}
                   className="safety-range w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40"

@@ -6,10 +6,15 @@ import { useEffect, useRef, useState } from "react";
 export default function Navbar({
   onNavigate,
   hideCta = false,
+  hasExistingPlan = false,
 }: {
   onNavigate: (page: string) => void;
   hideCta?: boolean;
+  hasExistingPlan?: boolean;
 }){
+  const ctaTarget = hasExistingPlan ? "results" : "form";
+  const ctaLabel = hasExistingPlan ? "SEE MY GENERATED PLAN" : "GET MY FREE PLAN";
+  const ctaMobileLabel = hasExistingPlan ? "SEE MY GENERATED PLAN" : "Get Free Plan Now";
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -56,10 +61,10 @@ export default function Navbar({
         <div className="hidden md:flex gap-8 items-center">
           {!hideCta && (
             <button 
-              onClick={() => onNavigate('form')}
+              onClick={() => onNavigate(ctaTarget)}
               className="bg-[#0E79B2] hover:bg-[#0b5e8b] text-white px-8 py-3 rounded-full font-semibold shadow-xl shadow-[#0E79B2]/20 transition-all hover:scale-105 hover:shadow-2xl border border-transparent"
             >
-              GET MY FREE PLAN
+              {ctaLabel}
             </button>
           )}
         </div>
@@ -80,10 +85,10 @@ export default function Navbar({
           <div className="p-6 flex flex-col gap-6">
             {!hideCta && (
               <button 
-                onClick={() => { onNavigate('form'); setIsOpen(false); }}
+                onClick={() => { onNavigate(ctaTarget); setIsOpen(false); }}
                 className="w-full bg-[#0E79B2] text-white py-4 rounded-xl font-bold shadow-lg text-lg"
               >
-                Get Free Plan Now
+                {ctaMobileLabel}
               </button>
             )}
           </div>

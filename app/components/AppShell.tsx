@@ -150,6 +150,7 @@ export default function AppShell({
   }, []);
 
   const reportsSoldOut = reportsRemaining !== null && reportsRemaining <= 0;
+  const hasExistingPlan = Boolean(storedLead);
 
   const handleFormComplete = async (data: FormData) => {
     const calcResult = estimateCameraPlan(data);
@@ -194,7 +195,8 @@ export default function AppShell({
       {view !== "form" && (
         <Navbar
           onNavigate={handleNavigation}
-          hideCta={reportsSoldOut || view === "results"}
+          hideCta={view === "results" || (reportsSoldOut && !hasExistingPlan)}
+          hasExistingPlan={hasExistingPlan}
         />
       )}
 
@@ -205,6 +207,7 @@ export default function AppShell({
           reportsLoading={reportsLoading}
           reportsError={reportsError}
           windowEndsAt={reportsWindowEndsAt}
+          hasExistingPlan={hasExistingPlan}
         />
       )}
 

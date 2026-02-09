@@ -92,12 +92,14 @@ export default function HomePage({
   reportsLoading,
   reportsError,
   windowEndsAt,
+  hasExistingPlan,
 }: {
   onNavigate: (p: string) => void;
   reportsRemaining: number | null;
   reportsLoading: boolean;
   reportsError: boolean;
   windowEndsAt: number | null;
+  hasExistingPlan: boolean;
 }) {
   const [expandedReason, setExpandedReason] = useState<number | null>(null);
   const [showCertModal, setShowCertModal] = useState(false);
@@ -124,6 +126,12 @@ export default function HomePage({
 
   const reportsSoldOut = reportsRemaining !== null && reportsRemaining <= 0;
   const hasClock = nowMs > 0;
+  const ctaTarget = hasExistingPlan ? "results" : "form";
+  const ctaLabel = hasExistingPlan
+    ? "SEE MY GENERATED PLAN"
+    : "GET MY FREE PLAN NOW";
+  const ctaDisabled = reportsSoldOut && !hasExistingPlan;
+  const showScarcity = !hasExistingPlan;
   const countdown =
     hasClock && windowEndsAt ? formatCountdown(windowEndsAt, nowMs) : "";
   const countdownLabel = countdown ? ` (${countdown} left)` : "";
@@ -206,37 +214,39 @@ export default function HomePage({
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-stretch">
               <div className="flex flex-col gap-2 w-full sm:flex-3">
                 <button
-                  onClick={() => onNavigate("form")}
-                  disabled={reportsSoldOut}
+                  onClick={() => onNavigate(ctaTarget)}
+                  disabled={ctaDisabled}
                   className="bg-[#0E79B2] hover:bg-[#0b5e8b] text-white text-xl px-10 py-5 rounded-2xl font-extrabold shadow-xl shadow-[#0E79B2]/25 transition-all hover:-translate-y-1 hover:shadow-2xl flex items-center justify-center gap-3 group w-full h-full disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none"
                 >
-                  GET MY FREE PLAN NOW
+                  {ctaLabel}
                   <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                 </button>
-                <div className="flex items-start gap-2 text-xs sm:text-sm justify-center text-slate-600">
-                  <span
-                    className="mt-1 h-2 w-2 rounded-full bg-[#E53E3E] animate-pulse"
-                    aria-hidden="true"
-                  ></span>
-                  <span>
-                    {reportsLoading && "Checking report availability..."}
-                    {!reportsLoading &&
-                      reportsError &&
-                      "Availability check failed. Please try again shortly."}
-                    {!reportsLoading && !reportsError && reportsSoldOut && (
-                      <>All 15 reports are claimed until{countdownLabel}.</>
-                    )}
-                    {!reportsLoading && !reportsError && !reportsSoldOut && (
-                      <>
-                        Only {reportsRemaining}/15 reports remaining until
-                        {countdownLabel}
-                      </>
-                    )}
-                  </span>
-                </div>
+                {showScarcity && (
+                  <div className="flex items-start gap-2 text-xs sm:text-sm justify-center text-slate-600">
+                    <span
+                      className="mt-1 h-2 w-2 rounded-full bg-[#E53E3E] animate-pulse"
+                      aria-hidden="true"
+                    ></span>
+                    <span>
+                      {reportsLoading && "Checking report availability..."}
+                      {!reportsLoading &&
+                        reportsError &&
+                        "Availability check failed. Please try again shortly."}
+                      {!reportsLoading && !reportsError && reportsSoldOut && (
+                        <>All 15 reports are claimed until{countdownLabel}.</>
+                      )}
+                      {!reportsLoading && !reportsError && !reportsSoldOut && (
+                        <>
+                          Only {reportsRemaining}/15 Plan remaining until
+                          {countdownLabel}
+                        </>
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {!bonusExpired && (
+              {!bonusExpired && showScarcity && (
                 <div className="flex items-center gap-4 bg-white/90 backdrop-blur-sm p-2 sm:p-2 rounded-2xl border border-[#BEE9E8] shadow-xl animate-bounce-slow w-full sm:flex-2">
                   <div className="bg-[#BEE9E8]/60 p-1 rounded-xl text-[#0E79B2]">
                     <Gift className="w-5 h-5" />
@@ -806,36 +816,38 @@ export default function HomePage({
                 Secrets to a Panatag Home: The Smart Home Security Checklist.
               </p>
               <button
-                onClick={() => onNavigate("form")}
-                disabled={reportsSoldOut}
+                onClick={() => onNavigate(ctaTarget)}
+                disabled={ctaDisabled}
                 className="bg-[#0E79B2] hover:bg-[#0b5e8b] text-white text-xl px-14 py-6 rounded-full font-extrabold shadow-lg shadow-[#0E79B2]/25 transition-all hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100"
               >
-                GET MY FREE PLAN NOW
+                {ctaLabel}
               </button>
-              <div className="mt-4 flex items-start justify-center gap-2 text-xs sm:text-sm text-slate-300">
-                <span
-                  className="mt-1 h-2 w-2 rounded-full bg-[#E53E3E] animate-pulse"
-                  aria-hidden="true"
-                ></span>
-                <span>
-                  {reportsLoading && "Checking report availability..."}
-                  {!reportsLoading &&
-                    reportsError &&
-                    "Availability check failed. Please try again shortly."}
-                  {!reportsLoading && !reportsError && reportsSoldOut && (
-                    <>
-                      All 15 reports are claimed until{countdownLabel}. Check
-                      back soon for the free bonus.
-                    </>
-                  )}
-                  {!reportsLoading && !reportsError && !reportsSoldOut && (
-                    <>
-                      Only {reportsRemaining}/15 reports remaining until
-                      {countdownLabel}
-                    </>
-                  )}
-                </span>
-              </div>
+              {showScarcity && (
+                <div className="mt-4 flex items-start justify-center gap-2 text-xs sm:text-sm text-slate-300">
+                  <span
+                    className="mt-1 h-2 w-2 rounded-full bg-[#E53E3E] animate-pulse"
+                    aria-hidden="true"
+                  ></span>
+                  <span>
+                    {reportsLoading && "Checking report availability..."}
+                    {!reportsLoading &&
+                      reportsError &&
+                      "Availability check failed. Please try again shortly."}
+                    {!reportsLoading && !reportsError && reportsSoldOut && (
+                      <>
+                        All 15 reports are claimed until{countdownLabel}. Check
+                        back soon for the free bonus.
+                      </>
+                    )}
+                    {!reportsLoading && !reportsError && !reportsSoldOut && (
+                      <>
+                        Only {reportsRemaining}/15 reports remaining until
+                        {countdownLabel}
+                      </>
+                    )}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

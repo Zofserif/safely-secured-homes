@@ -6,7 +6,7 @@ import { initPostHog } from "../posthog";
 
 import Navbar from "./layout/Navbar";
 import Footer from "./layout/Footer";
-import HomePage from "./home/HomePage";
+import HomePage, { resetBonusTimerForDebug } from "./home/HomePage";
 import WizardForm from "./form/WizardForm";
 import ResultsPage from "./results/ResultsPage";
 import { FormData, CalculationResult } from "../lib/types";
@@ -22,6 +22,13 @@ import {
   trackPageView,
   type AppView,
 } from "../lib/analytics";
+
+declare global {
+  interface Window {
+    clearLogs?: () => Promise<void> | void;
+    "clear logs"?: () => Promise<void> | void;
+  }
+}
 
 type StoredLead = {
   formData: FormData;
@@ -151,6 +158,54 @@ export default function AppShell({
 
   const reportsSoldOut = reportsRemaining !== null && reportsRemaining <= 0;
   const hasExistingPlan = Boolean(storedLead);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const clearLogs = async () => {
+      const lead = readStoredLead();
+      const email = lead?.formData?.email?.trim();
+
+      if (email) {
+        try {
+          const response = await fetch("/api/leads/clear", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({
+              error: "Unknown error",
+            }));
+            console.error("Failed to clear lead from Supabase:", errorData);
+          }
+        } catch (error) {
+          console.error("Failed to clear lead from Supabase:", error);
+        }
+      }
+
+      sessionStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("ssh_bonus_started_at");
+      resetBonusTimerForDebug();
+
+      setStoredLead(null);
+      setFormData(null);
+      setResult(null);
+      setView("home");
+      router.push("/");
+    };
+
+    window.clearLogs = clearLogs;
+    window["clear logs"] = clearLogs;
+
+    return () => {
+      delete window.clearLogs;
+      delete window["clear logs"];
+    };
+  }, [router]);
 
   const handleFormComplete = async (data: FormData) => {
     const calcResult = estimateCameraPlan(data);

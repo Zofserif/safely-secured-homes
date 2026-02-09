@@ -59,6 +59,15 @@ let bonusEndsAtValue: number | null = null;
 let bonusInitialized = false;
 const bonusListeners = new Set<() => void>();
 
+export const resetBonusTimerForDebug = () => {
+  bonusInitialized = false;
+  bonusEndsAtValue = null;
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("ssh_bonus_started_at");
+  }
+  initBonusTimer();
+};
+
 const initBonusTimer = () => {
   if (bonusInitialized) return;
   bonusInitialized = true;

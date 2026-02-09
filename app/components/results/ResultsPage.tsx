@@ -93,67 +93,62 @@ export default function ResultsPage({
             problems before they start.
           </p>
           <Section title="15-minute Quick Wins (Do today)">
-            <p className="text-sm text-slate-700">
-              Light up the entry points tonight. Focus on: gate, front door,
-              garage, side door, and any dark corner where someone can hide.
-            </p>
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-slate-800">
-                Check your door + window basics.
-              </p>
-              <BulletList
-                items={[
-                  "Are hinges exposed?",
-                  "Are locks working smoothly?",
-                  "Are sliding windows secured (even with a simple stopper)?",
-                ]}
-              />
-            </div>
-            <p className="text-sm text-slate-700">
-              Create a &ldquo;grab kit&rdquo; location. Pick one spot everyone
-              knows (cabinet near the main exit). Put: flashlight, power bank,
-              whistle, and small cash.
-            </p>
-          </Section>
-          <Section title="Weekend Upgrade (High-impact)">
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-slate-800">
-                Outdoor lighting plan (simple rule)
-              </p>
-              <p className="text-sm text-slate-700">
-                Every entry point should be visible from the street and from
-                inside the home.
-              </p>
-              <BulletList
-                items={[
-                  "Add motion lights where possible",
-                  "Aim lights downward to avoid glare and shadow zones",
-                ]}
-              />
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-slate-800">
-                Fire safety essentials
-              </p>
-              <BulletList
-                items={[
-                  "Install/replace smoke alarm batteries",
-                  "Place a kitchen fire extinguisher where you can reach it without crossing the stove",
-                  "Keep a fire blanket if cooking often",
-                ]}
-              />
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-slate-800">
-                First aid + medicine readiness
-              </p>
-              <BulletList
-                items={[
-                  "Basic first aid kit + bandages, antiseptic, thermometer",
-                  "Keep maintenance meds in one labeled container",
-                  "Add emergency items: ORS, antihistamine, pain reliever (as appropriate for your family)",
-                ]}
-              />
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl" aria-hidden="true">
+                    💡
+                  </span>
+                  <span className="rounded-full bg-[#2E8B57]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-[#2E8B57]">
+                    Fast Win
+                  </span>
+                </div>
+                <h6 className="mt-3 text-sm font-semibold text-slate-800">
+                  Light + Visibility
+                </h6>
+                <ul className="mt-2 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
+                  <li>Focus: gate, front door, garage, side door, dark corners.</li>
+                  <li>Add mini motion lights near these areas.</li>
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl" aria-hidden="true">
+                    🔒
+                  </span>
+                  <span className="rounded-full bg-[#0E79B2]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-[#0E79B2]">
+                    Preventive
+                  </span>
+                </div>
+                <h6 className="mt-3 text-sm font-semibold text-slate-800">
+                  Locks + Openings
+                </h6>
+                <ul className="mt-2 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
+                  <li>Hinges exposed?</li>
+                  <li>Locks smooth?</li>
+                  <li>Sliding windows locked?</li>
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl" aria-hidden="true">
+                    🧰
+                  </span>
+                  <span className="rounded-full bg-[#FFB300]/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-[#B46B00]">
+                    Family Safety
+                  </span>
+                </div>
+                <h6 className="mt-3 text-sm font-semibold text-slate-800">
+                  Emergency Ready
+                </h6>
+                <ul className="mt-2 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
+                  <li>Grab Kit: flashlight, power bank, whistle, small cash</li>
+                  <li>Fire: smoke alarms + extinguisher</li>
+                  <li>First aid ready to grab</li>
+                </ul>
+              </div>
             </div>
           </Section>
           <MiniCheck text="If there's a problem tonight - power outage, noise outside, fire risk - can your family respond in the first 60 seconds?" />
@@ -509,14 +504,14 @@ export default function ResultsPage({
                         <span className="pointer-events-none absolute -inset-1 rounded-3xl bg-[#0E79B2]/20 blur-2xl opacity-70" />
                       )}
                       <div className="relative z-10">
-                        <h4 className="text-lg font-bold text-slate-800">
+                        <h4 className="text-center text-xl font-bold text-slate-800">
                           {card.title}
                         </h4>
-                        <p className="mt-2 text-sm text-slate-600">
+                        <p className="mt-2 text-center text-xs italic text-slate-500">
                           {card.summary}
                         </p>
-                        <p className="mt-3 text-xs text-slate-500">
-                          Click to view details
+                        <p className="mt-3 text-xs font-semibold text-[#0E79B2] flex items-center gap-1">
+                          Click to view details <span aria-hidden="true">→</span>
                         </p>
                       </div>
                     </button>

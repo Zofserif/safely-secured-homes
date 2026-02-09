@@ -70,6 +70,7 @@ export default function ResultsPage({
   data: FormData;
 }) {
   const [showDIY, setShowDIY] = useState(false);
+  const showDIYPlan = Boolean(data.diy_security_plan);
   const [activeBlueprintId, setActiveBlueprintId] = useState<string | null>(
     null,
   );
@@ -365,7 +366,7 @@ export default function ResultsPage({
       return (
         <>
           <PrimaryBookButton />
-          <CommonDIYButton />
+          {showDIYPlan && <CommonDIYButton />}
         </>
       );
     } else {
@@ -373,7 +374,7 @@ export default function ResultsPage({
       return (
         <>
           <PrimaryCallButton />
-          <CommonDIYButton />
+          {showDIYPlan && <CommonDIYButton />}
         </>
       );
     }
@@ -381,7 +382,7 @@ export default function ResultsPage({
 
   return (
     <div className="min-h-screen bg-[#F7FAFC] py-20 px-4">
-      {showDIY && (
+      {showDIY && showDIYPlan && (
         <DIYView
           onBack={() => setShowDIY(false)}
           onCall={() => (window.location.href = "tel:09959959229")}

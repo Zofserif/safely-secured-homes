@@ -14,6 +14,7 @@ export type FormData = {
   safety_emergency_readiness: number | null;
   features_must: string[];
   smart_home_interest: string;
+  diy_security_plan: boolean;
   budget_band: string;
   timeline: string;
   first_name: string; 

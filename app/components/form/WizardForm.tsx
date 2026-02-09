@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { Check, ChevronLeft, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useState, type CSSProperties } from "react";
 import {
@@ -43,6 +43,7 @@ export default function WizardForm({
     safety_emergency_readiness: null,
     features_must: [],
     smart_home_interest: "",
+    diy_security_plan: false,
     budget_band: "",
     timeline: "",
     first_name: "",
@@ -489,18 +490,34 @@ export default function WizardForm({
         <label className="block text-sm font-medium mb-2">
           Must-have Features
         </label>
-        <div className="space-y-2">
-          {FEATURE_OPTIONS.map((feat) => (
-            <label key={feat} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={formData.features_must.includes(feat)}
-                onChange={() => toggleArrayField("features_must", feat)}
-                className="rounded text-[#0E79B2]"
-              />
-              <span className="text-sm">{feat}</span>
-            </label>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {FEATURE_OPTIONS.map((feat) => {
+            const isSelected = formData.features_must.includes(feat);
+            return (
+              <label
+                key={feat}
+                className={`group flex items-center gap-3 rounded-xl border p-3 transition-all cursor-pointer ${isSelected ? "border-[#0E79B2] bg-[#0E79B2]/10 shadow-sm" : "border-slate-200 hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => toggleArrayField("features_must", feat)}
+                  className="sr-only"
+                />
+                <span
+                  className={`flex h-6 w-6 items-center justify-center rounded-md border transition-all ${isSelected ? "border-[#0E79B2] bg-[#0E79B2] text-white" : "border-slate-300 bg-white text-transparent"}`}
+                  aria-hidden="true"
+                >
+                  <Check className="h-4 w-4" />
+                </span>
+                <span
+                  className={`text-sm font-medium ${isSelected ? "text-[#0E79B2]" : "text-slate-700 group-hover:text-slate-900"}`}
+                >
+                  {feat}
+                </span>
+              </label>
+            );
+          })}
         </div>
       </div>
       <div className="rounded-2xl border-2 border-[#0E79B2]/30 bg-[#0E79B2]/5 p-4 shadow-sm">
@@ -527,6 +544,22 @@ export default function WizardForm({
             </span>
             <p className="text-xs text-slate-500">
               Lighting, locks, sensors, and automation.
+            </p>
+          </div>
+        </label>
+        <label className="mt-4 flex items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-5 w-5 rounded text-[#0E79B2]"
+            checked={formData.diy_security_plan}
+            onChange={(e) => updateField("diy_security_plan", e.target.checked)}
+          />
+          <div>
+            <span className="text-sm font-semibold text-[#2D3748]">
+              DIY Security Plan
+            </span>
+            <p className="text-xs text-slate-500">
+              I want a self-install guide and plan.
             </p>
           </div>
         </label>

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { AlertTriangle, Calendar, Camera, CheckCircle2, FileText, Gauge, HouseHeart, Phone, ShieldCheck, Siren, Video, X } from "lucide-react";
+import { AlertTriangle, Calendar, CheckCircle2, FileText, Gauge, HouseHeart, Phone, ShieldCheck, Siren, Video, X } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { getResultsSummary } from "../../lib/calculations";
 import { CalculationResult, FormData } from "../../lib/types";

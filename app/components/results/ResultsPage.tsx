@@ -497,11 +497,11 @@ export default function ResultsPage({
                       type="button"
                       onClick={() => setActiveBlueprintId(card.id)}
                       className={[
-                        "relative text-left bg-white border border-slate-200 rounded-2xl p-5 shadow-sm transition-all duration-300",
+                        "relative text-left bg-white border-2 border-slate-300/80 rounded-2xl p-5 shadow-sm transition-all duration-300",
                         "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/60",
-                        "hover:-translate-y-1 hover:shadow-lg",
+                        "hover:-translate-y-1 hover:shadow-lg hover:border-[#0E79B2] hover:ring-2 hover:ring-[#0E79B2]/20",
                         isFeatured
-                          ? "md:scale-[1.04] md:-translate-y-1 border-[#0E79B2]/40 bg-linear-to-br from-white via-white to-[#EAF4FB]"
+                          ? "md:scale-[1.04] md:-translate-y-1 border-[#0E79B2]/70 ring-1 ring-[#0E79B2]/20 bg-linear-to-br from-white via-white to-[#EAF4FB]"
                           : "",
                       ].join(" ")}
                     >

@@ -338,16 +338,22 @@ export default function WizardForm({
           const storedValue = hasScore ? (formData[section.id] as number) : null;
           const sliderValue = storedValue === null ? 5 : 5 - storedValue;
           const fillPercent = hasScore ? (sliderValue / 5) * 100 : 0;
-          const hue = (sliderValue / 5) * 120;
+          const fillPalette = [
+            "#ef4444",
+            "#f97316",
+            "#fb923c",
+            "#facc15",
+            "#a3e635",
+            "#22c55e",
+          ];
+          const fillColor = fillPalette[sliderValue] ?? "#22c55e";
           const sliderStyle = {
             "--slider-track": "#e2e8f0",
             "--slider-fill": hasScore
-              ? "linear-gradient(to right, #ef4444 0%, #f97316 35%, #facc15 65%, #22c55e 100%)"
+              ? `linear-gradient(to right, ${fillColor}, ${fillColor})`
               : "none",
             "--slider-fill-size": `${fillPercent}% 100%`,
-            "--slider-thumb": hasScore
-              ? `hsl(${hue} 80% 45%)`
-              : "#cbd5e1",
+            "--slider-thumb": hasScore ? fillColor : "#cbd5e1",
           } as CSSProperties;
 
           return (

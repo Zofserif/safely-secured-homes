@@ -12,7 +12,7 @@ import {
   CURRENT_SETUP_VALUES,
   FEATURE_OPTIONS,
   FLOOR_OPTIONS,
-  HOME_SIZE_VALUES,
+  HOME_SIZE_CARDS,
   MAIN_GOAL_OPTIONS,
   PRIORITY_AREAS,
   PROPERTY_TYPES,
@@ -305,16 +305,38 @@ export default function WizardForm({
         <label className="block text-sm font-medium mb-2 text-slate-700">
           Lot Size
         </label>
-        <select
-          className="w-full p-3 rounded-xl border border-slate-300"
-          value={formData.home_size}
-          onChange={(e) => updateField("home_size", e.target.value)}
-        >
-          <option value="">Select size</option>
-          {HOME_SIZE_VALUES.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
+        <div className="grid grid-cols-2 gap-4">
+          {HOME_SIZE_CARDS.map((opt) => {
+            const isSelected = formData.home_size === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => updateField("home_size", opt.value)}
+                className={`group overflow-hidden rounded-2xl border text-left transition-all ${isSelected ? "border-[#0E79B2] ring-2 ring-[#0E79B2]/20" : "border-slate-200 hover:border-[#0E79B2]/60"}`}
+                aria-pressed={isSelected}
+              >
+                <div className="relative h-24 w-full bg-slate-100">
+                  <Image
+                    src={opt.image}
+                    alt={opt.label}
+                    fill
+                    sizes="(min-width: 768px) 50vw, 100vw"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="p-3">
+                  <div className={`text-sm font-semibold ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}>
+                    {opt.title ?? opt.label}
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    {opt.subtitle ?? "Approx. bedrooms"}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div>
         <label className="block text-sm font-medium mb-2 text-slate-700">

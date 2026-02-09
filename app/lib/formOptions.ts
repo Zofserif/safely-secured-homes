@@ -1,4 +1,10 @@
-export const PROPERTY_TYPES = [
+export type PropertyTypeOption = {
+  label: string;
+  value: string;
+  image: string;
+};
+
+export const PROPERTY_TYPES: PropertyTypeOption[] = [
   {
     label: "Single-family house",
     value: "Single-family house",
@@ -19,7 +25,7 @@ export const PROPERTY_TYPES = [
     value: "Vacation Home / Beach House",
     image: "/assets/img/Property Types/vacation-home-beach-house.png",
   },
-] as const;
+];
 
 export const CURRENT_SETUP_OPTIONS = {
   NEW_INSTALL: "No, this is a new installation",
@@ -54,6 +60,45 @@ export const HOME_SIZE_VALUES = [
   HOME_SIZE_OPTIONS.LARGE,
   HOME_SIZE_OPTIONS.EXTRA_LARGE,
 ] as const;
+
+export type HomeSizeCard = {
+  title: string;
+  subtitle: string;
+  label: string;
+  value: string;
+  image: string;
+};
+
+export const HOME_SIZE_CARDS: HomeSizeCard[] = [
+  {
+    title: "Small (≤120 sqm)",
+    subtitle: "Approx. 1-2 bedrooms",
+    label: HOME_SIZE_OPTIONS.SMALL,
+    value: HOME_SIZE_OPTIONS.SMALL,
+    image: "/assets/img/Home Size/small.png",
+  },
+  {
+    title: "Medium (121-200 sqm)",
+    subtitle: "Approx. 3-4 bedrooms",
+    label: HOME_SIZE_OPTIONS.MEDIUM,
+    value: HOME_SIZE_OPTIONS.MEDIUM,
+    image: "/assets/img/Home Size/medium.png",
+  },
+  {
+    title: "Large (200-300 sqm)",
+    subtitle: "Approx. 5-6 bedrooms",
+    label: HOME_SIZE_OPTIONS.LARGE,
+    value: HOME_SIZE_OPTIONS.LARGE,
+    image: "/assets/img/Home Size/large.png",
+  },
+  {
+    title: "Extra Large (300+ sqm)",
+    subtitle: "Approx. 7+ bedrooms",
+    label: HOME_SIZE_OPTIONS.EXTRA_LARGE,
+    value: HOME_SIZE_OPTIONS.EXTRA_LARGE,
+    image: "/assets/img/Home Size/extra-large.png",
+  },
+];
 
 export const FLOOR_OPTIONS = ["1", "2", "3+"] as const;
 

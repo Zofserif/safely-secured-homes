@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import {
   trackFormStepCompleted,
   trackFormSubmissionStarted,
@@ -329,13 +329,26 @@ export default function WizardForm({
         Home Safety Check
       </h3>
       <p className="text-center text-sm text-slate-500">
-        Legend: Choose one score appropriate to your home safety level (0 = very
-        safe, 5 = not safe at all).
+        Slide left for most unsafe, right for most safe.
       </p>
 
       <div className="space-y-5 max-h-[480px] overflow-y-auto pr-1">
         {safetySections.map((section) => {
           const hasScore = typeof formData[section.id] === "number";
+          const storedValue = hasScore ? (formData[section.id] as number) : null;
+          const sliderValue = storedValue === null ? 5 : 5 - storedValue;
+          const fillPercent = hasScore ? (sliderValue / 5) * 100 : 0;
+          const hue = (sliderValue / 5) * 120;
+          const sliderStyle = {
+            "--slider-track": "#e2e8f0",
+            "--slider-fill": hasScore
+              ? "linear-gradient(to right, #ef4444 0%, #f97316 35%, #facc15 65%, #22c55e 100%)"
+              : "none",
+            "--slider-fill-size": `${fillPercent}% 100%`,
+            "--slider-thumb": hasScore
+              ? `hsl(${hue} 80% 45%)`
+              : "#cbd5e1",
+          } as CSSProperties;
 
           return (
             <div
@@ -358,8 +371,11 @@ export default function WizardForm({
                   min="0"
                   max="5"
                   step="1"
-                  value={formData[section.id] ?? 0}
-                  onChange={(e) => updateField(section.id, parseInt(e.target.value, 10))}
+                  value={sliderValue}
+                  onChange={(e) => {
+                    const rawValue = parseInt(e.target.value, 10);
+                    updateField(section.id, 5 - rawValue);
+                  }}
                   onPointerDown={() => {
                     if (typeof formData[section.id] !== "number") {
                       updateField(section.id, 0);
@@ -370,14 +386,13 @@ export default function WizardForm({
                       updateField(section.id, 0);
                     }
                   }}
-                  className={`w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer ${hasScore ? "accent-[#0E79B2]" : "accent-slate-400"}`}
+                  style={sliderStyle}
+                  className="safety-range w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40"
+                  aria-label={`${section.title} safety rating`}
                 />
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span>0 Very safe</span>
-                  <span className="text-slate-600 font-semibold">
-                    {typeof formData[section.id] === "number" ? formData[section.id] : "—"}
-                  </span>
-                  <span>5 Not safe at all</span>
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>Most unsafe</span>
+                  <span>Most safe</span>
                 </div>
               </div>
             </div>

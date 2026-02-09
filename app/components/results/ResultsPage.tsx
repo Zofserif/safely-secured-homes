@@ -16,6 +16,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { getResultsSummary } from "../../lib/calculations";
 import { CalculationResult, FormData } from "../../lib/types";
 import DIYView from "./DIYView";
+import AccordionItem from "../AccordionItem";
 
 type BlueprintCard = {
   id: string;
@@ -256,45 +257,34 @@ export default function ResultsPage({
             <span className="font-semibold text-slate-800">Goal:</span> Make
             sure everyone knows what to do under stress.
           </p>
-          <Section title="Build your family ICE system (In Case of Emergency)">
-            <p className="text-sm text-slate-700">
-              Create a simple &ldquo;ICE card&ldquo; and store it:
-            </p>
-            <BulletList
-              items={[
-                "Printed on the fridge",
-                "Saved on every family member's phone lock screen",
-              ]}
-            />
-            <p className="text-sm font-semibold text-slate-800">Include:</p>
-            <BulletList
-              items={[
-                "Full names + birthdays (especially kids)",
-                "Allergies / medical conditions",
-                "Blood type (if known)",
-                "Emergency contacts (2-3 people)",
-                "Home address + landmark directions",
-              ]}
-            />
-          </Section>
-          <Section title="Know the emergency line">
-            <p className="text-sm text-slate-700">
-              In the Philippines, 911 is the nationwide emergency hotline (and
-              it has been institutionalized as the emergency hotline number).
-            </p>
-            <p className="text-sm text-slate-700">
-              Pro tip: Teach kids to say their name + address + what happened in
-              one sentence.
-            </p>
-          </Section>
-          <Section title="Evacuation route + meetup plan (Most families skip this)">
-            <BulletList
-              items={[
-                "Pick 2 exit routes (main + backup)",
-                "Decide 1 meetup spot nearby (outside the gate / neighbor's house / sari-sari store corner)",
-                "Practice once: If we can't find each other inside, we go to the meetup spot.",
-              ]}
-            />
+          <Section title="Emergency Readiness (ICE + 911 + Meet-Up Plan)">
+            <div className="space-y-3">
+              <AccordionItem title="ICE Card Setup (🪪)">
+                <p className="text-sm text-slate-600">
+                  Create it. Print it. Save it.
+                </p>
+                <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
+                  <li>Full names + birthdays</li>
+                  <li>Allergies / medical conditions</li>
+                  <li>Blood type</li>
+                  <li>Emergency contacts</li>
+                  <li>Home address + landmark directions</li>
+                </ul>
+              </AccordionItem>
+
+              <AccordionItem title="Call the Right Line (📞)">
+                <p className="text-sm text-slate-600">
+                  Save 911 on every phone. In the Philippines, 911 is the nationwide emergency hotline, supported by the government’s Unified 911 rollout.
+                </p>
+              </AccordionItem>
+
+              <AccordionItem title="Meet-Up Plan (📍)">
+                  <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
+                  <li>2 exit routes: Main + backup</li>
+                  <li>1 meet-up spot nearby: outside the gate / neighbor’s house / sari-sari store corner</li>
+                </ul>
+              </AccordionItem>
+            </div>
           </Section>
           <MiniCheck text="If someone yells Fire! at 2 AM, does everyone know where to go without thinking?" />
         </>

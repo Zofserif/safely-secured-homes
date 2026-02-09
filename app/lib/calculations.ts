@@ -124,6 +124,9 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   const recs = [];
   if (areas.includes(PRIORITY_AREA_KEYS.OUTDOOR_GATE_DRIVEWAY)) recs.push("Varifocal cameras for plate recognition");
   if (features.includes(FEATURES.HUMAN_VEHICLE_ALERT)) recs.push("Smart filtering for human/vehicle alerts");
+  if (data.smart_home_interest) {
+    recs.push("Start your smart home journey with a simple starter kit: smart lights, door lock, and motion sensors tied to a few automations.");
+  }
   
   return {
     cameraCount,

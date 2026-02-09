@@ -29,12 +29,18 @@ type BlueprintCard = {
 const Section = ({
   title,
   children,
+  titleClassName,
 }: {
   title: string;
   children: ReactNode;
+  titleClassName?: string;
 }) => (
   <div className="mt-6">
-    <h5 className="text-base font-semibold text-slate-800">{title}</h5>
+    <h5
+      className={`text-base font-semibold text-slate-800 ${titleClassName ?? ""}`}
+    >
+      {title}
+    </h5>
     <div className="mt-3 space-y-3">{children}</div>
   </div>
 );
@@ -179,70 +185,61 @@ export default function ResultsPage({
               <li>No evidence, no timeline, no clarity.</li>
             </ul>
           </div>
-          <Section title="The 3 Layers of Real Home Protection">
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-slate-800">
-                1) Awareness (Know what is happening)
-              </p>
-              <BulletList
-                items={[
-                  "Motion alerts for entry points",
-                  "Clear visibility of gate/front/garage/side paths",
-                ]}
-              />
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-slate-800">
-                2) Evidence (If something happens, you are covered)
-              </p>
-              <BulletList
-                items={[
-                  "Recorded footage that clearly shows faces/plates (when possible)",
-                  'Reliable storage (not just "I think it recorded")',
-                ]}
-              />
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-slate-800">
-                3) Response (Faster action, less panic)
-              </p>
-              <BulletList
-                items={[
-                  "Phone notifications that are set up correctly (not spammy)",
-                  "Family knows what to do when an alert triggers",
-                ]}
-              />
+
+          <Section
+            title="The 3 Layers of Real Home Protection"
+            titleClassName="text-lg md:text-xl font-bold text-slate-900"
+          >
+            <div className="space-y-3">
+              <AccordionItem title="Awareness (Know what is happening)">
+                <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
+                  <li>Motion alerts for entry points</li>
+                  <li>Clear visibility of gate/front/garage/side paths</li>
+                </ul>
+              </AccordionItem>
+
+              <AccordionItem title="Evidence (If something happens, you are covered)">
+                <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
+                  <li>Recorded footage that clearly shows faces/plates (when possible)</li> 
+                  <li>Reliable storage (not just &quot;I think it recorded&quot;)</li>
+                </ul>
+              </AccordionItem>
+
+              <AccordionItem title="Response (Faster action, less panic)">
+                  <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
+                  <li>Phone notifications that are set up correctly (not spammy)</li>
+                  <li>Family knows what to do when an alert triggers</li>
+                </ul>
+              </AccordionItem>
             </div>
           </Section>
-          <Section title="Why a security system is the natural next step">
-            <p className="text-sm text-slate-700">
-              A properly planned CCTV system gives you:
-            </p>
-            <BulletList
-              items={[
-                "Early warning before a situation escalates",
-                "Proof for authorities, barangay reports, or disputes",
-                "Confidence when you are away (work, school runs, travel)",
-              ]}
-            />
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-slate-800">
-                But here is the key:
+          <Section
+            title="A Security System is your best Next Step!"
+            titleClassName="text-lg md:text-xl font-bold text-slate-900"
+          >
+            <div className="rounded-2xl border border-[#0E79B2]/20 bg-[#EAF4FB] p-4">
+              <p className="text-base font-semibold text-slate-800">
+                A properly planned CCTV system gives you:
               </p>
-              <p className="text-sm text-slate-700">
-                &ldquo;More cameras&ldquo; does not automatically mean
-                &ldquo;more safety. &ldquo;
-              </p>
+              <BulletList
+                items={[
+                  "Early warning before a situation escalates",
+                  "Proof for authorities, barangay reports, or disputes",
+                  "Confidence when you are away (work, school runs, travel)",
+                ]}
+              />
             </div>
-            <p className="text-sm text-slate-700">Bad installs create:</p>
-            <BulletList
-              items={[
-                "Blind spots (the exact angle intruders love)",
-                "Glare at night (useless footage)",
-                'The "watched" feeling inside the home',
-                "Notifications that are so noisy you ignore them",
-              ]}
-            />
+            <div className="rounded-3xl border border-[#0E79B2]/40 bg-[#0E79B2] p-5 text-center text-white shadow-lg shadow-[#0E79B2]/30">
+              <p className="mt-2 text-sm font-extrabold text-white/90">
+                To complete your piece-of-mind, We offers you a worry-free solution.
+              </p>
+              <a
+                href="tel:09959959229"
+                className="mt-4 inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-extrabold text-[#0E79B2] shadow-lg transition-transform hover:scale-[1.02]"
+              >
+                CALL US NOW
+              </a>
+            </div>
           </Section>
         </>
       ),
@@ -538,9 +535,6 @@ export default function ResultsPage({
                       </h4>
                     </div>
                     <div className="max-h-[70vh] overflow-y-auto bg-white px-6 py-6">
-                      <div className="rounded-2xl border border-slate-100 bg-[#F7FAFC] p-4 text-sm text-slate-600">
-                        Here is the exact checklist we recommend for this area.
-                      </div>
                       <div className="mt-5">{activeBlueprint.content}</div>
                     </div>
                   </div>

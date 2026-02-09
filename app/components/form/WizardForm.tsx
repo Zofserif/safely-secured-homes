@@ -325,7 +325,7 @@ export default function WizardForm({
                     className="object-cover"
                   />
                 </div>
-                <div className="p-3">
+                <div className="p-3 text-center">
                   <div className={`text-sm font-semibold ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}>
                     {opt.title ?? opt.label}
                   </div>

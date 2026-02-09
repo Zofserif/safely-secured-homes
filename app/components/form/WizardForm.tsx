@@ -462,7 +462,15 @@ export default function WizardForm({
           ))}
         </div>
       </div>
-      <div className="rounded-xl border border-slate-200 p-4">
+      <div className="rounded-2xl border-2 border-[#0E79B2]/30 bg-[#0E79B2]/5 p-4 shadow-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
+            Optional Upgrade
+          </span>
+          <span className="text-[11px] font-medium text-slate-500">
+            Smart Home
+          </span>
+        </div>
         <label className="flex items-start gap-3">
           <input
             type="checkbox"
@@ -473,14 +481,14 @@ export default function WizardForm({
             }
           />
           <div>
-            <span className="text-sm font-medium">
+            <span className="text-sm font-semibold text-[#2D3748]">
               Interested in smart home integration
             </span>
             <p className="text-xs text-slate-500">
               Lighting, locks, sensors, and automation.
             </p>
           </div>
-      </label>
+        </label>
       </div>
       <div>
         <label className="block text-sm font-medium mb-2">Budget Zone</label>

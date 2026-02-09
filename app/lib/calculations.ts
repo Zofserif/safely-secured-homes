@@ -100,7 +100,7 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   
   // Updated logic for new fields
   if (currentSetup === CURRENT_SETUP_OPTIONS.NEW_INSTALL || currentSetup === CURRENT_SETUP_OPTIONS.BROKEN_OLD) score += 1;
-  if (budgetBand === BUDGET_BANDS.BEST_VALUE || budgetBand === BUDGET_BANDS.FEATURE_RICH) score += 2;
+  if (budgetBand === BUDGET_BANDS.PREMIUM || budgetBand === BUDGET_BANDS.FEATURE_RICH) score += 2;
   if (timeline === TIMELINE_VALUES.ASAP) score += 3;
   const safetyScores = [
     data.safety_gate_entry,

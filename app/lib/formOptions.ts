@@ -1,8 +1,8 @@
 export const PROPERTY_TYPES = [
   "Single-family house",
-  "Townhouse / Duplex",
   "Condo / Apartment",
-  "Other",
+  "Townhouse / Pre-built House",
+  "Vacation Home / Beach House",
 ] as const;
 
 export const CURRENT_SETUP_OPTIONS = {
@@ -18,17 +18,18 @@ export const CURRENT_SETUP_VALUES = [
 ] as const;
 
 export const MAIN_GOAL_OPTIONS = [
-  { label: "🏠 General peace of mind", value: "Peace of Mind" },
-  { label: "👶 Checking my family while at work or away", value: "Family" },
-  { label: "🛡️ Scaring off intruders and preventing break-ins", value: "Security" },
-  { label: "🎥 Capturing video evidence for police or insurance", value: "Recording" },
+  { label: "👶 Checking my family & piece of mind while away", value: "Family" },
+  { label: "🛡️ Prevent break-ins & eliminate blind spots", value: "Security" },
+  { label: "🏠 Everyday home convinience & control", value: "Smart Home First" },
+  { label: "🔓 Control access & track home entry", value: "Home Access Control" },
+  { label: "🎥 Emergency alert & Capturing video evidence for police or insurance", value: "Emergency Recording" },
 ] as const;
 
 export const HOME_SIZE_OPTIONS = {
-  SMALL: "Small (≤120 sqm)",
-  MEDIUM: "Medium (121-250 sqm)",
-  LARGE: "Large (251-450 sqm)",
-  EXTRA_LARGE: "Extra Large (451+ sqm)",
+  SMALL: "Small (≤120 sqm) Approx. 1-2 bedrooms",
+  MEDIUM: "Medium (121-200 sqm) Approx. 3-4 bedrooms",
+  LARGE: "Large (200-300 sqm) Approx. 5-6 bedrooms",
+  EXTRA_LARGE: "Extra Large (300+ sqm) Approx. 7+ bedrooms",
 } as const;
 
 export const HOME_SIZE_VALUES = [
@@ -80,7 +81,7 @@ export const FEATURE_OPTIONS = [
 ] as const;
 
 export const BUDGET_BANDS = {
-  BEST_VALUE: "Starter Value (₱30K - ₱50K) ",
+  BEST_VALUE: "Starter Value (₱30K - ₱50K)",
   FEATURE_RICH: "My Needed Features (₱50K - ₱75K)",
   PREMIUM: "Premium Features (₱75K+) ",
 } as const;

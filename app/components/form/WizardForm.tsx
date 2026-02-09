@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Loader2 } from "lucide-react";
+import Image from "next/image";
 import { useState, type CSSProperties } from "react";
 import {
   trackFormStepCompleted,
@@ -210,18 +211,36 @@ export default function WizardForm({
       <h3 className="text-xl font-bold text-center text-[#2D3748]">
         Our place is a...
       </h3>
-      {PROPERTY_TYPES.map((opt) => (
-        <button
-          key={opt}
-          onClick={() => {
-            updateField("property_type", opt);
-            nextStep();
-          }}
-          className={`w-full p-4 rounded-xl border text-left hover:border-[#0E79B2] transition-all ${formData.property_type === opt ? "border-[#0E79B2] bg-[#0E79B2]/5 ring-1 ring-[#0E79B2]" : "border-slate-200"}`}
-        >
-          {opt}
-        </button>
-      ))}
+      <div className="grid grid-cols-2 gap-4">
+        {PROPERTY_TYPES.map((opt) => {
+          const isSelected = formData.property_type === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => {
+                updateField("property_type", opt.value);
+                nextStep();
+              }}
+              className={`group overflow-hidden rounded-2xl border text-left transition-all ${isSelected ? "border-[#0E79B2] ring-2 ring-[#0E79B2]/20" : "border-slate-200 hover:border-[#0E79B2]/60"}`}
+              aria-pressed={isSelected}
+              type="button"
+            >
+              <div className="relative h-28 w-full bg-slate-100">
+                <Image
+                  src={opt.image}
+                  alt={opt.label}
+                  fill
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  className="object-cover"
+                />
+              </div>
+              <div className={`p-3 text-sm font-semibold ${isSelected ? "text-[#0E79B2]" : "text-slate-700"}`}>
+                {opt.label}
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>,
 
     // 2. Current Setup

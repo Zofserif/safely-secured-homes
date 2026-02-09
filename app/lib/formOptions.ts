@@ -1,8 +1,24 @@
 export const PROPERTY_TYPES = [
-  "Single-family house",
-  "Condo / Apartment",
-  "Townhouse / Pre-built House",
-  "Vacation Home / Beach House",
+  {
+    label: "Single-family house",
+    value: "Single-family house",
+    image: "/assets/img/Property Types/single-family-home.png",
+  },
+  {
+    label: "Condo / Apartment",
+    value: "Condo / Apartment",
+    image: "/assets/img/Property Types/condo-apartment.png",
+  },
+  {
+    label: "Townhouse / Pre-built House",
+    value: "Townhouse / Pre-built House",
+    image: "/assets/img/Property Types/townhouse-pre-built-house.png",
+  },
+  {
+    label: "Vacation Home / Beach House",
+    value: "Vacation Home / Beach House",
+    image: "/assets/img/Property Types/vacation-home-beach-house.png",
+  },
 ] as const;
 
 export const CURRENT_SETUP_OPTIONS = {

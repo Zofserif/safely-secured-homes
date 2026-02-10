@@ -172,11 +172,19 @@ export default function HomePage({
   const reportsSoldOut =
     effectiveReportsRemaining !== null && effectiveReportsRemaining <= 0;
   const hasClock = nowMs > 0;
-  const ctaTarget = hasExistingPlan ? "results" : "form";
-  const ctaLabel = hasExistingPlan
-    ? "SEE MY GENERATED PLAN"
-    : "GET MY FREE PLAN NOW";
-  const ctaDisabled = reportsSoldOut && !hasExistingPlan;
+  const ctaTarget =
+    reportsSoldOut && !hasExistingPlan
+      ? "newsletter"
+      : hasExistingPlan
+        ? "results"
+        : "form";
+  const ctaLabel =
+    reportsSoldOut && !hasExistingPlan
+      ? "JOIN THE WAITINGLIST"
+      : hasExistingPlan
+        ? "SEE MY GENERATED PLAN"
+        : "GET MY FREE PLAN NOW";
+  const ctaDisabled = ctaTarget === "form" && reportsSoldOut && !hasExistingPlan;
   const showScarcity = !hasExistingPlan;
   const refreshEndsAt = hasClock ? getNextFridayMidnightGmt8(nowMs) : null;
   const countdown = refreshEndsAt ? formatCountdown(refreshEndsAt, nowMs) : "";
@@ -200,6 +208,11 @@ export default function HomePage({
       setDebugReportsRemaining(0);
       setDebugReportsLoading(false);
       setDebugReportsError(false);
+      window.dispatchEvent(
+        new CustomEvent("ssh-debug-reports", {
+          detail: { remaining: 0, loading: false, error: false },
+        })
+      );
     };
 
     const normal = () => {
@@ -207,6 +220,9 @@ export default function HomePage({
       setDebugReportsLoading(undefined);
       setDebugReportsError(undefined);
       resetBonusTimerForDebug();
+      window.dispatchEvent(
+        new CustomEvent("ssh-debug-reports", { detail: { reset: true } })
+      );
     };
 
     (window as typeof window & { sshDebug?: Record<string, () => void> }).sshDebug =

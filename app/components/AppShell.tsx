@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { initPostHog } from "../posthog";
 
 import Navbar from "./layout/Navbar";
@@ -63,12 +63,13 @@ export default function AppShell({
   formMode?: "default" | "newsletter";
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [storedLead, setStoredLead] = useState<StoredLead | null>(null);
   const [storedLeadLoaded, setStoredLeadLoaded] = useState(false);
   const [view, setView] = useState<AppView>(() =>
     initialView === "results" ? "form" : initialView
   );
+  const [effectiveFormMode, setEffectiveFormMode] =
+    useState<"default" | "newsletter">(formMode);
   const [formData, setFormData] = useState<FormData | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [reportsRemaining, setReportsRemaining] = useState<number | null>(null);
@@ -254,9 +255,17 @@ export default function AppShell({
     };
   }, [router]);
 
-  const sourceParam = searchParams?.get("source");
-  const effectiveFormMode =
-    sourceParam === "newsletter" ? "newsletter" : formMode;
+  useEffect(() => {
+    setEffectiveFormMode(formMode);
+  }, [formMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const source = new URLSearchParams(window.location.search).get("source");
+    if (source === "newsletter") {
+      setEffectiveFormMode("newsletter");
+    }
+  }, []);
 
   const handleFormComplete = async (data: FormData) => {
     const calcResult = estimateCameraPlan(data);

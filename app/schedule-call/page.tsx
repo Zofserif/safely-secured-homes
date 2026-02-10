@@ -58,11 +58,17 @@ export default function ScheduleCallPage() {
 
       <main className="container mx-auto px-6 pb-16 lg:pb-24 pt-6">
         <div className="text-center max-w-3xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mt-6 text-[#2D3748]">
-            Thanks for your answers! Let's schedule your call.
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+            Thanks for your answers
+          </p>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mt-4 text-[#2D3748] leading-tight">
+            <span className="block">You&apos;re pre-approved.</span>
+            <span className="block mt-2 text-[#0E79B2]">
+              Book a quick call with a Home Security Consultant.
+            </span>
           </h1>
           <p className="text-slate-600 mt-4 text-base sm:text-lg">
-            We'll review your responses and walk you through the best security
+            We&apos;ll review your responses and walk you through the best security
             plan for your home.
           </p>
           <div className="mt-5 inline-flex items-center gap-2 bg-[#BEE9E8]/70 text-[#0E79B2] px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide">

@@ -100,12 +100,14 @@ export default function NewsletterPage() {
                   3-minute Friday reads
                 </span>
               </div>
+              <NewsletterChecklistModal />
             </div>
 
             <div className="space-y-6">
               <a
                 href="#newsletter-form"
                 className="group relative mx-auto w-full max-w-[360px] sm:max-w-[400px] lg:max-w-[440px] block"
+
               >
                 <div className="relative rounded-[2.2rem] overflow-hidden shadow-md shadow-[#0E79B2]/10 rotate-2 bg-transparent aspect-4/5">
                   <Image
@@ -120,8 +122,6 @@ export default function NewsletterPage() {
               </a>
             </div>
           </section>
-
-          <NewsletterChecklistModal />
 
           <section className="mt-12 lg:mt-16">
             <div className="grid md:grid-cols-3 gap-6">

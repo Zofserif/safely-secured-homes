@@ -102,14 +102,12 @@ export default function HomePage({
   reportsRemaining,
   reportsLoading,
   reportsError,
-  windowEndsAt,
   hasExistingPlan,
 }: {
   onNavigate: (p: string) => void;
   reportsRemaining: number | null;
   reportsLoading: boolean;
   reportsError: boolean;
-  windowEndsAt: number | null;
   hasExistingPlan: boolean;
 }) {
   const [expandedReason, setExpandedReason] = useState<number | null>(null);
@@ -144,6 +142,25 @@ export default function HomePage({
     return `${hours}h ${pad(minutes)}m ${pad(seconds)}s`;
   };
 
+  const getNextFridayMidnightGmt8 = (currentMs: number) => {
+    const offsetMs = 8 * 60 * 60 * 1000;
+    const gmt8Date = new Date(currentMs + offsetMs);
+    const day = gmt8Date.getUTCDay();
+    let daysUntilFriday = (5 - day + 7) % 7;
+    if (daysUntilFriday === 0) daysUntilFriday = 7;
+    const targetUtcMs =
+      Date.UTC(
+        gmt8Date.getUTCFullYear(),
+        gmt8Date.getUTCMonth(),
+        gmt8Date.getUTCDate() + daysUntilFriday,
+        0,
+        0,
+        0,
+        0,
+      ) - offsetMs;
+    return targetUtcMs;
+  };
+
   const effectiveReportsRemaining =
     debugReportsRemaining !== undefined
       ? debugReportsRemaining
@@ -161,8 +178,8 @@ export default function HomePage({
     : "GET MY FREE PLAN NOW";
   const ctaDisabled = reportsSoldOut && !hasExistingPlan;
   const showScarcity = !hasExistingPlan;
-  const countdown =
-    hasClock && windowEndsAt ? formatCountdown(windowEndsAt, nowMs) : "";
+  const refreshEndsAt = hasClock ? getNextFridayMidnightGmt8(nowMs) : null;
+  const countdown = refreshEndsAt ? formatCountdown(refreshEndsAt, nowMs) : "";
   const countdownLabel = countdown ? ` (${countdown} left)` : "";
   const bonusCountdown =
     hasClock && bonusEndsAt !== null ? formatCountdown(bonusEndsAt, nowMs) : "";
@@ -302,7 +319,7 @@ export default function HomePage({
                       {!effectiveReportsLoading &&
                         !effectiveReportsError &&
                         reportsSoldOut && (
-                        <>All 15 reports are claimed. {countdownLabel}.</>
+                        <>All 15 reports are claimed. Report will refresh in: {countdownLabel}.</>
                       )}
                       {!effectiveReportsLoading &&
                         !effectiveReportsError &&
@@ -318,23 +335,31 @@ export default function HomePage({
                 )}
               </div>
 
-              {!bonusExpired && showScarcity && (
-                <div className="flex items-center gap-4 bg-white/90 backdrop-blur-sm p-2 sm:p-2 rounded-2xl border border-[#BEE9E8] shadow-xl animate-bounce-slow w-full sm:flex-2">
-                  <div className="bg-[#BEE9E8]/60 p-1 rounded-xl text-[#0E79B2]">
-                    <Gift className="w-5 h-5" />
+              {!bonusExpired && showScarcity && !reportsSoldOut && (
+                <div className="w-full sm:flex-2 flex flex-col items-start">
+                  <div className="relative flex items-center gap-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-2xl border border-[#BEE9E8] shadow-xl animate-bounce-slow w-full sm:h-[68px] sm:self-start">
+                    <div className="bg-[#BEE9E8]/60 p-1 rounded-xl text-[#0E79B2]">
+                      <Gift className="w-5 h-5" />
+                    </div>
+                    <div className="flex flex-col">
+                      <p className="text-[11px] font-extrabold text-[#0E79B2] uppercase tracking-widest leading-none">
+                        Free Bonus Included
+                      </p>
+                      <p className="text-[13px] font-extrabold text-[#2D3748] leading-tight">
+                        5 Home Security Must-Have Secrets you can do Today!
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <p className="text-[11px] font-extrabold text-[#0E79B2] uppercase tracking-widest">
-                      Free Bonus Included
-                    </p>
-                    <p className="text-sm font-extrabold text-[#2D3748]">
-                      5 Home Security Must-Have Secrets you can do Today!
-                    </p>
-                    <p className="text-xs font-semibold text-slate-500 pt-1">
-                      {bonusEndsAt === null && "Loading bonus timer..."}
-                      {bonusEndsAt !== null &&
-                        `Bonus Expires in ${bonusCountdown}`}
-                    </p>
+                  <div className="mt-2 inline-flex items-center gap-2 bg-white/90 text-[#2D3748] text-[11px] font-semibold px-3 py-1 rounded-full shadow-lg border border-[#BEE9E8] backdrop-blur-sm self-center">
+                    <span
+                      className="h-2 w-2 rounded-full bg-[#E53E3E] animate-pulse"
+                      aria-hidden="true"
+                    ></span>
+                    <span className="uppercase tracking-wide text-[#0E79B2]">
+                      {bonusEndsAt === null
+                        ? "Loading bonus timer..."
+                        : `Bonus expires in ${bonusCountdown}`}
+                    </span>
                   </div>
                 </div>
               )}

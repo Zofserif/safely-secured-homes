@@ -173,7 +173,7 @@ export default function NewsletterForm() {
           disabled={status === "submitting"}
           className="w-full bg-[#0E79B2] hover:bg-[#0b5e8b] text-white text-base sm:text-lg py-3 rounded-2xl font-bold shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          {status === "submitting" ? "Submitting..." : "Subscribe to Updates"}
+          {status === "submitting" ? "Submitting..." : "GET THE CHECKLIST"}
         </button>
 
         <p className="text-xs text-slate-500 text-center">

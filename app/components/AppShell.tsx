@@ -71,7 +71,6 @@ export default function AppShell({
   const [reportsRemaining, setReportsRemaining] = useState<number | null>(null);
   const [reportsLoading, setReportsLoading] = useState(true);
   const [reportsError, setReportsError] = useState(false);
-  const [reportsWindowEndsAt, setReportsWindowEndsAt] = useState<number | null>(null);
 
   useEffect(() => {
     initPostHog();
@@ -108,9 +107,6 @@ export default function AppShell({
   useEffect(() => {
     let isMounted = true;
 
-    const getThreeDayWindowEnd = () =>
-      Date.now() + 3 * 24 * 60 * 60 * 1000;
-
     const fetchReportsRemaining = async () => {
       try {
         const response = await fetch("/api/reports-remaining", {
@@ -124,22 +120,13 @@ export default function AppShell({
         if (typeof remaining !== "number") {
           throw new Error("Invalid reports remaining response");
         }
-        const parsedWindowEndsAt =
-          typeof data?.windowEndsAt === "string"
-            ? Date.parse(data.windowEndsAt)
-            : Number.NaN;
-        const safeWindowEndsAt = Number.isNaN(parsedWindowEndsAt)
-          ? getThreeDayWindowEnd()
-          : parsedWindowEndsAt;
         if (isMounted) {
           setReportsRemaining(remaining);
-          setReportsWindowEndsAt(safeWindowEndsAt);
           setReportsError(false);
         }
       } catch (error) {
         if (isMounted) {
           setReportsRemaining(null);
-          setReportsWindowEndsAt(null);
           setReportsError(true);
         }
       } finally {
@@ -261,7 +248,6 @@ export default function AppShell({
           reportsRemaining={reportsRemaining}
           reportsLoading={reportsLoading}
           reportsError={reportsError}
-          windowEndsAt={reportsWindowEndsAt}
           hasExistingPlan={hasExistingPlan}
         />
       )}

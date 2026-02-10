@@ -341,7 +341,7 @@ export default function HomePage({
                 whileHover={{ y: -10 }}
                 className="group p-8 bg-[#F7FAFC] rounded-3xl border border-slate-100 hover:border-[#63B3ED] hover:bg-white hover:shadow-2xl hover:shadow-[#0E79B2]/5 transition-all duration-300"
               >
-                <div className="w-14 h-14 bg-white rounded-2xl border border-slate-100 flex items-center justify-center mb-6 shadow-sm group-hover:bg-[#0E79B2] group-hover:text-white transition-colors">
+                <div className="mx-auto w-14 h-14 bg-white rounded-2xl border border-slate-100 flex items-center justify-center mb-6 shadow-sm group-hover:bg-[#0E79B2] group-hover:text-white transition-colors">
                   <item.icon className="w-7 h-7 text-[#2D3748] group-hover:text-white" />
                 </div>
                 <h3 className="font-bold text-xl text-[#2D3748] mb-3">

@@ -4,12 +4,82 @@ import { useState, type FormEvent } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 export default function NewsletterForm() {
-  const [submitted, setSubmitted] = useState(false);
+  const [status, setStatus] = useState<
+    "idle" | "submitting" | "success" | "error"
+  >("idle");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSubmitted(true);
-    event.currentTarget.reset();
+    if (status === "submitting") return;
+    setPhoneError(null);
+    setSubmitError(null);
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const rawContact = String(formData.get("contactNumber") || "").trim();
+    const digitsOnly = rawContact.replace(/\D/g, "");
+    let normalizedContact = digitsOnly;
+    if (digitsOnly.startsWith("63") && digitsOnly.length === 12) {
+      normalizedContact = `0${digitsOnly.slice(2)}`;
+    } else if (digitsOnly.startsWith("9") && digitsOnly.length === 10) {
+      normalizedContact = `0${digitsOnly}`;
+    }
+    const payload = {
+      first_name: String(formData.get("firstName") || "").trim(),
+      last_name: String(formData.get("lastName") || "").trim(),
+      email: String(formData.get("email") || "").trim(),
+      contact_number: normalizedContact,
+      source: "newsletter",
+    };
+
+    const phPhoneRegex = /^09\d{9}$/;
+    if (!phPhoneRegex.test(normalizedContact)) {
+      setPhoneError(
+        "Use 09XXXXXXXXX, +639XXXXXXXXX, or +63 9xx-xxx-xxxx."
+      );
+      return;
+    }
+
+    setStatus("submitting");
+
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        if (response.status === 409 && errorData?.code === "email_exists") {
+          setSubmitError("That email is already subscribed.");
+          setStatus("error");
+          return;
+        }
+        if (response.status === 400 && errorData?.code === "23514") {
+          setSubmitError("Please use a valid PH phone number.");
+          setStatus("error");
+          return;
+        }
+        if (response.status === 400 && errorData?.code === "23502") {
+          setSubmitError("Please fill in all required fields.");
+          setStatus("error");
+          return;
+        }
+        setSubmitError(errorData?.error || "Newsletter signup failed.");
+        setStatus("error");
+        return;
+      }
+
+      form.reset();
+      setStatus("success");
+    } catch (error) {
+      console.error(error);
+      setSubmitError("Something went wrong. Please try again.");
+      setStatus("error");
+    }
   };
 
   return (
@@ -35,7 +105,7 @@ export default function NewsletterForm() {
               type="text"
               autoComplete="given-name"
               required
-              className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
+              className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
               placeholder="Juan"
             />
           </div>
@@ -52,7 +122,7 @@ export default function NewsletterForm() {
               type="text"
               autoComplete="family-name"
               required
-              className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
+              className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
               placeholder="Dela Cruz"
             />
           </div>
@@ -71,7 +141,7 @@ export default function NewsletterForm() {
             type="email"
             autoComplete="email"
             required
-            className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
+            className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
             placeholder="you@email.com"
           />
         </div>
@@ -90,26 +160,35 @@ export default function NewsletterForm() {
             inputMode="tel"
             autoComplete="tel"
             required
-            className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
+            className={`w-full p-3 rounded-xl border bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none ${phoneError ? "border-red-500" : "border-slate-300"}`}
             placeholder="09xx xxx xxxx"
           />
+          {phoneError && (
+            <p className="text-xs text-red-600 mt-1">{phoneError}</p>
+          )}
         </div>
 
         <button
           type="submit"
-          className="w-full bg-[#0E79B2] hover:bg-[#0b5e8b] text-white text-base sm:text-lg py-3 rounded-2xl font-bold shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5"
+          disabled={status === "submitting"}
+          className="w-full bg-[#0E79B2] hover:bg-[#0b5e8b] text-white text-base sm:text-lg py-3 rounded-2xl font-bold shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          Subscribe to Updates
+          {status === "submitting" ? "Submitting..." : "Subscribe to Updates"}
         </button>
 
         <p className="text-xs text-slate-500 text-center">
           We respect your privacy and will never share your contact details.
         </p>
 
-        {submitted && (
+        {status === "success" && (
           <div className="flex items-center justify-center gap-2 text-sm text-[#2E8B57] font-semibold">
             <CheckCircle2 className="w-4 h-4" />
             Thanks! You are on the list.
+          </div>
+        )}
+        {status === "error" && submitError && (
+          <div className="text-center text-sm text-red-600 font-semibold">
+            {submitError}
           </div>
         )}
       </form>

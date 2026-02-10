@@ -337,25 +337,25 @@ export default function HomePage({
 
               {!bonusExpired && showScarcity && !reportsSoldOut && (
                 <div className="w-full sm:flex-2 flex flex-col items-start">
-                  <div className="relative flex items-center gap-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-2xl border border-[#BEE9E8] shadow-xl animate-bounce-slow w-full sm:h-[68px] sm:self-start">
+                  <div className="relative flex items-center gap-3 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-2xl border border-[#BEE9E8] shadow-xl animate-bounce-slow w-full sm:h-[68px] sm:self-start">
                     <div className="bg-[#BEE9E8]/60 p-1 rounded-xl text-[#0E79B2]">
-                      <Gift className="w-5 h-5" />
+                      <Gift className="w-4 h-4" />
                     </div>
-                    <div className="flex flex-col">
-                      <p className="text-[11px] font-extrabold text-[#0E79B2] uppercase tracking-widest leading-none">
+                    <div className="flex flex-col min-w-0">
+                      <p className="text-[clamp(8px,0.7vw,10px)] font-extrabold text-[#0E79B2] uppercase tracking-normal leading-none">
                         Free Bonus Included
                       </p>
-                      <p className="text-[13px] font-extrabold text-[#2D3748] leading-tight">
+                      <p className="text-[clamp(10px,0.85vw,12px)] font-extrabold text-[#2D3748] leading-snug">
                         5 Home Security Must-Have Secrets you can do Today!
                       </p>
                     </div>
                   </div>
-                  <div className="mt-2 inline-flex items-center gap-2 bg-white/90 text-[#2D3748] text-[11px] font-semibold px-3 py-1 rounded-full shadow-lg border border-[#BEE9E8] backdrop-blur-sm self-center">
+                  <div className="mt-2 inline-flex items-center gap-2 bg-white/90 text-[#2D3748] text-[clamp(8px,0.7vw,10px)] font-semibold px-2.5 py-1 rounded-full shadow-lg border border-[#BEE9E8] backdrop-blur-sm self-center">
                     <span
                       className="h-2 w-2 rounded-full bg-[#E53E3E] animate-pulse"
                       aria-hidden="true"
                     ></span>
-                    <span className="uppercase tracking-wide text-[#0E79B2]">
+                    <span className="uppercase tracking-normal text-[#0E79B2]">
                       {bonusEndsAt === null
                         ? "Loading bonus timer..."
                         : `Bonus expires in ${bonusCountdown}`}

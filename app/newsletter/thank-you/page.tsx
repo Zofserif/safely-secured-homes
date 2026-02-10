@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { ogImageUrl, siteName, siteUrl } from "../../lib/site";
+import SuccessStoriesSection from "../../components/success-stories/SuccessStoriesSection";
 
 export const metadata: Metadata = {
   title: `Thanks for Joining | ${siteName}`,
@@ -92,20 +93,20 @@ export default function NewsletterThankYouPage() {
               </p>
             </div>
           </div>
-          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
+          <div className="mt-8 flex flex-col items-center text-center gap-4">
+            <p className="text-lg sm:text-xl lg:text-2xl text-[#2D3748] max-w-3xl">
+              If you&apos;re ready to build a personalized security plan for
+              your home, apply now and let&apos;s talk.
+            </p>
             <Link
-              href="/"
-              className="inline-flex items-center justify-center bg-[#0E79B2] hover:bg-[#0b5e8b] text-white px-6 py-3 rounded-full font-semibold shadow-lg shadow-[#0E79B2]/20 transition-all hover:-translate-y-0.5"
+              href="/form"
+              className="inline-flex items-center justify-center bg-[#0E79B2] hover:bg-[#0b5e8b] text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-[#0E79B2]/20 transition-all hover:-translate-y-0.5"
             >
-              Back to Home
-            </Link>
-            <Link
-              href="/newsletter"
-              className="inline-flex items-center justify-center bg-white border border-[#BEE9E8] text-[#0E79B2] px-6 py-3 rounded-full font-semibold shadow-sm hover:bg-[#F7FAFC]"
-            >
-              Return to Newsletter
+              APPLY NOW
             </Link>
           </div>
+
+          <SuccessStoriesSection />
         </div>
       </main>
     </div>

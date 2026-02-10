@@ -35,6 +35,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function FormPage() {
-  return <AppShell initialView="form" />;
+export default function FormPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
+  const source =
+    typeof searchParams?.source === "string" ? searchParams.source : undefined;
+  const formMode = source === "newsletter" ? "newsletter" : "default";
+  return <AppShell initialView="form" formMode={formMode} />;
 }

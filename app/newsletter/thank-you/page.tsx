@@ -99,7 +99,7 @@ export default function NewsletterThankYouPage() {
               your home, apply now and let&apos;s talk.
             </p>
             <Link
-              href="/form"
+              href="/form?source=newsletter"
               className="inline-flex items-center justify-center bg-[#0E79B2] hover:bg-[#0b5e8b] text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-[#0E79B2]/20 transition-all hover:-translate-y-0.5"
             >
               APPLY NOW

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, X } from "lucide-react";
+import { writeNewsletterLead } from "../../lib/newsletterLead";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -142,6 +143,12 @@ export default function NewsletterChecklistModal() {
         return;
       }
 
+      writeNewsletterLead({
+        first_name: payload.first_name,
+        last_name: payload.last_name,
+        email: payload.email,
+        mobile: normalizedContact,
+      });
       setStatus("success");
     } catch (submitError) {
       console.error(submitError);

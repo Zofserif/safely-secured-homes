@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { initPostHog } from "../posthog";
 
 import Navbar from "./layout/Navbar";
@@ -57,10 +57,13 @@ const writeStoredLead = (formData: FormData, result: CalculationResult) => {
 
 export default function AppShell({
   initialView = "home",
+  formMode = "default",
 }: {
   initialView?: AppView;
+  formMode?: "default" | "newsletter";
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [storedLead, setStoredLead] = useState<StoredLead | null>(null);
   const [storedLeadLoaded, setStoredLeadLoaded] = useState(false);
   const [view, setView] = useState<AppView>(() =>
@@ -251,6 +254,10 @@ export default function AppShell({
     };
   }, [router]);
 
+  const sourceParam = searchParams?.get("source");
+  const effectiveFormMode =
+    sourceParam === "newsletter" ? "newsletter" : formMode;
+
   const handleFormComplete = async (data: FormData) => {
     const calcResult = estimateCameraPlan(data);
     setFormData(data);
@@ -260,11 +267,21 @@ export default function AppShell({
     identifyLead(data);
     trackLeadGenerated(data, calcResult);
 
-    await Promise.all([
-      submitToEmail(data, calcResult),
+    const submissions = [
       submitToFormspree(data, calcResult),
       submitLeadToSupabase(data, calcResult),
-    ]);
+    ];
+
+    if (effectiveFormMode !== "newsletter") {
+      submissions.push(submitToEmail(data, calcResult));
+    }
+
+    await Promise.all(submissions);
+
+    if (effectiveFormMode === "newsletter") {
+      router.push("/schedule-call");
+      return;
+    }
 
     setView("results");
     router.push("/results");
@@ -314,7 +331,9 @@ export default function AppShell({
         />
       )}
 
-      {view === "form" && <WizardForm onComplete={handleFormComplete} />}
+      {view === "form" && (
+        <WizardForm onComplete={handleFormComplete} mode={effectiveFormMode} />
+      )}
 
       {view === "results" && formData && result && (
         <ResultsPage result={result} data={formData} />

@@ -2,7 +2,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronLeft, Loader2 } from "lucide-react";
 import Image from "next/image";
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import {
   trackFormStepCompleted,
   trackFormSubmissionStarted,
@@ -19,11 +19,14 @@ import {
   TIMELINE_OPTIONS,
 } from "../../lib/formOptions";
 import { FormData } from "../../lib/types";
+import { readNewsletterLead } from "../../lib/newsletterLead";
 
 export default function WizardForm({
   onComplete,
+  mode = "default",
 }: {
   onComplete: (data: FormData) => void;
+  mode?: "default" | "newsletter";
 }) {
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,7 +55,21 @@ export default function WizardForm({
     mobile: "",
   });
 
+  const isNewsletterFlow = mode === "newsletter";
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    if (!isNewsletterFlow) return;
+    const lead = readNewsletterLead();
+    if (!lead) return;
+    setFormData((prev) => ({
+      ...prev,
+      first_name: prev.first_name || lead.first_name || "",
+      last_name: prev.last_name || lead.last_name || "",
+      email: prev.email || lead.email || "",
+      mobile: prev.mobile || lead.mobile || "",
+    }));
+  }, [isNewsletterFlow]);
 
   const updateField = (field: keyof FormData, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -671,10 +688,11 @@ export default function WizardForm({
       >
         {isSubmitting ? (
           <>
-            <Loader2 className="w-5 h-5 animate-spin" /> Generating Plan...
+            <Loader2 className="w-5 h-5 animate-spin" />{" "}
+            {isNewsletterFlow ? "Sending your answer..." : "Generating Plan..."}
           </>
         ) : (
-          "Generate My FREE PLAN"
+          (isNewsletterFlow ? "SEND MY ANSWER NOW" : "Generate My FREE PLAN")
         )}
       </button>
     </div>,

@@ -20,9 +20,10 @@ import {
   Sparkles,
   Activity,
   ShieldUser,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Quote,
 } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import ReasonItem from "../ReasonItem";
 import AccordionItem from "../AccordionItem";
 import CertModal from "../layout/CertModal";
@@ -113,6 +114,15 @@ export default function HomePage({
 }) {
   const [expandedReason, setExpandedReason] = useState<number | null>(null);
   const [showCertModal, setShowCertModal] = useState(false);
+  const [debugReportsRemaining, setDebugReportsRemaining] = useState<
+    number | null | undefined
+  >(undefined);
+  const [debugReportsLoading, setDebugReportsLoading] = useState<
+    boolean | undefined
+  >(undefined);
+  const [debugReportsError, setDebugReportsError] = useState<
+    boolean | undefined
+  >(undefined);
   const nowMs = useSyncExternalStore(
     subscribeToClock,
     getClockSnapshot,
@@ -134,7 +144,16 @@ export default function HomePage({
     return `${hours}h ${pad(minutes)}m ${pad(seconds)}s`;
   };
 
-  const reportsSoldOut = reportsRemaining !== null && reportsRemaining <= 0;
+  const effectiveReportsRemaining =
+    debugReportsRemaining !== undefined
+      ? debugReportsRemaining
+      : reportsRemaining;
+  const effectiveReportsLoading =
+    debugReportsLoading !== undefined ? debugReportsLoading : reportsLoading;
+  const effectiveReportsError =
+    debugReportsError !== undefined ? debugReportsError : reportsError;
+  const reportsSoldOut =
+    effectiveReportsRemaining !== null && effectiveReportsRemaining <= 0;
   const hasClock = nowMs > 0;
   const ctaTarget = hasExistingPlan ? "results" : "form";
   const ctaLabel = hasExistingPlan
@@ -148,6 +167,43 @@ export default function HomePage({
   const bonusCountdown =
     hasClock && bonusEndsAt !== null ? formatCountdown(bonusEndsAt, nowMs) : "";
   const bonusExpired = hasClock && bonusEndsAt !== null && nowMs >= bonusEndsAt;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const expireBonus = () => {
+      const storageKey = "ssh_bonus_started_at";
+      const startAt = Date.now() - 25 * 60 * 60 * 1000;
+      localStorage.setItem(storageKey, new Date(startAt).toISOString());
+      bonusInitialized = false;
+      initBonusTimer();
+    };
+
+    const setReportsSoldOut = () => {
+      setDebugReportsRemaining(0);
+      setDebugReportsLoading(false);
+      setDebugReportsError(false);
+    };
+
+    const normal = () => {
+      setDebugReportsRemaining(undefined);
+      setDebugReportsLoading(undefined);
+      setDebugReportsError(undefined);
+      resetBonusTimerForDebug();
+    };
+
+    (window as typeof window & { sshDebug?: Record<string, () => void> }).sshDebug =
+      {
+        expireBonus,
+        reportsSoldOut: setReportsSoldOut,
+        normal,
+      };
+
+    return () => {
+      delete (window as typeof window & { sshDebug?: Record<string, () => void> })
+        .sshDebug;
+    };
+  }, []);
 
   return (
     <div className="overflow-x-hidden bg-[#F7FAFC]">
@@ -238,16 +294,22 @@ export default function HomePage({
                       aria-hidden="true"
                     ></span>
                     <span>
-                      {reportsLoading && "Checking report availability..."}
-                      {!reportsLoading &&
-                        reportsError &&
+                      {effectiveReportsLoading &&
+                        "Checking report availability..."}
+                      {!effectiveReportsLoading &&
+                        effectiveReportsError &&
                         "Availability check failed. Please try again shortly."}
-                      {!reportsLoading && !reportsError && reportsSoldOut && (
-                        <>All 15 reports are claimed until{countdownLabel}.</>
+                      {!effectiveReportsLoading &&
+                        !effectiveReportsError &&
+                        reportsSoldOut && (
+                        <>All 15 reports are claimed. {countdownLabel}.</>
                       )}
-                      {!reportsLoading && !reportsError && !reportsSoldOut && (
+                      {!effectiveReportsLoading &&
+                        !effectiveReportsError &&
+                        !reportsSoldOut && (
                         <>
-                          Only {reportsRemaining}/15 Plan remaining until
+                          Only {effectiveReportsRemaining}/15 Plan remaining
+                          until
                           {countdownLabel}
                         </>
                       )}
@@ -857,19 +919,25 @@ export default function HomePage({
                     aria-hidden="true"
                   ></span>
                   <span>
-                    {reportsLoading && "Checking report availability..."}
-                    {!reportsLoading &&
-                      reportsError &&
+                    {effectiveReportsLoading &&
+                      "Checking report availability..."}
+                    {!effectiveReportsLoading &&
+                      effectiveReportsError &&
                       "Availability check failed. Please try again shortly."}
-                    {!reportsLoading && !reportsError && reportsSoldOut && (
+                    {!effectiveReportsLoading &&
+                      !effectiveReportsError &&
+                      reportsSoldOut && (
                       <>
                         All 15 reports are claimed until{countdownLabel}. Check
                         back soon for the free bonus.
                       </>
                     )}
-                    {!reportsLoading && !reportsError && !reportsSoldOut && (
+                    {!effectiveReportsLoading &&
+                      !effectiveReportsError &&
+                      !reportsSoldOut && (
                       <>
-                        Only {reportsRemaining}/15 reports remaining until
+                        Only {effectiveReportsRemaining}/15 reports remaining
+                        until
                         {countdownLabel}
                       </>
                     )}

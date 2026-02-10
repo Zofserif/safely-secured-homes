@@ -20,6 +20,7 @@ import {
   Sparkles,
   Activity,
   ShieldUser,
+  Quote,
 } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import ReasonItem from "../ReasonItem";
@@ -357,18 +358,30 @@ export default function HomePage({
       </section>
 
       {/* Testimonials */}
-      {/* <section className="py-20 bg-[#F7FAFC] border-b border-slate-200">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-[#2D3748] mb-4">What Our Clients Say</h2>
-            <p className="text-slate-600">Families across Luzon sleep soundly because of Safely Secured Homes.</p>
+      {/* <section className="relative py-24 sm:py-28 bg-linear-to-b from-[#F7FAFC] via-white to-[#E9F5F4] border-y border-slate-200 overflow-hidden">
+        <div className="absolute -top-24 -right-24 w-[360px] h-[360px] bg-[#BEE9E8]/45 rounded-full blur-3xl opacity-70 pointer-events-none"></div>
+        <div className="absolute -bottom-20 -left-16 w-[320px] h-80 bg-[#63B3ED]/20 rounded-full blur-3xl opacity-70 pointer-events-none"></div>
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 bg-white/90 border border-[#BEE9E8] rounded-full px-4 py-1.5 mb-5 shadow-sm">
+              <Sparkles className="w-4 h-4 text-[#0E79B2]" />
+              <span className="text-[#2D3748] font-semibold text-xs uppercase tracking-wide">
+                Trusted Testimonials
+              </span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#2D3748] mb-4">
+              What Our Clients Say
+            </h2>
+            <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto">
+              Families across Luzon sleep soundly because of Safely Secured Homes.
+            </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 lg:gap-10">
             {[
               {
                 text: "The installation was super fast and clean. Troy explained everything clearly. Now I can check on my kids even when I'm at the office.",
-                author: "Maria S.",
-                location: "Quezon City"
+                author: "Reigne A.",
+                location: "Laguna"
               },
               {
                 text: "We had a break-in scare in our village, so we called them. They set up the cameras the same week. The peace of mind is priceless.",
@@ -381,16 +394,22 @@ export default function HomePage({
                 location: "Laguna"
               }
             ].map((testimonial, i) => (
-              <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative">
-                <Quote className="w-8 h-8 text-[#BEE9E8] absolute top-4 left-4" />
-                <p className="text-slate-600 mb-6 mt-8 relative z-10 italic">&quot;{testimonial.text}&quot;</p>
+              <div
+                key={i}
+                className="group bg-white/95 p-8 rounded-3xl shadow-xl shadow-[#0E79B2]/10 border border-[#BEE9E8]/60 relative overflow-hidden"
+              >
+                <div className="absolute inset-x-0 top-0 h-1.5 bg-linear-to-r from-[#0E79B2] via-[#2E8B57] to-[#63B3ED] rounded-t-3xl"></div>
+                <Quote className="w-10 h-10 text-[#BEE9E8] absolute top-6 left-6" />
+                <p className="text-slate-700 mb-8 mt-10 relative z-10 text-base sm:text-lg leading-relaxed font-medium">
+                  &quot;{testimonial.text}&quot;
+                </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#0E79B2] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                  <div className="w-11 h-11 bg-[#0E79B2] rounded-full flex items-center justify-center text-white font-bold text-base">
                     {testimonial.author.charAt(0)}
                   </div>
                   <div>
-                    <div className="font-bold text-[#2D3748] text-sm">{testimonial.author}</div>
-                    <div className="text-xs text-slate-500">{testimonial.location}</div>
+                    <div className="font-bold text-[#2D3748] text-base">{testimonial.author}</div>
+                    <div className="text-sm text-slate-500">{testimonial.location}</div>
                   </div>
                 </div>
               </div>

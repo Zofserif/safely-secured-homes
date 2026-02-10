@@ -130,41 +130,44 @@ export default function NewsletterPage() {
                   quote:
                     "Short, clear, and actually useful. The checklist helped us fix blind spots in one afternoon.",
                   name: "Regina D.",
-                  location: "Quezon Province",
+                  company: "Quezon Province",
                 },
                 {
                   quote:
                     "I like that it’s not salesy. Just practical advice and reminders that keep our home safer.",
                   name: "Paolo M.",
-                  location: "Laguna",
+                  company: "Laguna",
                 },
                 {
                   quote:
                     "The Friday emails are quick to read and easy to act on. We finally set up our alerts right.",
                   name: "Celine A.",
-                  location: "Makati",
+                  company: "Makati",
                 },
               ].map((item) => (
                 <div
                   key={item.name}
-                  className="bg-white/95 border border-[#E2E0D8] rounded-3xl p-6 shadow-lg shadow-[#0E79B2]/10"
+                  className="bg-white/95 border border-[#BEE9E8]/70 rounded-3xl p-6 shadow-lg shadow-[#0E79B2]/10"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-[#E8E4DC] flex items-center justify-center text-sm font-bold text-[#1F2937]">
+                  <div className="flex items-start gap-4">
+                    <div className="h-14 w-14 rounded-full bg-[#BEE9E8]/60 flex items-center justify-center text-sm font-bold text-[#0E79B2]">
                       {item.name
                         .split(" ")
                         .map((part) => part[0])
                         .join("")}
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-[#1F2937]">
+                    <div className="flex-1">
+                      <p className="text-base font-semibold text-[#1F2937]">
                         {item.name}
                       </p>
-                      <p className="text-xs text-slate-500">{item.location}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-600 font-semibold">
+                          {item.company}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <Quote className="w-7 h-7 text-[#BEE9E8] mt-4" />
-                  <p className="text-sm text-slate-600 mt-3 leading-relaxed">
+                  <p className="text-sm text-slate-600 mt-5 leading-relaxed">
                     “{item.quote}”
                   </p>
                 </div>

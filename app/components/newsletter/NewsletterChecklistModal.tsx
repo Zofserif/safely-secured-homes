@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, X } from "lucide-react";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
 export default function NewsletterChecklistModal() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState<Status>("idle");
@@ -42,6 +44,9 @@ export default function NewsletterChecklistModal() {
 
   const closeModal = () => {
     setOpen(false);
+    if (status === "success") {
+      router.push("/newsletter/thank-you");
+    }
   };
 
   const updateValue = (field: keyof typeof values, value: string) => {
@@ -164,7 +169,19 @@ export default function NewsletterChecklistModal() {
             onClick={closeModal}
             aria-hidden="true"
           ></div>
-          <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-[#E2E0D8] p-6 sm:p-8">
+          <div
+            className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-[#E2E0D8] p-6 sm:p-8"
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" || event.shiftKey) return;
+              if (status === "success" || status === "submitting") return;
+              event.preventDefault();
+              if (step < 2) {
+                handleNext();
+              } else {
+                handleSubmit();
+              }
+            }}
+          >
             <button
               type="button"
               onClick={closeModal}
@@ -177,9 +194,6 @@ export default function NewsletterChecklistModal() {
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold">
                 Step {step + 1} of 3
               </p>
-              <span className="text-xs text-slate-500">
-                {status === "success" ? "Complete" : "Quick signup"}
-              </span>
             </div>
             <div className="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
               <div

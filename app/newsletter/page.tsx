@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Mail, Quote, ShieldCheck, Sparkles } from "lucide-react";
+import { Mail, ShieldCheck, Sparkles } from "lucide-react";
 import NewsletterChecklistModal from "../components/newsletter/NewsletterChecklistModal";
 import Footer from "../components/layout/Footer";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";

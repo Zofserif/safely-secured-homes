@@ -20,13 +20,54 @@ import {
   Sparkles,
   Activity,
   ShieldUser,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Quote,
 } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import ReasonItem from "../ReasonItem";
 import AccordionItem from "../AccordionItem";
 import CertModal from "../layout/CertModal";
+
+type HomeTestimonial = {
+  id: string;
+  name: string;
+  location: string;
+  rating: number;
+  review: string;
+  profileImageUrl: string | null;
+};
+
+type ApiTestimonial = {
+  id: string | number | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  location?: string | null;
+  rating?: number | null;
+  review?: string | null;
+  profile_image_url?: string | null;
+};
+
+const isApiTestimonial = (value: unknown): value is ApiTestimonial => {
+  if (!value || typeof value !== "object") return false;
+  return "id" in value && "review" in value;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const renderHearts = (rating: number) =>
+  Array.from({ length: 5 }, (_, index) => {
+    const filled = index < rating;
+    return (
+      <svg
+        key={`heart-${index}`}
+        viewBox="0 0 24 24"
+        className="h-6 w-6 sm:h-7 sm:w-7"
+        fill={filled ? "#0E79B2" : "none"}
+        stroke={filled ? "#0E79B2" : "#CBD5E1"}
+        strokeWidth="1.6"
+        aria-hidden="true"
+      >
+        <path d="M12 20.25s-7.5-4.35-9.3-8.55C1.6 8.7 3.4 6 6.3 6c1.8 0 3.15 1.05 3.7 2.1C10.55 7.05 11.9 6 13.7 6c2.9 0 4.7 2.7 3.6 5.7-1.8 4.2-9.3 8.55-9.3 8.55z" />
+      </svg>
+    );
+  });
 
 let clockValue = 0;
 let clockTimer: ReturnType<typeof setInterval> | null = null;
@@ -121,6 +162,36 @@ export default function HomePage({
   const [debugReportsError, setDebugReportsError] = useState<
     boolean | undefined
   >(undefined);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [testimonials, setTestimonials] = useState<HomeTestimonial[]>([
+    {
+      id: "fallback-1",
+      review:
+        "The installation was super fast and clean. Troy explained everything clearly. Now I can check on my kids even when I'm at the office.",
+      name: "Reigne A.",
+      location: "Laguna",
+      rating: 5,
+      profileImageUrl: null,
+    },
+    {
+      id: "fallback-2",
+      review:
+        "We had a break-in scare in our village, so we called them. They set up the cameras the same week. The peace of mind is priceless.",
+      name: "James D.",
+      location: "Makati",
+      rating: 5,
+      profileImageUrl: null,
+    },
+    {
+      id: "fallback-3",
+      review:
+        "I'm not good with tech, but the app is so easy to use. The video quality is amazing even at night. Highly recommended!",
+      name: "Elena R.",
+      location: "Laguna",
+      rating: 5,
+      profileImageUrl: null,
+    },
+  ]);
   const nowMs = useSyncExternalStore(
     subscribeToClock,
     getClockSnapshot,
@@ -235,6 +306,56 @@ export default function HomePage({
     return () => {
       delete (window as typeof window & { sshDebug?: Record<string, () => void> })
         .sshDebug;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchTestimonials = async () => {
+      try {
+        const response = await fetch("/api/testimonials?limit=3", {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch testimonials");
+        }
+        const data = await response.json();
+        const rawItems: unknown[] = Array.isArray(data?.testimonials)
+          ? data.testimonials
+          : [];
+
+        const mapped: HomeTestimonial[] = rawItems
+          .filter(isApiTestimonial)
+          .map((item) => {
+            const fullName = [item.first_name, item.last_name]
+              .filter(Boolean)
+              .join(" ")
+              .trim();
+            const ratingValue =
+              typeof item.rating === "number" ? item.rating : 0;
+            return {
+              id: String(item.id ?? ""),
+              review: String(item.review ?? ""),
+              name: fullName || "Homeowner",
+              location: item.location ? String(item.location) : "",
+              rating: Math.max(0, Math.min(5, ratingValue)),
+              profileImageUrl: item.profile_image_url ?? null,
+            } as HomeTestimonial;
+          })
+          .filter((item) => item.id && item.review);
+
+        if (isMounted && mapped.length) {
+          setTestimonials(mapped);
+        }
+      } catch (error) {
+        console.warn("Failed to load testimonials:", error);
+      }
+    };
+
+    fetchTestimonials();
+    return () => {
+      isMounted = false;
     };
   }, []);
 
@@ -480,41 +601,43 @@ export default function HomePage({
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 lg:gap-10">
-            {[
-              {
-                text: "The installation was super fast and clean. Troy explained everything clearly. Now I can check on my kids even when I'm at the office.",
-                author: "Reigne A.",
-                location: "Laguna"
-              },
-              {
-                text: "We had a break-in scare in our village, so we called them. They set up the cameras the same week. The peace of mind is priceless.",
-                author: "James D.",
-                location: "Makati"
-              },
-              {
-                text: "I'm not good with tech, but the app is so easy to use. The video quality is amazing even at night. Highly recommended!",
-                author: "Elena R.",
-                location: "Laguna"
-              }
-            ].map((testimonial, i) => (
+            {testimonials.map((testimonial) => (
               <div
-                key={i}
-                className="group bg-white/95 p-8 rounded-3xl shadow-xl shadow-[#0E79B2]/10 border border-[#BEE9E8]/60 relative overflow-hidden"
+                key={testimonial.id}
+                className="group bg-white/90 p-7 sm:p-8 rounded-3xl shadow-lg shadow-[#0E79B2]/8 border border-slate-200/70 relative overflow-hidden"
               >
-                <div className="absolute inset-x-0 top-0 h-1.5 bg-linear-to-r from-[#0E79B2] via-[#2E8B57] to-[#63B3ED] rounded-t-3xl"></div>
-                <Quote className="w-10 h-10 text-[#BEE9E8] absolute top-6 left-6" />
-                <p className="text-slate-700 mb-8 mt-10 relative z-10 text-base sm:text-lg leading-relaxed font-medium">
-                  &quot;{testimonial.text}&quot;
-                </p>
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 bg-[#0E79B2] rounded-full flex items-center justify-center text-white font-bold text-base">
-                    {testimonial.author.charAt(0)}
+                  <div className="w-11 h-11 bg-[#E6F4FF] rounded-full flex items-center justify-center text-[#0E79B2] font-bold text-base overflow-hidden">
+                    {testimonial.profileImageUrl ? (
+                      <img
+                        src={testimonial.profileImageUrl}
+                        alt={testimonial.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span>{testimonial.name.charAt(0)}</span>
+                    )}
                   </div>
                   <div>
-                    <div className="font-bold text-[#2D3748] text-base">{testimonial.author}</div>
-                    <div className="text-sm text-slate-500">{testimonial.location}</div>
+                    <div className="font-bold text-[#2D3748] text-base">
+                      {testimonial.name}
+                    </div>
+                    {testimonial.location && (
+                      <div className="text-sm text-slate-500">
+                        {testimonial.location}
+                      </div>
+                    )}
                   </div>
                 </div>
+                <div
+                  className="mt-4 flex items-center justify-center gap-1"
+                  aria-label={`Rating ${testimonial.rating} out of 5`}
+                >
+                  {renderHearts(testimonial.rating)}
+                </div>
+                <p className="text-slate-700 mb-1 mt-5 relative z-10 text-base sm:text-lg leading-relaxed font-medium">
+                  &quot;{testimonial.review}&quot;
+                </p>
               </div>
             ))}
           </div>

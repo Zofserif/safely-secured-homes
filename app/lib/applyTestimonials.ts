@@ -40,7 +40,7 @@ export async function getApplyTestimonials(limit = 3): Promise<ApplyTestimonial[
     .select(
       "id,first_name,last_name,location,rating,review,profile_image_url,created_at"
     )
-    .order("rating", { ascending: false, nullsLast: true })
+    .order("rating", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(fetchLimit);
 

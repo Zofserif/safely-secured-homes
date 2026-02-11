@@ -37,7 +37,7 @@ export default function ApplyPage() {
   const benefits = [
     {
       image: null,
-      title: "Personalized Safety Roadmap",
+      title: "Personalized Safety Consultation",
       description: "A clear plan tailored to your home layout and priorities.",
     },
     {
@@ -47,8 +47,8 @@ export default function ApplyPage() {
     },
     {
       image: null,
-      title: "Budget-Fit Camera Plan",
-      description: "Recommendations that match your budget and timeline.",
+      title: "Smart Security Home Plan",
+      description: "Recommendations that match your needs for your home and family.",
     },
     {
       image: null,
@@ -57,13 +57,13 @@ export default function ApplyPage() {
     },
     {
       image: null,
-      title: "Installation Timeline",
-      description: "A realistic path from planning to protection.",
+      title: "Ongoing Support",
+      description: "Guidance by call or chat when you need it.",
     },
     {
       image: null,
-      title: "Ongoing Support",
-      description: "Guidance by call or chat when you need it.",
+      title: "Quarterly Safety Reviews",
+      description: "Maintenance checks and updates to keep your home secure over time.",
     },
   ];
 
@@ -174,10 +174,10 @@ export default function ApplyPage() {
                     </div>
                   )}
                 </div>
-                <h3 className="mt-5 text-lg font-semibold text-[#1F2937]">
+                <h3 className="mt-5 text-lg font-semibold text-[#1F2937] text-center">
                   {item.title}
                 </h3>
-                <p className="mt-2 text-sm sm:text-base text-slate-600">
+                <p className="mt-2 text-sm sm:text-base text-slate-600 text-center">
                   {item.description}
                 </p>
               </article>

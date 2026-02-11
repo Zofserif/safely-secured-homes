@@ -5,6 +5,7 @@ import { Mail, ShieldCheck, Sparkles } from "lucide-react";
 import NewsletterChecklistModal from "../components/newsletter/NewsletterChecklistModal";
 import Footer from "../components/layout/Footer";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";
+import { getApplyTestimonials } from "../lib/applyTestimonials";
 
 export const metadata: Metadata = {
   title: `Newsletter | ${siteName}`,
@@ -35,7 +36,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function NewsletterPage() {
+export default async function NewsletterPage() {
+  const testimonials = await getApplyTestimonials(3);
+
   return (
     <div className="min-h-screen bg-[#F8F6F2] text-[#1F2937]">
       <div className="relative overflow-hidden">
@@ -125,53 +128,53 @@ export default function NewsletterPage() {
 
           <section className="mt-12 lg:mt-16">
             <div className="grid md:grid-cols-3 gap-6">
-              {[
-                {
-                  quote:
-                    "Short, clear, and actually useful. The checklist helped us fix blind spots in one afternoon.",
-                  name: "Regina D.",
-                  company: "Quezon Province",
-                },
-                {
-                  quote:
-                    "I like that it’s not salesy. Just practical advice and reminders that keep our home safer.",
-                  name: "Paolo M.",
-                  company: "Laguna",
-                },
-                {
-                  quote:
-                    "The Friday emails are quick to read and easy to act on. We finally set up our alerts right.",
-                  name: "Celine A.",
-                  company: "Makati",
-                },
-              ].map((item) => (
+              {testimonials.map((item) => {
+                const fullName = [item.first_name, item.last_name]
+                  .filter(Boolean)
+                  .join(" ")
+                  .trim();
+                const initials = fullName
+                  .split(" ")
+                  .filter(Boolean)
+                  .map((part) => part[0])
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase();
+                return (
                 <div
-                  key={item.name}
+                  key={item.id}
                   className="bg-white/95 border border-[#BEE9E8]/70 rounded-3xl p-6 shadow-lg shadow-[#0E79B2]/10"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="h-14 w-14 rounded-full bg-[#BEE9E8]/60 flex items-center justify-center text-sm font-bold text-[#0E79B2]">
-                      {item.name
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")}
+                    <div className="h-14 w-14 rounded-full bg-[#BEE9E8]/60 flex items-center justify-center text-sm font-bold text-[#0E79B2] overflow-hidden">
+                      {item.profile_image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.profile_image_url}
+                          alt={fullName || "Homeowner"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span>{initials || "H"}</span>
+                      )}
                     </div>
                     <div className="flex-1">
                       <p className="text-base font-semibold text-[#1F2937]">
-                        {item.name}
+                        {fullName || "Homeowner"}
                       </p>
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                         <span className="inline-flex items-center px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-600 font-semibold">
-                          {item.company}
+                          {item.location || "Philippines"}
                         </span>
                       </div>
                     </div>
                   </div>
                   <p className="text-sm text-slate-600 mt-5 leading-relaxed">
-                    “{item.quote}”
+                    “{item.review ?? ""}”
                   </p>
                 </div>
-              ))}
+              );
+              })}
             </div>
           </section>
 

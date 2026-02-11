@@ -24,9 +24,13 @@ import { readNewsletterLead } from "../../lib/newsletterLead";
 export default function WizardForm({
   onComplete,
   mode = "default",
+  submitLabel,
+  submittingLabel,
 }: {
   onComplete: (data: FormData) => void;
   mode?: "default" | "newsletter";
+  submitLabel?: string;
+  submittingLabel?: string;
 }) {
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -689,9 +693,13 @@ export default function WizardForm({
         {isSubmitting ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />{" "}
-            {isNewsletterFlow ? "Sending your answer..." : "Generating Plan..."}
+            {submittingLabel ??
+              (isNewsletterFlow
+                ? "Sending your answer..."
+                : "Generating Plan...")}
           </>
         ) : (
+          submitLabel ??
           (isNewsletterFlow ? "SEND MY ANSWER NOW" : "Generate My FREE PLAN")
         )}
       </button>

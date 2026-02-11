@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/newsletter",
     "/newsletter/thank-you",
     "/schedule-call",
+    "/apply",
   ];
 
   return routes.map((route) => ({

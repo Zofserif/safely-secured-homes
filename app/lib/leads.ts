@@ -5,7 +5,8 @@ const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT;
 
 export async function submitToEmail(
   data: FormData,
-  result: CalculationResult
+  result: CalculationResult,
+  source?: string
 ) {
   const templateParams = {
     to_email: data.email,
@@ -16,6 +17,7 @@ export async function submitToEmail(
     camera_count: result.cameraCount,
     property_type: data.property_type,
     recommendations: result.recommendations.join(", "),
+    lead_source: source ?? "website",
   };
 
   try {
@@ -28,7 +30,8 @@ export async function submitToEmail(
 
 export async function submitToFormspree(
   data: FormData,
-  result: CalculationResult
+  result: CalculationResult,
+  source?: string
 ) {
   const payload = {
     ...data,
@@ -38,6 +41,7 @@ export async function submitToFormspree(
     summary_lead_score: result.leadScore,
     summary_lead_tier: result.leadTier,
     summary_recommendations: result.recommendations.join(", "),
+    lead_source: source ?? "website",
   };
 
   if (!FORMSPREE_ENDPOINT) {
@@ -78,7 +82,8 @@ export async function submitToFormspree(
 
 export async function submitLeadToSupabase(
   data: FormData,
-  result: CalculationResult
+  result: CalculationResult,
+  source?: string
 ) {
   const safetyScores = {
     gate_entry: data.safety_gate_entry,
@@ -111,6 +116,7 @@ export async function submitLeadToSupabase(
           ...data,
           safety_scores: safetyScores,
           safety_score_total: safetyScoreTotal,
+          lead_source: source ?? "website",
         },
       }),
     });

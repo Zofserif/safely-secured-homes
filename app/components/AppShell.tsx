@@ -70,6 +70,7 @@ export default function AppShell({
   );
   const [effectiveFormMode, setEffectiveFormMode] =
     useState<"default" | "newsletter">(formMode);
+  const [formSource, setFormSource] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [reportsRemaining, setReportsRemaining] = useState<number | null>(null);
@@ -262,6 +263,9 @@ export default function AppShell({
   useEffect(() => {
     if (typeof window === "undefined") return;
     const source = new URLSearchParams(window.location.search).get("source");
+    if (source) {
+      setFormSource(source);
+    }
     if (source === "newsletter") {
       setEffectiveFormMode("newsletter");
     }
@@ -276,16 +280,27 @@ export default function AppShell({
     identifyLead(data);
     trackLeadGenerated(data, calcResult);
 
+    const submissionSource =
+      formSource ??
+      (effectiveFormMode === "newsletter" ? "newsletter" : undefined);
+
     const submissions = [
-      submitToFormspree(data, calcResult),
-      submitLeadToSupabase(data, calcResult),
+      submitToFormspree(data, calcResult, submissionSource),
+      submitLeadToSupabase(data, calcResult, submissionSource),
     ];
 
     if (effectiveFormMode !== "newsletter") {
-      submissions.push(submitToEmail(data, calcResult));
+      submissions.push(submitToEmail(data, calcResult, submissionSource));
     }
 
     await Promise.all(submissions);
+
+    if (formSource === "apply") {
+      if (typeof window !== "undefined") {
+        window.location.href = "https://calendly.com/vallarta-troy/30min";
+      }
+      return;
+    }
 
     if (effectiveFormMode === "newsletter") {
       router.push("/schedule-call");
@@ -341,7 +356,16 @@ export default function AppShell({
       )}
 
       {view === "form" && (
-        <WizardForm onComplete={handleFormComplete} mode={effectiveFormMode} />
+        <WizardForm
+          onComplete={handleFormComplete}
+          mode={effectiveFormMode}
+          submitLabel={
+            formSource === "apply" ? "SUBMIT MY APPLICATION" : undefined
+          }
+          submittingLabel={
+            formSource === "apply" ? "Submitting your application..." : undefined
+          }
+        />
       )}
 
       {view === "results" && formData && result && (

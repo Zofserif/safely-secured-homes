@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Footer(){
     return(
   <footer className="bg-[#2D3748] text-[#F7FAFC] py-20 border-t border-slate-700">
@@ -24,6 +26,11 @@ export default function Footer(){
             <li className="hover:text-[#63B3ED] cursor-pointer transition-colors">Security Consultation</li>
             <li className="hover:text-[#63B3ED] cursor-pointer transition-colors">CCTV Installation</li>
             <li className="hover:text-[#63B3ED] cursor-pointer transition-colors">Smart Home Integration</li>
+            <li>
+              <Link href="/blog" className="hover:text-[#63B3ED] transition-colors">
+                Blog
+              </Link>
+            </li>
           </ul>
         </div>
         <div>

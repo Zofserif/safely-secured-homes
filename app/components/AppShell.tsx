@@ -317,6 +317,11 @@ export default function AppShell({
       return;
     }
 
+    if (page === "blog") {
+      router.push("/blog");
+      return;
+    }
+
     const nextView = page as AppView;
     setView(nextView);
 

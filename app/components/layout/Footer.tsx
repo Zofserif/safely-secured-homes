@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Footer(){
@@ -7,9 +8,11 @@ export default function Footer(){
       <div className="grid md:grid-cols-4 gap-12">
         <div className="col-span-1 md:col-span-1">
           <div className="flex items-center gap-2 mb-6">
-            <img
+            <Image
               src="/assets/img/Logo/footer banner white.png"
               alt="Safely Secured Homes Logo"
+              width={220}
+              height={40}
               className="h-10 w-auto"
             />
           </div>

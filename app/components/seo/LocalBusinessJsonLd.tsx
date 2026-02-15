@@ -19,6 +19,22 @@ export default function LocalBusinessJsonLd() {
     description: siteDescription,
     telephone: sitePhone,
     priceRange: "PHP 10000-150000",
+    openingHoursSpecification: [
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: [
+          "https://schema.org/Monday",
+          "https://schema.org/Tuesday",
+          "https://schema.org/Wednesday",
+          "https://schema.org/Thursday",
+          "https://schema.org/Friday",
+          "https://schema.org/Saturday",
+          "https://schema.org/Sunday",
+        ],
+        opens: "08:00",
+        closes: "22:00",
+      },
+    ],
     areaServed: [
       {
         "@type": "AdministrativeArea",

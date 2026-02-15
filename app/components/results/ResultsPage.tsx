@@ -568,12 +568,6 @@ export default function ResultsPage({
                     Key Zones: {data.priority_areas.join(", ")}
                   </li>
                 )}
-                {data.smart_home_interest && (
-                  <li className="flex gap-3 text-slate-700 bg-[#F7FAFC] p-3 rounded-lg">
-                    <span className="text-[#0E79B2] font-bold">•</span>
-                    Smart Home Starter Popular Choice: Smart light and Home Assistant (like Alexa or Google Home) integration for easy control and automation.
-                  </li>
-                )}
                 <li className="flex gap-3 text-slate-700 bg-[#F7FAFC] p-3 rounded-lg">
                   <p>
                     <strong>Our baseline promise:</strong> All key zones points

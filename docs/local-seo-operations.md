@@ -4,6 +4,7 @@
 - Primary category: Security system installer.
 - Secondary categories: CCTV installer, home automation company (if available).
 - Service areas: Metro Manila, Laguna, Quezon, Cavite, Rizal, Batangas.
+- Opening hours: 8:00 AM to 10:00 PM (Philippine time, UTC+8).
 - Business description should match on-site language: practical CCTV and smart-home security for Filipino families.
 - Publish one weekly GBP update: project photo, safety tip, or customer education post.
 

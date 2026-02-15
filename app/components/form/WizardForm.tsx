@@ -2,7 +2,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronLeft, Loader2 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import {
   trackFormStepCompleted,
   trackFormSubmissionStarted,
@@ -21,20 +21,8 @@ import {
 import { FormData } from "../../lib/types";
 import { readNewsletterLead } from "../../lib/newsletterLead";
 
-export default function WizardForm({
-  onComplete,
-  mode = "default",
-  submitLabel,
-  submittingLabel,
-}: {
-  onComplete: (data: FormData) => void;
-  mode?: "default" | "newsletter";
-  submitLabel?: string;
-  submittingLabel?: string;
-}) {
-  const [step, setStep] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
+const createInitialFormData = (mode: "default" | "newsletter"): FormData => {
+  const baseFormData: FormData = {
     property_type: "",
     home_size: "",
     floors: "",
@@ -57,23 +45,41 @@ export default function WizardForm({
     last_name: "",
     email: "",
     mobile: "",
-  });
+  };
+
+  if (mode !== "newsletter") return baseFormData;
+
+  const lead = readNewsletterLead();
+  if (!lead) return baseFormData;
+
+  return {
+    ...baseFormData,
+    first_name: lead.first_name || "",
+    last_name: lead.last_name || "",
+    email: lead.email || "",
+    mobile: lead.mobile || "",
+  };
+};
+
+export default function WizardForm({
+  onComplete,
+  mode = "default",
+  submitLabel,
+  submittingLabel,
+}: {
+  onComplete: (data: FormData) => void;
+  mode?: "default" | "newsletter";
+  submitLabel?: string;
+  submittingLabel?: string;
+}) {
+  const [step, setStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState<FormData>(() =>
+    createInitialFormData(mode),
+  );
 
   const isNewsletterFlow = mode === "newsletter";
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-
-  useEffect(() => {
-    if (!isNewsletterFlow) return;
-    const lead = readNewsletterLead();
-    if (!lead) return;
-    setFormData((prev) => ({
-      ...prev,
-      first_name: prev.first_name || lead.first_name || "",
-      last_name: prev.last_name || lead.last_name || "",
-      email: prev.email || lead.email || "",
-      mobile: prev.mobile || lead.mobile || "",
-    }));
-  }, [isNewsletterFlow]);
 
   const updateField = (field: keyof FormData, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

@@ -5,9 +5,16 @@ import { ogImageUrl, siteName, siteUrl } from "../../lib/site";
 import SuccessStoriesSection from "../../components/success-stories/SuccessStoriesSection";
 
 export const metadata: Metadata = {
-  title: `Thanks for Joining | ${siteName}`,
+  title: "Thanks for Joining",
   description:
     "Thanks for joining the Safely Secured Homes newsletter. Your checklist is on the way.",
+  alternates: {
+    canonical: "/newsletter/thank-you",
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
   openGraph: {
     title: `Thanks for Joining | ${siteName}`,
     description:

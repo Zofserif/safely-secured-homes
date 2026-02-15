@@ -1,4 +1,5 @@
 import { MetadataRoute } from "next";
+import { absoluteUrl } from "./lib/seo";
 import { siteUrl } from "./lib/site";
 
 export default function robots(): MetadataRoute.Robots {
@@ -9,7 +10,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
       },
     ],
-    sitemap: `${siteUrl}/sitemap.xml`,
+    sitemap: absoluteUrl("/sitemap.xml"),
     host: siteUrl,
   };
 }

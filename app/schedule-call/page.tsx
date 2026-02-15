@@ -7,9 +7,16 @@ import SuccessStoriesSection from "../components/success-stories/SuccessStoriesS
 const calendlyUrl = "https://calendly.com/vallarta-troy/30min";
 
 export const metadata: Metadata = {
-  title: `Schedule Your Call | ${siteName}`,
+  title: "Schedule Your Call",
   description:
     "Thanks for sharing your answers. Schedule a quick call with the Safely Secured Homes team.",
+  alternates: {
+    canonical: "/schedule-call",
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
   openGraph: {
     title: `Schedule Your Call | ${siteName}`,
     description:

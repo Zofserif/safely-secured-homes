@@ -1,4 +1,13 @@
-import { siteDescription, siteName, siteUrl } from "../../lib/site";
+import {
+  siteAddressLocality,
+  siteAddressRegion,
+  siteCountryCode,
+  siteDescription,
+  siteName,
+  sitePhone,
+  sitePostalCode,
+  siteUrl,
+} from "../../lib/site";
 
 export default function LocalBusinessJsonLd() {
   const jsonLd = {
@@ -8,18 +17,52 @@ export default function LocalBusinessJsonLd() {
     url: siteUrl,
     image: `${siteUrl}/assets/img/Logo/Black Header.png`,
     description: siteDescription,
-    telephone: "+63 995 995 9229",
-    areaServed: {
-      "@type": "City",
-      name: "Candelaria",
-    },
+    telephone: sitePhone,
+    priceRange: "PHP 10000-150000",
+    areaServed: [
+      {
+        "@type": "AdministrativeArea",
+        name: "Metro Manila",
+      },
+      {
+        "@type": "AdministrativeArea",
+        name: "Laguna",
+      },
+      {
+        "@type": "AdministrativeArea",
+        name: "Quezon",
+      },
+      {
+        "@type": "AdministrativeArea",
+        name: "Cavite",
+      },
+      {
+        "@type": "AdministrativeArea",
+        name: "Rizal",
+      },
+      {
+        "@type": "AdministrativeArea",
+        name: "Batangas",
+      },
+    ],
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Candelaria",
-      addressCountry: "PH",
+      addressLocality: siteAddressLocality,
+      addressRegion: siteAddressRegion,
+      postalCode: sitePostalCode,
+      addressCountry: siteCountryCode,
     },
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        contactType: "customer service",
+        telephone: sitePhone,
+        areaServed: "PH",
+        availableLanguage: ["en", "fil"],
+      },
+    ],
     sameAs: [
-      "https://www.facebook.com/people/Safely-Secured-Homes/61581014067336/",
+      "https://www.facebook.com/profile.php?id=61581014067336",
     ],
   };
 

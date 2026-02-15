@@ -3,9 +3,12 @@ import AppShell from "../components/AppShell";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 
 export const metadata: Metadata = {
-  title: `Your Security Plan Results | ${siteName}`,
+  title: "Your Security Plan Results",
   description:
     "Review your personalized home security plan, recommended setup, and next steps.",
+  alternates: {
+    canonical: "/results",
+  },
   robots: {
     index: false,
     follow: false,

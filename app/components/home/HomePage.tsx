@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @next/next/no-img-element */
 import Image from "next/image";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Award,
@@ -966,6 +967,56 @@ export default function HomePage({
                 <p className="text-sm text-slate-500">{feat.desc}</p>
               </div>
             ))}
+          </div>
+
+          <div className="mt-10 rounded-2xl border border-[#BEE9E8]/70 bg-white p-5">
+            <p className="text-sm font-semibold uppercase tracking-wide text-[#2D3748]">
+              Serving Metro Manila, Laguna, Quezon, Cavite, Rizal, Batangas
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/service-areas/luzon-cctv-installation"
+                className="rounded-full border border-[#0E79B2] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#0E79B2] transition-colors hover:bg-[#0E79B2] hover:text-white"
+              >
+                Luzon Hub
+              </Link>
+              <Link
+                href="/service-areas/metro-manila"
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+              >
+                Metro Manila
+              </Link>
+              <Link
+                href="/service-areas/laguna"
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+              >
+                Laguna
+              </Link>
+              <Link
+                href="/service-areas/quezon"
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+              >
+                Quezon
+              </Link>
+              <Link
+                href="/service-areas/cavite"
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+              >
+                Cavite
+              </Link>
+              <Link
+                href="/service-areas/rizal"
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+              >
+                Rizal
+              </Link>
+              <Link
+                href="/service-areas/batangas"
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+              >
+                Batangas
+              </Link>
+            </div>
           </div>
         </section>
       </div>

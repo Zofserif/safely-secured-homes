@@ -27,6 +27,26 @@ export default function Footer(){
             <li className="hover:text-[#63B3ED] cursor-pointer transition-colors">CCTV Installation</li>
             <li className="hover:text-[#63B3ED] cursor-pointer transition-colors">Smart Home Integration</li>
             <li>
+              <Link href="/service-areas/luzon-cctv-installation" className="hover:text-[#63B3ED] transition-colors">
+                Luzon Service Areas
+              </Link>
+            </li>
+            <li>
+              <Link href="/service-areas/metro-manila" className="hover:text-[#63B3ED] transition-colors">
+                Metro Manila
+              </Link>
+            </li>
+            <li>
+              <Link href="/service-areas/laguna" className="hover:text-[#63B3ED] transition-colors">
+                Laguna
+              </Link>
+            </li>
+            <li>
+              <Link href="/service-areas/quezon" className="hover:text-[#63B3ED] transition-colors">
+                Quezon
+              </Link>
+            </li>
+            <li>
               <Link href="/blog" className="hover:text-[#63B3ED] transition-colors">
                 Blog
               </Link>

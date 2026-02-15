@@ -3,15 +3,19 @@ import Image from "next/image";
 import Link from "next/link";
 import BlogPostCard from "../components/blog/BlogPostCard";
 import Footer from "../components/layout/Footer";
+import BreadcrumbJsonLd from "../components/seo/BreadcrumbJsonLd";
 import { getBlogPosts } from "../lib/blogPosts";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: `Blog | ${siteName}`,
+  title: "Blog",
   description:
     "Practical home security insights, newsletter-style guides, and copy-ready email campaign assets from Safely Secured Homes.",
+  alternates: {
+    canonical: "/blog",
+  },
   openGraph: {
     title: `Blog | ${siteName}`,
     description:
@@ -42,6 +46,12 @@ export default async function BlogPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F6F2] text-[#1F2937]">
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", item: "/" },
+          { name: "Blog", item: "/blog" },
+        ]}
+      />
       <div className="relative overflow-hidden">
         <div className="absolute -top-32 -right-20 h-[420px] w-[420px] rounded-full bg-[#BEE9E8]/45 blur-3xl opacity-80 pointer-events-none"></div>
         <div className="absolute -bottom-40 -left-16 h-[420px] w-[420px] rounded-full bg-[#63B3ED]/15 blur-3xl opacity-80 pointer-events-none"></div>
@@ -100,6 +110,60 @@ export default async function BlogPage() {
               </p>
             </section>
           )}
+
+          <section className="mt-12 rounded-3xl border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
+            <h2 className="text-xl font-bold text-[#1F2937]">
+              Serving Metro Manila, Laguna, Quezon, Cavite, Rizal, Batangas
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+              Looking for practical home security support in Luzon? Explore our
+              local service pages for area-specific guidance.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/service-areas/luzon-cctv-installation"
+                className="rounded-full border border-[#0E79B2] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#0E79B2] transition-colors hover:bg-[#0E79B2] hover:text-white"
+              >
+                Luzon Hub
+              </Link>
+              <Link
+                href="/service-areas/metro-manila"
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+              >
+                Metro Manila
+              </Link>
+              <Link
+                href="/service-areas/laguna"
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+              >
+                Laguna
+              </Link>
+              <Link
+                href="/service-areas/quezon"
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+              >
+                Quezon
+              </Link>
+              <Link
+                href="/service-areas/cavite"
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+              >
+                Cavite
+              </Link>
+              <Link
+                href="/service-areas/rizal"
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+              >
+                Rizal
+              </Link>
+              <Link
+                href="/service-areas/batangas"
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+              >
+                Batangas
+              </Link>
+            </div>
+          </section>
         </main>
       </div>
 

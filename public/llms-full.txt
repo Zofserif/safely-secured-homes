@@ -1,0 +1,45 @@
+# Safely Secured Homes - Full AI Context
+
+Safely Secured Homes helps families in Luzon improve home safety with CCTV installation planning, smart-home security setup, and practical guidance that balances protection and comfort.
+
+## Service Region
+- Luzon
+- Priority cluster: NCR + CALABARZON
+- High-priority service areas: Metro Manila, Laguna, Quezon, Cavite, Rizal, Batangas
+
+## What the Site Covers
+- Home security strategy for families
+- CCTV camera placement and blind-spot reduction
+- Lighting and alerting best practices
+- Weekly security routines and maintenance guidance
+- Consultation-driven implementation paths
+
+## Indexable URLs
+- https://www.safelysecuredhomes.com/
+- https://www.safelysecuredhomes.com/blog
+- https://www.safelysecuredhomes.com/blog/camera-placement-mistakes-families-make
+- https://www.safelysecuredhomes.com/blog/weekly-security-routine-15-minutes
+- https://www.safelysecuredhomes.com/blog/smart-lighting-rules-for-safer-nights
+- https://www.safelysecuredhomes.com/service-areas/luzon-cctv-installation
+- https://www.safelysecuredhomes.com/service-areas/metro-manila
+- https://www.safelysecuredhomes.com/service-areas/laguna
+- https://www.safelysecuredhomes.com/service-areas/quezon
+- https://www.safelysecuredhomes.com/service-areas/cavite
+- https://www.safelysecuredhomes.com/service-areas/rizal
+- https://www.safelysecuredhomes.com/service-areas/batangas
+
+## Feeds and Crawl Aids
+- Sitemap: https://www.safelysecuredhomes.com/sitemap.xml
+- Robots: https://www.safelysecuredhomes.com/robots.txt
+- RSS: https://www.safelysecuredhomes.com/rss.xml
+
+## Business Identity
+- Name: Safely Secured Homes
+- Phone: +63 995 995 9229
+- Locality: Candelaria, Quezon, Philippines
+- Facebook: https://www.facebook.com/profile.php?id=61581014067336
+
+## Content and Tone
+- English-first copy with Filipino/Luzon-local terms
+- Practical, family-oriented guidance
+- Privacy-first and usability-first recommendations

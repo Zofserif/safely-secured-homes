@@ -8,9 +8,16 @@ import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 import { getApplyTestimonials } from "../lib/applyTestimonials";
 
 export const metadata: Metadata = {
-  title: `Newsletter | ${siteName}`,
+  title: "Newsletter",
   description:
     "Sign up for smart home security tips, product updates, and practical guides from Safely Secured Homes.",
+  alternates: {
+    canonical: "/newsletter",
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
   openGraph: {
     title: `Newsletter | ${siteName}`,
     description:

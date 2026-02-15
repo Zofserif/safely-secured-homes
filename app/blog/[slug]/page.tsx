@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import EmailAssetsPanel from "../../components/blog/EmailAssetsPanel";
 import MarkdownContent from "../../components/blog/MarkdownContent";
 import Footer from "../../components/layout/Footer";
+import BlogPostingJsonLd from "../../components/seo/BlogPostingJsonLd";
+import BreadcrumbJsonLd from "../../components/seo/BreadcrumbJsonLd";
 import { getBlogPostBySlug, getBlogSlugs } from "../../lib/blogPosts";
 import { ogImageUrl, siteName, siteUrl } from "../../lib/site";
 
@@ -34,7 +36,7 @@ export async function generateMetadata({
 
   if (!post) {
     return {
-      title: `Article Not Found | ${siteName}`,
+      title: "Article Not Found",
       robots: {
         index: false,
         follow: false,
@@ -43,13 +45,13 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${post.title} | ${siteName}`,
+    title: post.title,
     description: post.excerpt,
     alternates: {
       canonical: `/blog/${post.slug}`,
     },
     openGraph: {
-      title: `${post.title} | ${siteName}`,
+      title: post.title,
       description: post.excerpt,
       url: new URL(`/blog/${post.slug}`, siteUrl),
       siteName,
@@ -64,7 +66,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: `${post.title} | ${siteName}`,
+      title: post.title,
       description: post.excerpt,
       images: [ogImageUrl],
     },
@@ -81,6 +83,19 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <div className="min-h-screen bg-[#F8F6F2] text-[#1F2937]">
+      <BlogPostingJsonLd
+        slug={post.slug}
+        title={post.title}
+        description={post.excerpt}
+        publishedAt={post.publishedAt}
+      />
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", item: "/" },
+          { name: "Blog", item: "/blog" },
+          { name: post.title, item: `/blog/${post.slug}` },
+        ]}
+      />
       <div className="relative overflow-hidden">
         <div className="absolute -top-32 -right-20 h-[420px] w-[420px] rounded-full bg-[#BEE9E8]/45 blur-3xl opacity-80 pointer-events-none"></div>
         <div className="absolute -bottom-40 -left-16 h-[420px] w-[420px] rounded-full bg-[#63B3ED]/15 blur-3xl opacity-80 pointer-events-none"></div>
@@ -133,6 +148,60 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
               <div className="mt-10">
                 <MarkdownContent markdown={post.markdownContent} />
+              </div>
+
+              <div className="mt-10 rounded-2xl border border-[#BEE9E8]/70 bg-[#F8FAFC] p-4 sm:p-5">
+                <p className="text-sm font-semibold uppercase tracking-wide text-[#2D3748]">
+                  Serving Metro Manila, Laguna, Quezon, Cavite, Rizal, Batangas
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Explore location-specific home security guides and service
+                  details for your area in Luzon.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    href="/service-areas/luzon-cctv-installation"
+                    className="rounded-full border border-[#0E79B2] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#0E79B2] transition-colors hover:bg-[#0E79B2] hover:text-white"
+                  >
+                    Luzon Hub
+                  </Link>
+                  <Link
+                    href="/service-areas/metro-manila"
+                    className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+                  >
+                    Metro Manila
+                  </Link>
+                  <Link
+                    href="/service-areas/laguna"
+                    className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+                  >
+                    Laguna
+                  </Link>
+                  <Link
+                    href="/service-areas/quezon"
+                    className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+                  >
+                    Quezon
+                  </Link>
+                  <Link
+                    href="/service-areas/cavite"
+                    className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+                  >
+                    Cavite
+                  </Link>
+                  <Link
+                    href="/service-areas/rizal"
+                    className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+                  >
+                    Rizal
+                  </Link>
+                  <Link
+                    href="/service-areas/batangas"
+                    className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2]"
+                  >
+                    Batangas
+                  </Link>
+                </div>
               </div>
 
               <div className="mt-12">

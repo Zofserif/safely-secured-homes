@@ -29,8 +29,11 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: `Unsubscribe | ${siteName}`,
+  title: "Unsubscribe",
   description: "Manage your Safely Secured Homes newsletter subscription.",
+  alternates: {
+    canonical: "/unsubscribe",
+  },
   robots: {
     index: false,
     follow: false,

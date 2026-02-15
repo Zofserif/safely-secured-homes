@@ -5,9 +5,16 @@ import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 import ApplyTestimonialsSection from "../components/testimonials/ApplyTestimonialsSection";
 
 export const metadata: Metadata = {
-  title: `Apply Now | ${siteName}`,
+  title: "Apply Now",
   description:
     "Start your Safely Secured Homes application and get a personalized security plan.",
+  alternates: {
+    canonical: "/apply",
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
   openGraph: {
     title: `Apply Now | ${siteName}`,
     description:

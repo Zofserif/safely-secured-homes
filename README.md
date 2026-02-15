@@ -34,3 +34,22 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Asset Storage Strategy
+
+This project uses a hybrid media strategy:
+
+- Keep small, app-owned static assets in `public/assets` and track them in Git.
+- Store dynamic media (email media and user uploads) in Supabase Storage.
+- Keep `blog_posts` text-only (`slug`, `title`, `excerpt`, `published_at`, `content_markdown`).
+
+### Supabase setup
+
+1. Run `supabase/blog_posts.sql` to create/update the `blog_posts` schema.
+2. Run `supabase/storage_assets.sql` to create storage buckets + policies.
+3. Optional: run `supabase/blog_posts_seed.sql` for sample content.
+
+### Optional environment variable
+
+- `NEXT_PUBLIC_BRAND_FOOTER_LOGO_URL`: absolute or root-relative URL for the email footer logo.
+  If omitted, the app uses `/assets/img/Logo/footer banner white.png` resolved against `siteUrl`.

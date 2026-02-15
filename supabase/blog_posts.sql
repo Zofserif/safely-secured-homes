@@ -38,7 +38,11 @@ alter table public.blog_posts drop column if exists tags;
 alter table public.blog_posts drop column if exists cover_image;
 alter table public.blog_posts drop column if exists email_assets;
 alter table public.blog_posts drop column if exists sections;
+alter table public.blog_posts drop column if exists asset_url;
+alter table public.blog_posts drop column if exists asset_type;
+alter table public.blog_posts drop column if exists alt_text;
 alter table public.blog_posts add column if not exists content_markdown text not null default '';
+alter table public.blog_posts drop constraint if exists blog_posts_asset_type_check;
 
 -- Example row shape:
 -- insert into public.blog_posts (

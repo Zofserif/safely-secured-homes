@@ -42,16 +42,39 @@ const BLOG_POST_SELECT_WITH_MARKDOWN =
   "slug,title,excerpt,published_at,content_markdown";
 const BLOG_POST_SELECT_FALLBACK = "slug,title,excerpt,published_at";
 const BLOG_TABLE = "blog_posts";
-const FOOTER_LOGO_URL =
-  "https://raw.githubusercontent.com/Zofserif/SafelySecuredHomesAssets/refs/heads/main/Safely%20Secured%20Homes%20Logo%20Footer.png";
+const DEFAULT_FOOTER_LOGO_PATH = "/assets/img/Logo/footer banner white.png";
+
+const toAbsoluteUrl = (value: string) => {
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+  if (value.startsWith("/")) {
+    return new URL(value, siteUrl).toString();
+  }
+  return "";
+};
+
+const FOOTER_LOGO_URL = (() => {
+  const envLogoUrl = process.env.NEXT_PUBLIC_BRAND_FOOTER_LOGO_URL?.trim();
+  if (envLogoUrl) {
+    const resolvedEnvLogoUrl = toAbsoluteUrl(envLogoUrl);
+    if (resolvedEnvLogoUrl) return resolvedEnvLogoUrl;
+  }
+  return new URL(DEFAULT_FOOTER_LOGO_PATH, siteUrl).toString();
+})();
 
 const isMissingTableError = (error: SupabaseError | null | undefined) =>
   error?.code === "PGRST205";
 
-const isMissingColumnError = (error: SupabaseError | null | undefined) =>
-  error?.code === "PGRST204" ||
-  error?.code === "42703" ||
-  Boolean(error?.message?.includes("content_markdown"));
+const isMissingColumnError = (
+  error: SupabaseError | null | undefined,
+  columns: string[],
+) => {
+  if (!error) return false;
+  if (error.code === "PGRST204" || error.code === "42703") return true;
+  const message = error.message?.toLowerCase() ?? "";
+  return columns.some((column) => message.includes(column.toLowerCase()));
+};
 
 const parseMarkdownContent = (value: unknown) =>
   typeof value === "string" ? value.trim() : "";
@@ -279,7 +302,7 @@ const buildBlogHtmlBody = ({
                   target="_blank"
                   ><img
                     alt="Safely Secured Homes Logo"
-                    src="${FOOTER_LOGO_URL}"
+                    src="${escapeHtml(FOOTER_LOGO_URL)}"
                     height="70"
                     style="height:70px;outline:none;border:none;text-decoration:none;vertical-align:middle;display:inline-block;max-width:100%"
                 /></a>
@@ -420,7 +443,7 @@ export const getBlogPosts = async (): Promise<BlogPost[]> => {
   let data = primaryResult.data as BlogPostRow[] | null;
   let error = primaryResult.error as SupabaseError | null;
 
-  if (error && isMissingColumnError(error)) {
+  if (error && isMissingColumnError(error, ["content_markdown"])) {
     const fallbackResult = await supabase
       .from(BLOG_TABLE)
       .select(BLOG_POST_SELECT_FALLBACK)
@@ -462,7 +485,7 @@ export const getBlogPostBySlug = async (
   let data = primaryResult.data as BlogPostRow | null;
   let error = primaryResult.error as SupabaseError | null;
 
-  if (error && isMissingColumnError(error)) {
+  if (error && isMissingColumnError(error, ["content_markdown"])) {
     const fallbackResult = await supabase
       .from(BLOG_TABLE)
       .select(BLOG_POST_SELECT_FALLBACK)

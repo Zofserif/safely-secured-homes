@@ -380,7 +380,7 @@ export default function HomePage({
             <div className="absolute inset-0 bg-linear-to-tr from-[#2D3748]/10 to-transparent rounded-4xl transform rotate-3 lg:rotate-6 scale-105 z-0"></div>
             <div className="relative rounded-4xl overflow-hidden shadow-2xl border-4 border-white z-10 h-40 sm:h-52 lg:h-[600px]">
               <Image
-                src="https://www.safelysecuredhomes.com/pexels-vlada-karpovich-4609033.jpg"
+                src="/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg"
                 alt="Happy Family in Secure Home"
                 fill
                 priority

@@ -52,4 +52,12 @@ This project uses a hybrid media strategy:
 ### Optional environment variable
 
 - `NEXT_PUBLIC_BRAND_FOOTER_LOGO_URL`: absolute or root-relative URL for the email footer logo.
-  If omitted, the app uses `/assets/img/Logo/footer banner white.png` resolved against `siteUrl`.
+  If omitted, the app uses `https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/brand-assets/sssh-banner-logo.png`.
+
+### Campaign Unsubscribe Link
+
+- Generated blog campaign HTML includes:
+  `https://safelysecuredhomes.com/unsubscribe?email={{email}}`
+- Replace `{{email}}` with your provider's merge syntax if needed.
+- If the merge value is missing/invalid, `/unsubscribe` shows a manual email fallback form.
+- If you only use anon RLS policies, run `supabase/newsletter_unsubscribe_rpc.sql` so unsubscribe can still remove `newsletter_subscribers` rows via RPC.

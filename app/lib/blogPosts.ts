@@ -42,7 +42,11 @@ const BLOG_POST_SELECT_WITH_MARKDOWN =
   "slug,title,excerpt,published_at,content_markdown";
 const BLOG_POST_SELECT_FALLBACK = "slug,title,excerpt,published_at";
 const BLOG_TABLE = "blog_posts";
-const DEFAULT_FOOTER_LOGO_PATH = "/assets/img/Logo/footer banner white.png";
+const EMAIL_LOGO_TARGET_URL = "https://safelysecuredhomes.com";
+const EMAIL_UNSUBSCRIBE_URL_TEMPLATE =
+  "https://safelysecuredhomes.com/unsubscribe?email={{email}}";
+const DEFAULT_FOOTER_LOGO_PATH =
+  "https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/brand-assets/sssh-banner-logo.png";
 
 const toAbsoluteUrl = (value: string) => {
   if (value.startsWith("http://") || value.startsWith("https://")) {
@@ -295,16 +299,18 @@ const buildBlogHtmlBody = ({
               </h2>
               ${excerptHtml}
               ${contentHtml}
-              <div style="padding:0px 24px 0px 24px;text-align:center">
+              <div
+                style="padding:20px 24px 8px 24px;text-align:center;border-top:1px solid #E5E7EB;margin-top:20px"
+              >
                 <a
-                  href="${escapeHtml(siteUrl)}"
+                  href="${escapeHtml(EMAIL_LOGO_TARGET_URL)}"
                   style="text-decoration:none"
                   target="_blank"
                   ><img
                     alt="Safely Secured Homes Logo"
                     src="${escapeHtml(FOOTER_LOGO_URL)}"
-                    height="70"
-                    style="height:70px;outline:none;border:none;text-decoration:none;vertical-align:middle;display:inline-block;max-width:100%"
+                    width="220"
+                    style="width:220px;max-width:100%;height:auto;outline:none;border:none;text-decoration:none;vertical-align:middle;display:inline-block"
                 /></a>
               </div>
               <div
@@ -315,7 +321,10 @@ const buildBlogHtmlBody = ({
               <div
                 style="font-size:12px;text-align:center;padding:0px 24px 0px 24px"
               >
-                <a href="mailto:vallarta.troy@gmail.com" style="color:#262626">
+                <a
+                  href="${escapeHtml(EMAIL_UNSUBSCRIBE_URL_TEMPLATE)}"
+                  style="color:#262626"
+                >
                   Unsubscribe
                 </a>
               </div>

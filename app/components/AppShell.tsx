@@ -343,7 +343,15 @@ export default function AppShell({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ payload }),
+        body: JSON.stringify({
+          payload,
+          contact: {
+            first_name: data.first_name,
+            last_name: data.last_name,
+            email: data.email,
+            mobile: data.mobile,
+          },
+        }),
       });
 
       if (!response.ok) {

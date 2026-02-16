@@ -6,11 +6,27 @@ create extension if not exists pgcrypto;
 create table if not exists public.results_links (
   id uuid primary key default gen_random_uuid(),
   link_key text not null unique,
+  first_name text,
+  last_name text,
+  email text,
+  mobile text,
   payload jsonb not null,
   created_at timestamptz not null default now(),
   expires_at timestamptz,
   revoked_at timestamptz
 );
+
+alter table public.results_links
+  add column if not exists first_name text;
+
+alter table public.results_links
+  add column if not exists last_name text;
+
+alter table public.results_links
+  add column if not exists email text;
+
+alter table public.results_links
+  add column if not exists mobile text;
 
 alter table public.results_links
   drop constraint if exists results_links_key_format_check;
@@ -24,6 +40,9 @@ create index if not exists results_links_created_at_idx
 
 create index if not exists results_links_expires_at_idx
   on public.results_links (expires_at);
+
+create index if not exists results_links_email_idx
+  on public.results_links (email);
 
 alter table public.results_links enable row level security;
 

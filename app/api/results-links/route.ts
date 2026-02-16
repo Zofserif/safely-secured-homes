@@ -30,6 +30,12 @@ const isExpired = (value: string | null): boolean => {
   return timestamp < Date.now();
 };
 
+const normalizeText = (value: unknown): string | null => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
 export async function POST(req: Request) {
   if (!supabase) {
     console.warn("Supabase env vars missing; skipping results-link insert.");
@@ -50,6 +56,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid share payload" }, { status: 400 });
   }
 
+  const contactRaw =
+    typeof body?.contact === "object" && body.contact !== null ? body.contact : {};
+  const firstName = normalizeText((contactRaw as { first_name?: unknown }).first_name);
+  const lastName = normalizeText((contactRaw as { last_name?: unknown }).last_name);
+  const emailRaw = normalizeText((contactRaw as { email?: unknown }).email);
+  const mobile =
+    normalizeText((contactRaw as { mobile?: unknown }).mobile) ??
+    normalizeText((contactRaw as { phone_number?: unknown }).phone_number) ??
+    normalizeText((contactRaw as { phone?: unknown }).phone);
+  const email = emailRaw ? emailRaw.toLowerCase() : null;
+
   const expiresAt = new Date(
     Date.now() + LINK_EXPIRY_DAYS * 24 * 60 * 60 * 1000
   ).toISOString();
@@ -59,6 +76,10 @@ export async function POST(req: Request) {
 
     const { error } = await supabase.from("results_links").insert({
       link_key: linkKey,
+      first_name: firstName,
+      last_name: lastName,
+      email,
+      mobile,
       payload,
       expires_at: expiresAt,
     });

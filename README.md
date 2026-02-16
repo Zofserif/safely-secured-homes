@@ -49,6 +49,7 @@ This project uses a hybrid media strategy:
 2. Run `supabase/storage_assets.sql` to create storage buckets + policies.
 3. Optional: run `supabase/blog_posts_seed.sql` for sample content.
 4. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
+   This table also stores `first_name`, `last_name`, `email`, and `mobile` for each generated link.
 
 ### Optional environment variable
 

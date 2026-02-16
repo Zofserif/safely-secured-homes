@@ -22,6 +22,8 @@ import {
   trackPageView,
   type AppView,
 } from "../lib/analytics";
+import { parseResultsToken } from "../lib/resultsLink";
+import { createShareableResultsPayload } from "../lib/resultsShare";
 
 declare global {
   interface Window {
@@ -103,19 +105,79 @@ export default function AppShell({
   useEffect(() => {
     if (!storedLeadLoaded) return;
 
-    if (storedLead) {
-      setFormData(storedLead.formData);
-      setResult(storedLead.result);
-      if (initialView === "results") {
-        setView("results");
+    if (initialView !== "results") {
+      if (storedLead) {
+        setFormData(storedLead.formData);
+        setResult(storedLead.result);
       }
       return;
     }
 
-    if (initialView === "results") {
+    let isMounted = true;
+    const showResults = (data: FormData, calculated?: CalculationResult) => {
+      if (!isMounted) return;
+      setFormData(data);
+      setResult(calculated ?? estimateCameraPlan(data));
+      setView("results");
+    };
+
+    const redirectToForm = () => {
+      if (!isMounted) return;
       setView("form");
       router.replace("/form");
-    }
+    };
+
+    const resolveResults = async () => {
+      const key =
+        typeof window === "undefined"
+          ? ""
+          : new URLSearchParams(window.location.search).get("r")?.trim() ?? "";
+
+      if (!key) {
+        if (storedLead) {
+          showResults(storedLead.formData, storedLead.result);
+          return;
+        }
+        redirectToForm();
+        return;
+      }
+
+      // Backward compatibility for already-issued URL payload links.
+      const legacyTokenData = parseResultsToken(key);
+      if (legacyTokenData) {
+        showResults(legacyTokenData);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/results-links?key=${encodeURIComponent(key)}`,
+          { cache: "no-store" }
+        );
+        if (!response.ok) {
+          redirectToForm();
+          return;
+        }
+
+        const data = (await response.json().catch(() => null)) as
+          | { formData?: FormData }
+          | null;
+        if (!data?.formData) {
+          redirectToForm();
+          return;
+        }
+
+        showResults(data.formData);
+      } catch {
+        redirectToForm();
+      }
+    };
+
+    void resolveResults();
+
+    return () => {
+      isMounted = false;
+    };
   }, [initialView, router, storedLead, storedLeadLoaded]);
 
   useEffect(() => {
@@ -271,6 +333,38 @@ export default function AppShell({
     }
   }, []);
 
+  const createDbResultsShareKey = async (data: FormData): Promise<string | null> => {
+    const payload = createShareableResultsPayload(data);
+    if (!payload) return null;
+
+    try {
+      const response = await fetch("/api/results-links", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ payload }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({
+          error: "Unknown error",
+        }));
+        console.error("Failed to create DB results link:", errorData);
+        return null;
+      }
+
+      const responseData = (await response.json().catch(() => null)) as
+        | { key?: string }
+        | null;
+      const key = typeof responseData?.key === "string" ? responseData.key : "";
+      return key.trim() || null;
+    } catch (error) {
+      console.error("Failed to create DB results link:", error);
+      return null;
+    }
+  };
+
   const handleFormComplete = async (data: FormData) => {
     const calcResult = estimateCameraPlan(data);
     setFormData(data);
@@ -307,8 +401,14 @@ export default function AppShell({
       return;
     }
 
+    let resultsPath = "/results";
+    const shareKey = await createDbResultsShareKey(data);
+    if (shareKey) {
+      resultsPath = `/results?r=${encodeURIComponent(shareKey)}`;
+    }
+
     setView("results");
-    router.push("/results");
+    router.push(resultsPath);
   };
 
   const handleNavigation = (page: string) => {

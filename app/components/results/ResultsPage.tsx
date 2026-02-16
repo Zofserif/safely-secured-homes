@@ -74,6 +74,7 @@ export default function ResultsPage({
   const [activeBlueprintId, setActiveBlueprintId] = useState<string | null>(
     null,
   );
+  const preparedForName = `${data.first_name} ${data.last_name}`.trim();
   const { safetyLevel, priority, emergency, panatagRating } = getResultsSummary(
     data,
     result,
@@ -402,7 +403,9 @@ export default function ResultsPage({
               Your Personalized Security Plan
             </h1>
             <p className="opacity-90">
-              Prepared for {data.first_name} {data.last_name}
+              {preparedForName
+                ? `Prepared for ${preparedForName}`
+                : "Prepared for your household"}
             </p>
           </div>
 

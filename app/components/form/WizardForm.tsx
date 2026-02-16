@@ -483,21 +483,34 @@ export default function WizardForm({
       <p className="text-center text-sm text-slate-500 mb-4">
         Select all that apply
       </p>
-      <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto">
-        {PRIORITY_AREAS.map((area) => (
-          <label
-            key={area}
-            className={`flex items-center p-4 border rounded-xl cursor-pointer ${formData.priority_areas.includes(area) ? "border-[#0E79B2] bg-[#0E79B2]/5" : "border-slate-200"}`}
-          >
-            <input
-              type="checkbox"
-              className="w-5 h-5 text-[#0E79B2] rounded mr-3"
-              checked={formData.priority_areas.includes(area)}
-              onChange={() => toggleArrayField("priority_areas", area)}
-            />
-            {area}
-          </label>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {PRIORITY_AREAS.map((area) => {
+          const isSelected = formData.priority_areas.includes(area);
+          return (
+            <label
+              key={area}
+              className={`group flex items-start gap-3 rounded-xl border p-3 transition-all cursor-pointer ${isSelected ? "border-[#0E79B2] bg-[#0E79B2]/10 shadow-sm" : "border-slate-200 hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+            >
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => toggleArrayField("priority_areas", area)}
+                className="sr-only"
+              />
+              <span
+                className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-all ${isSelected ? "border-[#0E79B2] bg-[#0E79B2] text-white" : "border-slate-300 bg-white text-transparent"}`}
+                aria-hidden="true"
+              >
+                <Check className="h-4 w-4" />
+              </span>
+              <span
+                className={`text-sm font-medium leading-snug ${isSelected ? "text-[#0E79B2]" : "text-slate-700 group-hover:text-slate-900"}`}
+              >
+                {area}
+              </span>
+            </label>
+          );
+        })}
       </div>
       <button
         onClick={nextStep}

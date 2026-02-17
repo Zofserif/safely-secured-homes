@@ -19,6 +19,11 @@ const supabase =
     ? createClient(supabaseUrl, serviceRoleKey)
     : null;
 
+type SupabaseError = {
+  code?: string | null;
+  message?: string;
+};
+
 const shuffle = <T,>(items: T[]) => {
   const copy = [...items];
   for (let i = copy.length - 1; i > 0; i -= 1) {
@@ -28,6 +33,12 @@ const shuffle = <T,>(items: T[]) => {
   return copy;
 };
 
+const isMissingPublishedColumnError = (
+  error: SupabaseError | null | undefined
+) =>
+  error?.code === "42703" &&
+  String(error?.message ?? "").includes("is_published");
+
 export async function getApplyTestimonials(limit = 3): Promise<ApplyTestimonial[]> {
   if (!supabase) {
     console.warn("Supabase env vars missing; skipping apply testimonials fetch.");
@@ -35,14 +46,29 @@ export async function getApplyTestimonials(limit = 3): Promise<ApplyTestimonial[
   }
 
   const fetchLimit = Math.max(limit * 5, 15);
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("testimonials")
     .select(
       "id,first_name,last_name,location,rating,review,profile_image_url,created_at"
     )
+    .eq("is_published", true)
     .order("rating", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(fetchLimit);
+
+  if (error && isMissingPublishedColumnError(error)) {
+    console.warn(
+      'Supabase column "testimonials.is_published" not found yet; falling back to legacy query.'
+    );
+    ({ data, error } = await supabase
+      .from("testimonials")
+      .select(
+        "id,first_name,last_name,location,rating,review,profile_image_url,created_at"
+      )
+      .order("rating", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(fetchLimit));
+  }
 
   if (error) {
     console.error("Failed to fetch apply testimonials:", error);

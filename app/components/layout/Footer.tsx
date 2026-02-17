@@ -90,6 +90,11 @@ export default function Footer(){
         <div>
           <h3 className="font-bold text-white mb-6 tracking-wide text-sm uppercase">Legal</h3>
           <ul className="space-y-4 text-sm font-medium">
+            <li>
+              <Link href="/rate" className="hover:text-[#63B3ED] transition-colors">
+                Share Feedback
+              </Link>
+            </li>
             <li className="hover:text-[#63B3ED] cursor-pointer transition-colors">Privacy Policy</li>
             <li className="hover:text-[#63B3ED] cursor-pointer transition-colors">Terms of Service</li>
           </ul>

@@ -3,6 +3,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 import ApplyTestimonialsSection from "../components/testimonials/ApplyTestimonialsSection";
+import {
+  FunnelPageMountTracker,
+  FunnelTrackedLink,
+} from "../components/analytics/FunnelTrackingClient";
 
 export const metadata: Metadata = {
   title: "Apply Now",
@@ -76,6 +80,10 @@ export default function ApplyPage() {
 
   return (
     <div className="min-h-screen bg-[#F7FAFC] text-[#2D3748]">
+      <FunnelPageMountTracker
+        page="apply"
+        context={{ flow_source: "apply", flow_mode: "default" }}
+      />
       <header className="container mx-auto px-6 pt-8 pb-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
           <Image
@@ -136,12 +144,16 @@ export default function ApplyPage() {
             </div>
 
             <div className="mt-4 sm:mt-6 flex justify-center">
-              <Link
+              <FunnelTrackedLink
                 href="/form?source=apply"
+                page="apply"
+                context={{ flow_source: "apply", flow_mode: "default" }}
+                ctaId="start_my_journey"
+                ctaLocation="hero_primary"
                 className="inline-flex items-center justify-center bg-[#0E79B2] hover:bg-[#0b5e8b] text-white px-10 py-3 rounded-full font-bold shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5"
               >
                 START MY JOURNEY
-              </Link>
+              </FunnelTrackedLink>
             </div>
           </div>
         </section>
@@ -195,12 +207,16 @@ export default function ApplyPage() {
         </section>
 
         <div className="mt-8 flex justify-center">
-          <Link
+          <FunnelTrackedLink
             href="/form?source=apply"
+            page="apply"
+            context={{ flow_source: "apply", flow_mode: "default" }}
+            ctaId="start_my_journey"
+            ctaLocation="benefits_footer"
             className="inline-flex items-center justify-center bg-[#0E79B2] hover:bg-[#0b5e8b] text-white px-10 py-3 rounded-full font-bold shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5"
           >
             START MY JOURNEY
-          </Link>
+          </FunnelTrackedLink>
         </div>
       </main>
     </div>

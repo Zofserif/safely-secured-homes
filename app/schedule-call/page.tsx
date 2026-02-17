@@ -3,6 +3,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 import SuccessStoriesSection from "../components/success-stories/SuccessStoriesSection";
+import {
+  FunnelPageMountTracker,
+  FunnelTrackedAnchor,
+} from "../components/analytics/FunnelTrackingClient";
 
 const calendlyUrl = "https://calendly.com/vallarta-troy/30min";
 
@@ -45,6 +49,11 @@ export const metadata: Metadata = {
 export default function ScheduleCallPage() {
   return (
     <div className="min-h-screen bg-[#F7FAFC] text-[#2D3748]">
+      <FunnelPageMountTracker
+        page="schedule_call"
+        outcome="schedule_call"
+        context={{ flow_source: "newsletter", flow_mode: "newsletter" }}
+      />
       <header className="container mx-auto px-6 pt-8 pb-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
           <Image
@@ -85,14 +94,18 @@ export default function ScheduleCallPage() {
         </div>
 
         <div className="mt-8 flex justify-center">
-          <a
+          <FunnelTrackedAnchor
             href={calendlyUrl}
+            page="schedule_call"
+            context={{ flow_source: "newsletter", flow_mode: "newsletter" }}
+            ctaId="schedule_my_call"
+            ctaLocation="hero_primary"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center bg-[#0E79B2] hover:bg-[#0b5e8b] text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5"
           >
             SCHEDULE MY CALL
-          </a>
+          </FunnelTrackedAnchor>
         </div>
 
         <div className="mt-10 lg:mt-12 max-w-6xl mx-auto">

@@ -38,6 +38,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Results() {
-  return <AppShell initialView="results" />;
+export default function Results({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
+  const source =
+    typeof searchParams?.source === "string" ? searchParams.source : undefined;
+  const resultsKey =
+    typeof searchParams?.r === "string" ? searchParams.r : undefined;
+  const formMode = source?.toLowerCase() === "newsletter" ? "newsletter" : "default";
+
+  return (
+    <AppShell
+      initialView="results"
+      formMode={formMode}
+      source={source}
+      resultsKey={resultsKey}
+    />
+  );
 }

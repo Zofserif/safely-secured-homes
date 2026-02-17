@@ -6,6 +6,7 @@ import { useState, type CSSProperties } from "react";
 import {
   trackFormStepCompleted,
   trackFormSubmissionStarted,
+  type FunnelContext,
 } from "../../lib/analytics";
 import {
   BUDGET_BAND_OPTIONS,
@@ -64,11 +65,13 @@ const createInitialFormData = (mode: "default" | "newsletter"): FormData => {
 export default function WizardForm({
   onComplete,
   mode = "default",
+  analyticsContext,
   submitLabel,
   submittingLabel,
 }: {
   onComplete: (data: FormData) => void;
   mode?: "default" | "newsletter";
+  analyticsContext?: FunnelContext;
   submitLabel?: string;
   submittingLabel?: string;
 }) {
@@ -102,7 +105,7 @@ export default function WizardForm({
   };
 
   const nextStep = () => {
-    trackFormStepCompleted(step);
+    trackFormStepCompleted(step, analyticsContext);
     setStep((s) => s + 1);
   };
 
@@ -127,7 +130,8 @@ export default function WizardForm({
   const handleFinalSubmit = () => {
     if (validateContactInfo()) {
       setIsSubmitting(true);
-      trackFormSubmissionStarted(formData);
+      trackFormStepCompleted(step, analyticsContext, { legacy: false });
+      trackFormSubmissionStarted(formData, analyticsContext);
       onComplete(formData);
     }
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { initPostHog } from "../posthog";
 
@@ -17,10 +17,12 @@ import {
   submitToFormspree,
 } from "../lib/leads";
 import {
-  identifyLead,
+  buildFunnelContext,
   trackLeadGenerated,
+  trackFunnelOutcomeViewed,
   trackPageView,
   type AppView,
+  type FunnelContext,
 } from "../lib/analytics";
 import { parseResultsToken } from "../lib/resultsLink";
 import { createShareableResultsPayload } from "../lib/resultsShare";
@@ -38,6 +40,11 @@ type StoredLead = {
 };
 
 const STORAGE_KEY = "ssh_lead_state";
+
+const readSearchParam = (key: string) => {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get(key)?.trim() ?? "";
+};
 
 const readStoredLead = () => {
   if (typeof window === "undefined") return null;
@@ -60,19 +67,21 @@ const writeStoredLead = (formData: FormData, result: CalculationResult) => {
 export default function AppShell({
   initialView = "home",
   formMode = "default",
+  source,
+  resultsKey,
 }: {
   initialView?: AppView;
   formMode?: "default" | "newsletter";
+  source?: string;
+  resultsKey?: string;
 }) {
   const router = useRouter();
   const [storedLead, setStoredLead] = useState<StoredLead | null>(null);
   const [storedLeadLoaded, setStoredLeadLoaded] = useState(false);
-  const [view, setView] = useState<AppView>(() =>
-    initialView === "results" ? "form" : initialView
+  const [view, setView] = useState<AppView>(initialView);
+  const [hasResolvedResultsView, setHasResolvedResultsView] = useState(
+    initialView !== "results"
   );
-  const [effectiveFormMode, setEffectiveFormMode] =
-    useState<"default" | "newsletter">(formMode);
-  const [formSource, setFormSource] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [reportsRemaining, setReportsRemaining] = useState<number | null>(null);
@@ -87,14 +96,46 @@ export default function AppShell({
   const [debugReportsError, setDebugReportsError] = useState<
     boolean | undefined
   >(undefined);
+  const [sourceParam, setSourceParam] = useState(() => source?.trim() ?? "");
+  const [resolvedResultsKey, setResolvedResultsKey] = useState(
+    () => resultsKey?.trim() ?? ""
+  );
+  const sourceForSubmission =
+    sourceParam.toLowerCase() === "apply" || sourceParam.toLowerCase() === "newsletter"
+      ? sourceParam.toLowerCase()
+      : sourceParam;
+  const formSource = sourceForSubmission || null;
+  const effectiveFormMode: "default" | "newsletter" =
+    formMode === "newsletter" || sourceParam.toLowerCase() === "newsletter"
+      ? "newsletter"
+      : "default";
+  const analyticsContext = useMemo<FunnelContext>(
+    () => buildFunnelContext(formSource, effectiveFormMode),
+    [effectiveFormMode, formSource]
+  );
+  const shouldTrackView = initialView !== "results" || hasResolvedResultsView;
 
   useEffect(() => {
     initPostHog();
   }, []);
 
   useEffect(() => {
-    trackPageView(view);
-  }, [view]);
+    const sourceFromUrl = readSearchParam("source");
+    const resultsKeyFromUrl = readSearchParam("r");
+
+    setSourceParam(sourceFromUrl || source?.trim() || "");
+    setResolvedResultsKey(resultsKeyFromUrl || resultsKey?.trim() || "");
+  }, [resultsKey, source]);
+
+  useEffect(() => {
+    if (!shouldTrackView) return;
+
+    trackPageView(view, analyticsContext);
+
+    if (view === "results") {
+      trackFunnelOutcomeViewed("results", "results", analyticsContext);
+    }
+  }, [analyticsContext, shouldTrackView, view]);
 
   useEffect(() => {
     const lead = readStoredLead();
@@ -119,20 +160,18 @@ export default function AppShell({
       setFormData(data);
       setResult(calculated ?? estimateCameraPlan(data));
       setView("results");
+      setHasResolvedResultsView(true);
     };
 
     const redirectToForm = () => {
       if (!isMounted) return;
       setView("form");
+      setHasResolvedResultsView(true);
       router.replace("/form");
     };
 
     const resolveResults = async () => {
-      const key =
-        typeof window === "undefined"
-          ? ""
-          : new URLSearchParams(window.location.search).get("r")?.trim() ?? "";
-
+      const key = resolvedResultsKey;
       if (!key) {
         if (storedLead) {
           showResults(storedLead.formData, storedLead.result);
@@ -178,7 +217,7 @@ export default function AppShell({
     return () => {
       isMounted = false;
     };
-  }, [initialView, router, storedLead, storedLeadLoaded]);
+  }, [initialView, resolvedResultsKey, router, storedLead, storedLeadLoaded]);
 
   useEffect(() => {
     let isMounted = true;
@@ -318,21 +357,6 @@ export default function AppShell({
     };
   }, [router]);
 
-  useEffect(() => {
-    setEffectiveFormMode(formMode);
-  }, [formMode]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const source = new URLSearchParams(window.location.search).get("source");
-    if (source) {
-      setFormSource(source);
-    }
-    if (source === "newsletter") {
-      setEffectiveFormMode("newsletter");
-    }
-  }, []);
-
   const createDbResultsShareKey = async (data: FormData): Promise<string | null> => {
     const payload = createShareableResultsPayload(data);
     if (!payload) return null;
@@ -379,8 +403,7 @@ export default function AppShell({
     setResult(calcResult);
     writeStoredLead(data, calcResult);
 
-    identifyLead(data);
-    trackLeadGenerated(data, calcResult);
+    trackLeadGenerated(data, calcResult, analyticsContext);
 
     const submissionSource =
       formSource ??
@@ -407,13 +430,18 @@ export default function AppShell({
       return;
     }
 
-    let resultsPath = "/results";
+    const resultsParams = new URLSearchParams();
     const shareKey = await createDbResultsShareKey(data);
     if (shareKey) {
-      resultsPath = `/results?r=${encodeURIComponent(shareKey)}`;
+      resultsParams.set("r", shareKey);
     }
+    if (formSource) {
+      resultsParams.set("source", formSource);
+    }
+    const resultsPath = resultsParams.toString()
+      ? `/results?${resultsParams.toString()}`
+      : "/results";
 
-    setView("results");
     router.push(resultsPath);
   };
 
@@ -429,7 +457,6 @@ export default function AppShell({
     }
 
     const nextView = page as AppView;
-    setView(nextView);
 
     if (nextView === "home") {
       router.push("/");
@@ -470,6 +497,7 @@ export default function AppShell({
         <WizardForm
           onComplete={handleFormComplete}
           mode={effectiveFormMode}
+          analyticsContext={analyticsContext}
           submitLabel={
             formSource === "apply" ? "SUBMIT MY APPLICATION" : undefined
           }

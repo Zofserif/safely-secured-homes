@@ -46,5 +46,5 @@ export default function FormPage({
   const source =
     typeof searchParams?.source === "string" ? searchParams.source : undefined;
   const formMode = source === "newsletter" ? "newsletter" : "default";
-  return <AppShell initialView="form" formMode={formMode} />;
+  return <AppShell initialView="form" formMode={formMode} source={source} />;
 }

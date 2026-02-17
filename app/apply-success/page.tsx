@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import SuccessStoriesSection from "../components/success-stories/SuccessStoriesSection";
+import { FunnelPageMountTracker } from "../components/analytics/FunnelTrackingClient";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 
 export const metadata: Metadata = {
@@ -43,6 +44,11 @@ export const metadata: Metadata = {
 export default function ApplySuccessPage() {
   return (
     <div className="min-h-screen bg-[#F7FAFC] text-[#2D3748]">
+      <FunnelPageMountTracker
+        page="apply_success"
+        outcome="apply_success"
+        context={{ flow_source: "apply", flow_mode: "default" }}
+      />
       <header className="container mx-auto px-6 pt-8 pb-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
           <Image

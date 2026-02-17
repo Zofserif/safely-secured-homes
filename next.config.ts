@@ -3,7 +3,16 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
-    domains: ["www.safelysecuredhomes.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "www.safelysecuredhomes.com",
+      },
+      {
+        protocol: "https",
+        hostname: "ukgfftcenpztjkynbymj.supabase.co",
+      },
+    ],
   },
   async rewrites() {
     return [

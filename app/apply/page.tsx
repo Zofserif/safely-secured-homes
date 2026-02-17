@@ -43,32 +43,32 @@ export const metadata: Metadata = {
 export default function ApplyPage() {
   const benefits = [
     {
-      image: null,
+      image: 'https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/user-assets/pexels-fauxels-3184292.jpg',
+      title: "Safely Secured Panatag Report",
+      description: "Know your Home Safety Score when taking our assessments.",
+    },
+    {
+      image: 'https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/user-assets/pexels-mart-production-7088483.jpg',
       title: "Personalized Safety Consultation",
       description: "A clear plan tailored to your home layout and priorities.",
     },
     {
-      image: null,
-      title: "Priority Coverage Map",
+      image: 'https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/user-assets/pexels-shvets-production-9052461.jpg',
+      title: "Priority Coverage Layout",
       description: "Know exactly which entry points to secure first.",
     },
     {
-      image: null,
-      title: "Smart Security Home Plan",
-      description: "Recommendations that match your needs for your home and family.",
+      image: 'https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/user-assets/pexels-jakubzerdzicki-17536106.jpg',
+      title: "Home Automation Plan",
+      description: "Practical Smart Home recommendations that fit your lifestyle.",
     },
     {
-      image: null,
-      title: "Step-by-Step Checklist",
-      description: "Simple actions you can follow right away.",
-    },
-    {
-      image: null,
-      title: "Ongoing Support",
+      image: 'https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/user-assets/pexels-michael-burrows-7129717.jpg',
+      title: "Continuous Support",
       description: "Guidance by call or chat when you need it.",
     },
     {
-      image: null,
+      image: 'https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/user-assets/pexels-rdne-8293673.jpg',
       title: "Quarterly Safety Reviews",
       description: "Maintenance checks and updates to keep your home secure over time.",
     },
@@ -95,54 +95,56 @@ export default function ApplyPage() {
         </Link>
       </header>
 
-      <main className="container mx-auto px-6 pb-16 lg:pb-24 pt-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
-            Apply for your Home Safety
-          </p>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mt-4 text-[#2D3748] leading-tight">
-            Get a personalized security plan for your home.
-          </h1>
-          <p className="text-slate-600 mt-4 text-base sm:text-lg">
-            Answer a few quick questions and we&apos;ll craft the safest, most
-            practical setup for your family.
-          </p>
-        </div>
-
-        <div className="mt-10 lg:mt-12 max-w-5xl mx-auto">
-          <div className="relative rounded-4xl overflow-hidden shadow-2xl shadow-[#0E79B2]/15 border border-white">
-            <Image
-              src="/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg"
-              alt="Safely Secured Homes quick intro"
-              width={1400}
-              height={800}
-              className="w-full h-auto object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-linear-to-t from-black/40 via-black/10 to-transparent"></div>
-            <div className="absolute top-4 left-4 bg-white/90 px-3 py-1.5 rounded-full text-xs font-semibold text-[#0E79B2] shadow-sm">
-              Safely Secured Homes
-            </div>
-            <div className="absolute bottom-6 left-6 right-6 text-left">
-              <p className="text-white text-lg sm:text-xl font-semibold">
-                60-second tour: what you&apos;ll get after you apply
-              </p>
-              <p className="text-white/80 text-sm mt-1">
-                Practical, calm, and actionable security tips for Filipino
-                homes.
-              </p>
-            </div>
+      <main className="container mx-auto px-6 pb-16 lg:pb-24 pt-2 sm:pt-4">
+        <section className="mx-auto flex w-full max-w-5xl flex-col gap-4 sm:gap-6 md:min-h-[calc(100svh-8.5rem)] md:justify-between">
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+              Apply for your Home Safety
+            </p>
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold mt-3 sm:mt-4 text-[#2D3748] leading-tight">
+              Get a personalized security plan for your home.
+            </h1>
+            <p className="text-slate-600 mt-2 sm:mt-4 text-sm sm:text-lg">
+              Answer a few quick questions and we&apos;ll craft the safest, most
+              practical setup for your family.
+            </p>
           </div>
 
-          <div className="mt-8 flex justify-center">
-            <Link
-              href="/form?source=apply"
-              className="inline-flex items-center justify-center bg-[#0E79B2] hover:bg-[#0b5e8b] text-white px-10 py-3 rounded-full font-bold shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5"
-            >
-              START MY JOURNEY
-            </Link>
+          <div className="max-w-5xl mx-auto w-full">
+            <div className="relative aspect-7/4 w-full rounded-4xl overflow-hidden shadow-2xl shadow-[#0E79B2]/15 border border-white">
+              <Image
+                src="/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg"
+                alt="Safely Secured Homes quick intro"
+                fill
+                sizes="(min-width: 1024px) 70vw, 92vw"
+                className="object-cover"
+                priority
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black/40 via-black/10 to-transparent"></div>
+              <div className="absolute top-4 left-4 bg-white/90 px-3 py-1.5 rounded-full text-xs font-semibold text-[#0E79B2] shadow-sm">
+                Safely Secured Homes
+              </div>
+              <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 text-left">
+                <p className="text-white text-base sm:text-xl font-semibold">
+                  60-second tour: what you&apos;ll get after you apply
+                </p>
+                <p className="text-white/80 text-xs sm:text-sm mt-1">
+                  Practical, calm, and actionable security tips for Filipino
+                  homes.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 sm:mt-6 flex justify-center">
+              <Link
+                href="/form?source=apply"
+                className="inline-flex items-center justify-center bg-[#0E79B2] hover:bg-[#0b5e8b] text-white px-10 py-3 rounded-full font-bold shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5"
+              >
+                START MY JOURNEY
+              </Link>
+            </div>
           </div>
-        </div>
+        </section>
 
         <ApplyTestimonialsSection />
 

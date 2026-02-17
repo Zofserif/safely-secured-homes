@@ -253,13 +253,13 @@ export default function WizardForm({
               aria-pressed={isSelected}
               type="button"
             >
-              <div className="relative h-28 w-full bg-slate-100">
+              <div className="relative aspect-square w-full bg-slate-100">
                 <Image
                   src={opt.image}
                   alt={opt.label}
                   fill
                   sizes="(min-width: 768px) 50vw, 100vw"
-                  className="object-cover"
+                  className="object-contain p-3 sm:p-4"
                 />
               </div>
               <div className={`p-3 text-sm font-semibold ${isSelected ? "text-[#0E79B2]" : "text-slate-700"}`}>
@@ -344,13 +344,13 @@ export default function WizardForm({
                 className={`group overflow-hidden rounded-2xl border text-left transition-all ${isSelected ? "border-[#0E79B2] ring-2 ring-[#0E79B2]/20" : "border-slate-200 hover:border-[#0E79B2]/60"}`}
                 aria-pressed={isSelected}
               >
-                <div className="relative h-24 w-full bg-slate-100">
+                <div className="relative aspect-square w-full bg-slate-100">
                   <Image
                     src={opt.image}
                     alt={opt.label}
                     fill
                     sizes="(min-width: 768px) 50vw, 100vw"
-                    className="object-cover"
+                    className="object-contain p-3 sm:p-4"
                   />
                 </div>
                 <div className="p-3 text-center">

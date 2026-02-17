@@ -398,9 +398,7 @@ export default function AppShell({
     await Promise.all(submissions);
 
     if (formSource === "apply") {
-      if (typeof window !== "undefined") {
-        window.location.href = "https://calendly.com/vallarta-troy/30min";
-      }
+      router.push("/apply-success");
       return;
     }
 

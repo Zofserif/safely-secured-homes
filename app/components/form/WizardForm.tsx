@@ -223,6 +223,12 @@ export default function WizardForm({
   ];
 
   const safetyFields = safetySections.map((section) => section.id);
+  const ratedSafetyCount = safetyFields.filter(
+    (field) => typeof formData[field] === "number"
+  ).length;
+  const safetyCompletionPct = Math.round(
+    (ratedSafetyCount / safetyFields.length) * 100
+  );
   const isSafetyComplete = safetyFields.every(
     (field) => typeof formData[field] === "number"
   );
@@ -408,15 +414,53 @@ export default function WizardForm({
       <h3 className="text-xl font-bold text-center text-[#2D3748]">
         Home Safety Check
       </h3>
-      <p className="text-center text-sm text-slate-500">
-        Slide left for most unsafe, right for most safe.
-      </p>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+        <p className="text-sm font-semibold text-[#2D3748]">How this works</p>
+        <p className="text-sm text-slate-600">
+          Rate each area by dragging the slider. Left means higher risk. Right
+          means safer.
+        </p>
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-slate-600">
+            <span>Progress</span>
+            <span>
+              {ratedSafetyCount}/{safetyFields.length} rated
+            </span>
+          </div>
+          <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+            <div
+              className="h-full bg-[#0E79B2] transition-all duration-300"
+              style={{ width: `${safetyCompletionPct}%` }}
+            />
+          </div>
+        </div>
+      </div>
 
       <div className="space-y-5 max-h-[480px] overflow-y-auto pr-1">
         {safetySections.map((section) => {
           const hasScore = typeof formData[section.id] === "number";
           const storedValue = hasScore ? (formData[section.id] as number) : null;
           const sliderValue = storedValue === null ? 2.5 : 5 - storedValue;
+          const safetyState = !hasScore
+            ? {
+                label: "Not rated",
+                className: "border-slate-200 bg-slate-100 text-slate-600",
+              }
+            : sliderValue <= 1
+              ? {
+                  label: "High risk",
+                  className: "border-rose-200 bg-rose-50 text-rose-700",
+                }
+              : sliderValue <= 3
+                ? {
+                    label: "Needs work",
+                    className: "border-amber-200 bg-amber-50 text-amber-700",
+                  }
+                : {
+                    label: "Safer",
+                    className:
+                      "border-emerald-200 bg-emerald-50 text-emerald-700",
+                  };
           const fillPercent = hasScore ? (sliderValue / 5) * 100 : 0;
           const fillPalette = [
             "#ef4444",
@@ -439,19 +483,25 @@ export default function WizardForm({
           return (
             <div
               key={section.id}
-              className="rounded-2xl border border-slate-200 p-5 space-y-4"
+              className={`rounded-2xl border p-5 space-y-4 transition-all ${hasScore ? "border-[#0E79B2]/40 bg-[#F8FBFF] shadow-sm" : "border-slate-200 bg-white"}`}
             >
               <div className="flex items-center justify-between">
                 <h4 className="font-semibold text-[#2D3748] text-base">
                   {section.title}
                 </h4>
+                <span
+                  className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${safetyState.className}`}
+                >
+                  {safetyState.label}
+                </span>
               </div>
-              <ul className="list-disc pl-4 text-sm text-slate-500 space-y-2">
-                {section.prompts.map((prompt) => (
-                  <li key={prompt}>{prompt}</li>
-                ))}
-              </ul>
               <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-500">Your rating</span>
+                  <span className="font-semibold text-[#2D3748]">
+                    {hasScore ? `${sliderValue}/5` : "--/5"}
+                  </span>
+                </div>
                 <input
                   type="range"
                   min="0"
@@ -468,8 +518,8 @@ export default function WizardForm({
                   aria-label={`${section.title} safety rating`}
                 />
                 <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>Most unsafe</span>
-                  <span>Most safe</span>
+                  <span>Riskier</span>
+                  <span>Safer</span>
                 </div>
               </div>
             </div>

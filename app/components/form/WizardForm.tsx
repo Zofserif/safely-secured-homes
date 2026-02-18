@@ -222,6 +222,29 @@ export default function WizardForm({
     },
   ];
 
+  const naEnabledSafetyFields: SafetyField[] = [
+    "safety_side_back_entry",
+    "safety_windows_terrace",
+    "safety_driveway_garage",
+  ];
+  const naEnabledSafetyFieldSet = new Set<SafetyField>(naEnabledSafetyFields);
+  const [naSafetySelections, setNaSafetySelections] = useState<
+    Partial<Record<SafetyField, boolean>>
+  >({});
+
+  const toggleNaSafetySelection = (field: SafetyField) => {
+    const nextSelected = !Boolean(naSafetySelections[field]);
+    setNaSafetySelections((prev) => {
+      if (nextSelected) {
+        return { ...prev, [field]: true };
+      }
+      const updated = { ...prev };
+      delete updated[field];
+      return updated;
+    });
+    updateField(field, nextSelected ? 5 : null);
+  };
+
   const safetyFields = safetySections.map((section) => section.id);
   const ratedSafetyCount = safetyFields.filter(
     (field) => typeof formData[field] === "number"
@@ -438,10 +461,17 @@ export default function WizardForm({
 
       <div className="space-y-5 max-h-[480px] overflow-y-auto pr-1">
         {safetySections.map((section) => {
+          const allowsNa = naEnabledSafetyFieldSet.has(section.id);
+          const isNaSelected = allowsNa && Boolean(naSafetySelections[section.id]);
           const hasScore = typeof formData[section.id] === "number";
           const storedValue = hasScore ? (formData[section.id] as number) : null;
           const sliderValue = storedValue === null ? 2.5 : 5 - storedValue;
-          const safetyState = !hasScore
+          const safetyState = isNaSelected
+            ? {
+                label: "N/A",
+                className: "border-sky-200 bg-sky-50 text-sky-700",
+              }
+            : !hasScore
             ? {
                 label: "Not rated",
                 className: "border-slate-200 bg-slate-100 text-slate-600",
@@ -489,38 +519,57 @@ export default function WizardForm({
                 <h4 className="font-semibold text-[#2D3748] text-base">
                   {section.title}
                 </h4>
-                <span
-                  className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${safetyState.className}`}
-                >
-                  {safetyState.label}
-                </span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-500">Your rating</span>
-                  <span className="font-semibold text-[#2D3748]">
-                    {hasScore ? `${sliderValue}/5` : "--/5"}
+                <div className="flex items-center gap-2">
+                  {allowsNa && (
+                    <button
+                      type="button"
+                      onClick={() => toggleNaSafetySelection(section.id)}
+                      className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide transition-colors ${isNaSelected ? "border-sky-300 bg-sky-100 text-sky-700" : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100"}`}
+                    >
+                      N/A
+                    </button>
+                  )}
+                  <span
+                    className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${safetyState.className}`}
+                  >
+                    {safetyState.label}
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="5"
-                  step={hasScore ? 1 : 0.5}
-                  value={sliderValue}
-                  onChange={(e) => {
-                    const rawValue = parseFloat(e.target.value);
-                    const snapped = Math.round(rawValue);
-                    updateField(section.id, 5 - snapped);
-                  }}
-                  style={sliderStyle}
-                  className="safety-range w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40"
-                  aria-label={`${section.title} safety rating`}
-                />
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>Riskier</span>
-                  <span>Safer</span>
-                </div>
+              </div>
+              <div className="space-y-2">
+                {isNaSelected ? (
+                  <div className="rounded-xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-700">
+                    Marked as N/A. This area is not applicable to my home.
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-slate-500">Your rating</span>
+                      <span className="font-semibold text-[#2D3748]">
+                        {hasScore ? `${sliderValue}/5` : "--/5"}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="5"
+                      step={hasScore ? 1 : 0.5}
+                      value={sliderValue}
+                      onChange={(e) => {
+                        const rawValue = parseFloat(e.target.value);
+                        const snapped = Math.round(rawValue);
+                        updateField(section.id, 5 - snapped);
+                      }}
+                      style={sliderStyle}
+                      className="safety-range w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40"
+                      aria-label={`${section.title} safety rating`}
+                    />
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>Riskier</span>
+                      <span>Safer</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           );

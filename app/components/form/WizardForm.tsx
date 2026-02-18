@@ -11,12 +11,12 @@ import {
 import {
   BUDGET_BAND_OPTIONS,
   CURRENT_SETUP_VALUES,
-  FEATURE_OPTIONS,
   FLOOR_OPTIONS,
   HOME_SIZE_CARDS,
   MAIN_GOAL_OPTIONS,
   PRIORITY_AREAS,
   PROPERTY_TYPES,
+  SMART_HOME_FEATURE_OPTIONS,
   TIMELINE_OPTIONS,
 } from "../../lib/formOptions";
 import { FormData } from "../../lib/types";
@@ -38,6 +38,7 @@ const createInitialFormData = (mode: "default" | "newsletter"): FormData => {
     safety_indoor_choke_points: null,
     safety_emergency_readiness: null,
     features_must: [],
+    smart_home_features: [],
     smart_home_interest: "",
     diy_security_plan: false,
     budget_band: "",
@@ -96,8 +97,14 @@ export default function WizardForm({
     }
   };
 
+  const getArrayFieldValues = (field: keyof FormData): string[] => {
+    const value = formData[field];
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is string => typeof item === "string");
+  };
+
   const toggleArrayField = (field: keyof FormData, value: string) => {
-    const current = formData[field] as string[];
+    const current = getArrayFieldValues(field);
     const updated = current.includes(value)
       ? current.filter((i) => i !== value)
       : [...current, value];
@@ -489,7 +496,7 @@ export default function WizardForm({
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {PRIORITY_AREAS.map((area) => {
-          const isSelected = formData.priority_areas.includes(area);
+          const isSelected = getArrayFieldValues("priority_areas").includes(area);
           return (
             <label
               key={area}
@@ -518,59 +525,25 @@ export default function WizardForm({
       </div>
       <button
         onClick={nextStep}
-        disabled={formData.priority_areas.length === 0}
+        disabled={getArrayFieldValues("priority_areas").length === 0}
         className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-4"
       >
         Next
       </button>
     </div>,
 
-    // 7. Tech Prefs
-    <div key="tech" className="space-y-6">
+    // 7. Smart Home Implementation
+    <div key="smart-home" className="space-y-6">
       <h3 className="text-xl font-bold text-center text-[#2D3748]">
-        System Preferences
+        Smart Home Implementation
       </h3>
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          Must-have Features
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {FEATURE_OPTIONS.map((feat) => {
-            const isSelected = formData.features_must.includes(feat);
-            return (
-              <label
-                key={feat}
-                className={`group flex items-center gap-3 rounded-xl border p-3 transition-all cursor-pointer ${isSelected ? "border-[#0E79B2] bg-[#0E79B2]/10 shadow-sm" : "border-slate-200 hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => toggleArrayField("features_must", feat)}
-                  className="sr-only"
-                />
-                <span
-                  className={`flex h-6 w-6 items-center justify-center rounded-md border transition-all ${isSelected ? "border-[#0E79B2] bg-[#0E79B2] text-white" : "border-slate-300 bg-white text-transparent"}`}
-                  aria-hidden="true"
-                >
-                  <Check className="h-4 w-4" />
-                </span>
-                <span
-                  className={`text-sm font-medium ${isSelected ? "text-[#0E79B2]" : "text-slate-700 group-hover:text-slate-900"}`}
-                >
-                  {feat}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      </div>
       <div className="rounded-2xl border-2 border-[#0E79B2]/30 bg-[#0E79B2]/5 p-4 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
-            Optional Upgrade
+            Smart Home
           </span>
           <span className="text-[11px] font-medium text-slate-500">
-            Smart Home
+            Optional
           </span>
         </div>
         <label className="flex items-start gap-3">
@@ -578,19 +551,82 @@ export default function WizardForm({
             type="checkbox"
             className="mt-1 h-5 w-5 rounded text-[#0E79B2]"
             checked={Boolean(formData.smart_home_interest)}
-            onChange={(e) =>
-              updateField("smart_home_interest", e.target.checked ? "Yes" : "")
-            }
+            onChange={(e) => {
+              const isChecked = e.target.checked;
+              updateField("smart_home_interest", isChecked ? "Yes" : "");
+              if (!isChecked) {
+                updateField("smart_home_features", []);
+              }
+            }}
           />
           <div>
             <span className="text-sm font-semibold text-[#2D3748]">
-              Interested in smart home integration
+              I am interested in to start my Smart home journey.
             </span>
             <p className="text-xs text-slate-500">
-              Lighting, locks, sensors, and automation.
+              Choose the smart home features you want to include.
             </p>
           </div>
         </label>
+        {Boolean(formData.smart_home_interest) && (
+          <div className="mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {SMART_HOME_FEATURE_OPTIONS.map((feature) => {
+                const isSelected =
+                  getArrayFieldValues("smart_home_features").includes(feature);
+                return (
+                  <label
+                    key={feature}
+                    className={`group flex items-start gap-3 rounded-xl border p-3 transition-all cursor-pointer ${isSelected ? "border-[#0E79B2] bg-[#0E79B2]/10 shadow-sm" : "border-slate-200 hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() =>
+                        toggleArrayField("smart_home_features", feature)
+                      }
+                      className="sr-only"
+                    />
+                    <span
+                      className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-all ${isSelected ? "border-[#0E79B2] bg-[#0E79B2] text-white" : "border-slate-300 bg-white text-transparent"}`}
+                      aria-hidden="true"
+                    >
+                      <Check className="h-4 w-4" />
+                    </span>
+                    <span
+                      className={`text-sm font-medium leading-snug ${isSelected ? "text-[#0E79B2]" : "text-slate-700 group-hover:text-slate-900"}`}
+                    >
+                      {feature}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+      <button
+        onClick={nextStep}
+        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold mt-4"
+      >
+        Next
+      </button>
+    </div>,
+
+    // 8. Budget + DIY
+    <div key="budget-diy" className="space-y-6">
+      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+        Budget & DIY Plan
+      </h3>
+      <div className="rounded-2xl border-2 border-[#0E79B2]/30 bg-[#0E79B2]/5 p-4 shadow-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
+            Optional Upgrade
+          </span>
+          <span className="text-[11px] font-medium text-slate-500">
+            DIY Security
+          </span>
+        </div>
         <label className="mt-4 flex items-start gap-3">
           <input
             type="checkbox"
@@ -630,7 +666,7 @@ export default function WizardForm({
       </button>
     </div>,
 
-    // 8. Timeline
+    // 9. Timeline
     <div key="timeline" className="space-y-4">
       <h3 className="text-xl font-bold text-center text-[#2D3748]">
         When do you need this?
@@ -651,7 +687,7 @@ export default function WizardForm({
       </div>
     </div>,
 
-    // 9. Final Details
+    // 10. Final Details
     <div key="final" className="space-y-4">
       <h3 className="text-xl font-bold text-center text-[#2D3748]">
         Almost done!

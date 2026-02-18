@@ -13,6 +13,7 @@ export type FormData = {
   safety_indoor_choke_points: number | null;
   safety_emergency_readiness: number | null;
   features_must: string[];
+  smart_home_features: string[];
   smart_home_interest: string;
   diy_security_plan: boolean;
   budget_band: string;

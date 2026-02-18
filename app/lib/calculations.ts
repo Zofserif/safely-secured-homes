@@ -6,6 +6,7 @@ import {
   HOME_SIZE_OPTIONS,
   PERIMETER_PRIORITY_AREAS,
   PRIORITY_AREA_KEYS,
+  SMART_HOME_FEATURES,
   TIMELINE_VALUES,
 } from "./formOptions";
 
@@ -74,9 +75,18 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   const floors = data.floors ?? "1";
   const size = data.home_size ?? HOME_SIZE_OPTIONS.SMALL;
   const features = data.features_must ?? [];
+  const smartHomeFeatures = data.smart_home_features ?? [];
   const currentSetup = data.current_setup ?? "";
   const budgetBand = data.budget_band ?? "";
   const timeline = data.timeline ?? "";
+  const smartHomeWeights: Partial<Record<string, number>> = {
+    [SMART_HOME_FEATURES.EMERGENCY_DECTION_SYSTEM]: 2,
+    [SMART_HOME_FEATURES.SMART_VIDEO_DOORBELL]: 2,
+    [SMART_HOME_FEATURES.AUTOMATIC_ENTRY_EXIT_GATE_OPENERS]: 2,
+    [SMART_HOME_FEATURES.AUTOMATED_LIGHTING_SYSTEM]: 1,
+    [SMART_HOME_FEATURES.SMART_ELECTRONIC_SWITCH_SYSTEM]: 1,
+    [SMART_HOME_FEATURES.SMART_ENTERTAINMENT_SYSTEM]: 1,
+  };
 
   // Baseline from areas
   const hasPerimeterCoverage = areas.some((area) => PERIMETER_PRIORITY_AREAS.includes(area as typeof PERIMETER_PRIORITY_AREAS[number]));
@@ -102,6 +112,11 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   if (currentSetup === CURRENT_SETUP_OPTIONS.NEW_INSTALL || currentSetup === CURRENT_SETUP_OPTIONS.BROKEN_OLD) score += 1;
   if (budgetBand === BUDGET_BANDS.PREMIUM || budgetBand === BUDGET_BANDS.FEATURE_RICH) score += 2;
   if (timeline === TIMELINE_VALUES.ASAP) score += 3;
+  const smartHomeBonus = smartHomeFeatures.reduce(
+    (sum, feature) => sum + (smartHomeWeights[feature] ?? 0),
+    0
+  );
+  score += Math.min(6, smartHomeBonus);
   const safetyScores = [
     data.safety_gate_entry,
     data.safety_blindspots,

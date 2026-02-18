@@ -7,6 +7,7 @@ import {
   MAIN_GOAL_OPTIONS,
   PRIORITY_AREAS,
   PROPERTY_TYPES,
+  SMART_HOME_FEATURE_OPTIONS,
   TIMELINE_OPTIONS,
 } from "./formOptions";
 import { FormData } from "./types";
@@ -34,6 +35,7 @@ export type ResultsSharePayloadV1 = {
   safety_indoor_choke_points: number;
   safety_emergency_readiness: number;
   features_must: string[];
+  smart_home_features?: string[];
   smart_home_interest: boolean;
   diy_security_plan: boolean;
   budget_band: string;
@@ -168,6 +170,11 @@ const toPayload = (formData: FormData): {
       formData.safety_emergency_readiness
     ),
     features_must: normalizeOptionArray(FEATURE_OPTIONS, formData.features_must, false),
+    smart_home_features: normalizeOptionArray(
+      SMART_HOME_FEATURE_OPTIONS,
+      formData.smart_home_features,
+      false
+    ),
     smart_home_interest: normalizeBoolean(formData.smart_home_interest),
     diy_security_plan: normalizeBoolean(formData.diy_security_plan),
     budget_band: normalizeOption(BUDGET_BAND_OPTIONS, formData.budget_band),
@@ -249,6 +256,14 @@ export const parseShareableResultsPayload = (
     value.features_must,
     false
   );
+  const smartHomeFeatures =
+    typeof value.smart_home_features === "undefined"
+      ? []
+      : normalizeOptionArray(
+          SMART_HOME_FEATURE_OPTIONS,
+          value.smart_home_features,
+          false
+        );
   const budgetBand = normalizeOption(BUDGET_BAND_OPTIONS, value.budget_band);
   const timeline = normalizeOption(TIMELINE_VALUES, value.timeline);
 
@@ -267,6 +282,7 @@ export const parseShareableResultsPayload = (
     typeof safetyIndoorChokePoints !== "number" ||
     typeof safetyEmergencyReadiness !== "number" ||
     !featuresMust ||
+    !smartHomeFeatures ||
     !budgetBand ||
     !timeline
   ) {
@@ -288,6 +304,7 @@ export const parseShareableResultsPayload = (
     safety_indoor_choke_points: safetyIndoorChokePoints,
     safety_emergency_readiness: safetyEmergencyReadiness,
     features_must: featuresMust,
+    smart_home_features: smartHomeFeatures,
     smart_home_interest: value.smart_home_interest ? "Yes" : "",
     diy_security_plan: normalizeBoolean(value.diy_security_plan),
     budget_band: budgetBand,

@@ -12,7 +12,8 @@ const FORM_STEPS = [
   { id: "home_details", label: "Home details" },
   { id: "safety_check", label: "Safety check" },
   { id: "priority_areas", label: "Priority areas" },
-  { id: "system_preferences", label: "System preferences" },
+  { id: "smart_home_implementation", label: "Smart home implementation" },
+  { id: "budget_diy", label: "Budget + DIY" },
   { id: "timeline", label: "Timeline" },
   { id: "contact_details", label: "Contact details" },
 ] as const;
@@ -207,6 +208,7 @@ const legacyFormProps = (data: FormData): EventProps => ({
 const normalizedFormProps = (data: FormData): EventProps => {
   const priorityAreas = safeArray(data.priority_areas);
   const featureList = safeArray(data.features_must);
+  const smartHomeFeatures = safeArray(data.smart_home_features ?? []);
   const safety = getSafetySummary(data);
 
   return {
@@ -219,6 +221,8 @@ const normalizedFormProps = (data: FormData): EventProps => {
     priority_area_count: priorityAreas.length,
     feature_keys: featureList.map((value) => slugify(value)),
     features_count: featureList.length,
+    smart_home_feature_keys: smartHomeFeatures.map((value) => slugify(value)),
+    smart_home_features_count: smartHomeFeatures.length,
     smart_home_interest: Boolean(data.smart_home_interest),
     diy_security_plan: Boolean(data.diy_security_plan),
     budget_band_key: slugify(data.budget_band),

@@ -316,6 +316,7 @@ export const parseResultsToken = (token: string): FormData | null => {
     safety_indoor_choke_points: s[5],
     safety_emergency_readiness: s[6],
     features_must: m.map((index) => FEATURE_OPTIONS[index]),
+    smart_home_features: [],
     smart_home_interest: i ? "Yes" : "",
     diy_security_plan: d,
     budget_band: BUDGET_BAND_OPTIONS[b],

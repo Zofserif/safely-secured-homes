@@ -308,6 +308,7 @@ export default function AppShell({
   const reportsSoldOut =
     effectiveReportsRemaining !== null && effectiveReportsRemaining <= 0;
   const hasExistingPlan = Boolean(storedLead);
+  const isResultsLoading = view === "results" && (!formData || !result);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -510,6 +511,8 @@ export default function AppShell({
       {view === "results" && formData && result && (
         <ResultsPage result={result} data={formData} />
       )}
+
+      {isResultsLoading && <div className="min-h-screen bg-white" />}
 
       {view !== "form" && view !== "results" && <Footer />}
     </div>

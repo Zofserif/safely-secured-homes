@@ -312,10 +312,7 @@ export default function ResultsPage({
 
     const handleBookVisit = () => {
       const url = "https://calendly.com/vallarta-troy/30min";
-      const newWindow = window.open(url, "_blank", "noopener,noreferrer");
-      if (!newWindow) {
-        window.location.href = url;
-      }
+      window.open(url, "_blank", "noopener,noreferrer");
     };
 
     const CommonDIYButton = () => (
@@ -402,7 +399,7 @@ export default function ResultsPage({
             <h1 className="text-3xl font-bold mb-2">
               {firstName ? `Hi ${firstName}` : "Hi there"}
             </h1>
-            <p className="opacity-90">Here is your personalized plan</p>
+            <p className="opacity-90">We Have Finished Your Personalized Home Plan </p>
           </div>
 
           <div className="p-8 space-y-8">
@@ -427,7 +424,7 @@ export default function ResultsPage({
                   {priority.label}
                 </div>
                 <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">
-                  Priority
+                  Priority Action
                 </div>
               </div>
               <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
@@ -436,7 +433,7 @@ export default function ResultsPage({
                   {result.cameraCount}
                 </div>
                 <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">
-                  Security Cameras
+                  Security Cameras Needed
                 </div>
               </div>
               <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">

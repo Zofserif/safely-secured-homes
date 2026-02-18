@@ -511,7 +511,7 @@ export default function AppShell({
         <ResultsPage result={result} data={formData} />
       )}
 
-      {view !== "form" && <Footer />}
+      {view !== "form" && view !== "results" && <Footer />}
     </div>
   );
 }

@@ -122,7 +122,7 @@ export async function GET(req: Request) {
 
   const { data, error } = await supabase
     .from("results_links")
-    .select("payload, expires_at, revoked_at")
+    .select("payload, expires_at, revoked_at, first_name, last_name, email, mobile")
     .eq("link_key", key)
     .maybeSingle();
 
@@ -143,8 +143,16 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Invalid share payload" }, { status: 500 });
   }
 
+  const hydratedFormData = {
+    ...formData,
+    first_name: normalizeText(data.first_name) ?? "",
+    last_name: normalizeText(data.last_name) ?? "",
+    email: normalizeText(data.email) ?? "",
+    mobile: normalizeText(data.mobile) ?? "",
+  };
+
   return NextResponse.json(
-    { formData },
+    { formData: hydratedFormData },
     {
       headers: {
         "Cache-Control": "no-store, max-age=0",

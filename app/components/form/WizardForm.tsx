@@ -228,9 +228,29 @@ export default function WizardForm({
     "safety_driveway_garage",
   ];
   const naEnabledSafetyFieldSet = new Set<SafetyField>(naEnabledSafetyFields);
+  const [safetySliderDrafts, setSafetySliderDrafts] = useState<
+    Partial<Record<SafetyField, number>>
+  >({});
   const [naSafetySelections, setNaSafetySelections] = useState<
     Partial<Record<SafetyField, boolean>>
   >({});
+
+  const clearSafetySliderDraft = (field: SafetyField) => {
+    setSafetySliderDrafts((prev) => {
+      if (typeof prev[field] !== "number") return prev;
+      const updated = { ...prev };
+      delete updated[field];
+      return updated;
+    });
+  };
+
+  const commitSafetySliderValue = (field: SafetyField, rawValue: number) => {
+    if (!Number.isFinite(rawValue)) return;
+    const clamped = Math.min(5, Math.max(0, rawValue));
+    const snapped = Math.round(clamped);
+    setSafetySliderDrafts((prev) => ({ ...prev, [field]: clamped }));
+    updateField(field, 5 - snapped);
+  };
 
   const toggleNaSafetySelection = (field: SafetyField) => {
     const nextSelected = !Boolean(naSafetySelections[field]);
@@ -242,6 +262,7 @@ export default function WizardForm({
       delete updated[field];
       return updated;
     });
+    clearSafetySliderDraft(field);
     updateField(field, nextSelected ? 5 : null);
   };
 
@@ -465,13 +486,20 @@ export default function WizardForm({
           const isNaSelected = allowsNa && Boolean(naSafetySelections[section.id]);
           const hasScore = typeof formData[section.id] === "number";
           const storedValue = hasScore ? (formData[section.id] as number) : null;
-          const sliderValue = storedValue === null ? 2.5 : 5 - storedValue;
+          const draftSliderValue = safetySliderDrafts[section.id];
+          const hasDraft = typeof draftSliderValue === "number";
+          const sliderValue = hasDraft
+            ? draftSliderValue
+            : storedValue === null
+              ? 2.5
+              : 5 - storedValue;
+          const hasVisibleSliderValue = hasScore || hasDraft;
           const safetyState = isNaSelected
             ? {
                 label: "N/A",
                 className: "border-sky-200 bg-sky-50 text-sky-700",
               }
-            : !hasScore
+            : !hasVisibleSliderValue
             ? {
                 label: "Not rated",
                 className: "border-slate-200 bg-slate-100 text-slate-600",
@@ -491,7 +519,7 @@ export default function WizardForm({
                     className:
                       "border-emerald-200 bg-emerald-50 text-emerald-700",
                   };
-          const fillPercent = hasScore ? (sliderValue / 5) * 100 : 0;
+          const fillPercent = hasVisibleSliderValue ? (sliderValue / 5) * 100 : 0;
           const fillPalette = [
             "#ef4444",
             "#f97316",
@@ -500,14 +528,18 @@ export default function WizardForm({
             "#a3e635",
             "#22c55e",
           ];
-          const fillColor = fillPalette[sliderValue] ?? "#22c55e";
+          const fillColor = fillPalette[Math.round(sliderValue)] ?? "#22c55e";
+          const ratingWhole = hasVisibleSliderValue ? Math.round(sliderValue) : null;
+          const ratingLabel = hasVisibleSliderValue
+            ? `${ratingWhole}/5`
+            : "--/5";
           const sliderStyle = {
             "--slider-track": "#e2e8f0",
-            "--slider-fill": hasScore
+            "--slider-fill": hasVisibleSliderValue
               ? `linear-gradient(to right, ${fillColor}, ${fillColor})`
               : "none",
             "--slider-fill-size": `${fillPercent}% 100%`,
-            "--slider-thumb": hasScore ? fillColor : "#cbd5e1",
+            "--slider-thumb": hasVisibleSliderValue ? fillColor : "#cbd5e1",
           } as CSSProperties;
 
           return (
@@ -546,19 +578,33 @@ export default function WizardForm({
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-medium text-slate-500">Your rating</span>
                       <span className="font-semibold text-[#2D3748]">
-                        {hasScore ? `${sliderValue}/5` : "--/5"}
+                        {ratingLabel}
                       </span>
                     </div>
                     <input
                       type="range"
                       min="0"
                       max="5"
-                      step={hasScore ? 1 : 0.5}
+                      step={0.1}
                       value={sliderValue}
                       onChange={(e) => {
                         const rawValue = parseFloat(e.target.value);
-                        const snapped = Math.round(rawValue);
-                        updateField(section.id, 5 - snapped);
+                        setSafetySliderDrafts((prev) => ({
+                          ...prev,
+                          [section.id]: rawValue,
+                        }));
+                      }}
+                      onPointerUp={(e) => {
+                        commitSafetySliderValue(
+                          section.id,
+                          parseFloat((e.target as HTMLInputElement).value)
+                        );
+                      }}
+                      onBlur={(e) => {
+                        commitSafetySliderValue(
+                          section.id,
+                          parseFloat(e.target.value)
+                        );
                       }}
                       style={sliderStyle}
                       className="safety-range w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40"

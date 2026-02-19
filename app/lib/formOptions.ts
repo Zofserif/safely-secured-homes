@@ -148,7 +148,7 @@ export const SMART_HOME_FEATURES = {
   SMART_ENTERTAINMENT_SYSTEM: "Smart Entertainment System",
   SMART_ELECTRONIC_SWITCH_SYSTEM: "Smart Electronic Switch System",
   EMERGENCY_DECTION_SYSTEM:
-    "Emergency Dection System (Fire/Smoke/Water leak)",
+    "Emergency Dection System (Fire/Smoke)",
 } as const;
 
 export const SMART_HOME_FEATURE_OPTIONS = [

@@ -546,7 +546,7 @@ export default function WizardForm({
         </div>
       </div>
 
-      <div className="space-y-3 sm:space-y-5 md:max-h-[480px] md:overflow-y-auto md:pr-1">
+      <div className="space-y-3 sm:space-y-5">
         {safetySections.map((section) => {
           const allowsNa = naEnabledSafetyFieldSet.has(section.id);
           const isNaSelected = allowsNa && Boolean(naSafetySelections[section.id]);

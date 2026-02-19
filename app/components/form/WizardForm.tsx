@@ -610,15 +610,20 @@ export default function WizardForm({
                 <h4 className="font-semibold text-[#2D3748] text-base">
                   {section.title}
                 </h4>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   {allowsNa && (
-                    <button
-                      type="button"
-                      onClick={() => toggleNaSafetySelection(section.id)}
-                      className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide transition-colors ${isNaSelected ? "border-sky-300 bg-sky-100 text-sky-700" : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100"}`}
+                    <label
+                      className={`inline-flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold transition-colors ${isNaSelected ? "text-sky-700" : "text-slate-500 hover:text-slate-700"}`}
                     >
-                      N/A
-                    </button>
+                      <input
+                        type="checkbox"
+                        checked={isNaSelected}
+                        onChange={() => toggleNaSafetySelection(section.id)}
+                        className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                        aria-label={`Mark ${section.title} as not applicable`}
+                      />
+                      <span>No such space</span>
+                    </label>
                   )}
                   <span
                     className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${safetyState.className}`}
@@ -629,9 +634,9 @@ export default function WizardForm({
               </div>
               <div className="space-y-2">
                 {isNaSelected ? (
-                  <div className="rounded-xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-700">
-                    Marked as N/A. This area is not applicable to my home.
-                  </div>
+                  <p className="text-xs text-sky-700">
+                    Marked as N/A because this space does not exist in your home.
+                  </p>
                 ) : (
                   <>
                     <div className="flex items-center justify-between text-xs">

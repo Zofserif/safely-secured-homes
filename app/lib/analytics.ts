@@ -1,22 +1,9 @@
 import posthog from "../posthog";
+import { FORM_STEPS } from "./formSteps";
 import type { CalculationResult, FormData } from "./types";
 
 const ENABLE_LEGACY_DUAL_WRITE = true;
 export const LEGACY_DUAL_WRITE_REMOVE_AFTER = "2026-03-19";
-
-const FORM_STEPS = [
-  { id: "intro", label: "Intro" },
-  { id: "property_type", label: "Property type" },
-  { id: "current_setup", label: "Current setup" },
-  { id: "main_goal", label: "Main goal" },
-  { id: "home_details", label: "Home details" },
-  { id: "safety_check", label: "Safety check" },
-  { id: "priority_areas", label: "Priority areas" },
-  { id: "smart_home_implementation", label: "Smart home implementation" },
-  { id: "budget_diy", label: "Budget + DIY" },
-  { id: "timeline", label: "Timeline" },
-  { id: "contact_details", label: "Contact details" },
-] as const;
 
 const APP_VIEW_PATH: Record<AppView, string> = {
   home: "/",

@@ -1,66 +1,20 @@
 import { motion } from "framer-motion";
-import {
-  AlertTriangle,
-  Calendar,
-  CheckCircle2,
-  FileText,
-  Gauge,
-  HouseHeart,
-  Phone,
-  ShieldCheck,
-  Siren,
-  Video,
-  X,
-} from "lucide-react";
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getResultsSummary } from "../../lib/calculations";
-import { CalculationResult, FormData } from "../../lib/types";
+import type { CalculationResult, FormData } from "../../lib/types";
+import { BLUEPRINT_CARDS } from "./blueprints";
+import {
+  RESULTS_BOOK_VISIT_URL,
+  RESULTS_CALL_HREF,
+} from "./constants";
+import BlueprintCardsGrid from "./components/BlueprintCardsGrid";
+import BlueprintModal from "./components/BlueprintModal";
+import NextStepPanel from "./components/NextStepPanel";
+import RecommendationsPanel from "./components/RecommendationsPanel";
+import ResultActionButtons from "./components/ResultActionButtons";
+import ResultsStatsGrid from "./components/ResultsStatsGrid";
+import type { BlueprintModalState } from "./types";
 import DIYView from "./DIYView";
-import AccordionItem from "../AccordionItem";
-
-type BlueprintCard = {
-  id: string;
-  title: string;
-  summary: string;
-  featured?: boolean;
-  content: ReactNode;
-};
-
-const Section = ({
-  title,
-  children,
-  titleClassName,
-}: {
-  title: string;
-  children: ReactNode;
-  titleClassName?: string;
-}) => (
-  <div className="mt-6">
-    <h5
-      className={`text-base font-semibold text-slate-800 ${titleClassName ?? ""}`}
-    >
-      {title}
-    </h5>
-    <div className="mt-3 space-y-3">{children}</div>
-  </div>
-);
-
-const BulletList = ({ items }: { items: string[] }) => (
-  <ul className="space-y-2">
-    {items.map((item) => (
-      <li key={item} className="flex items-start gap-3 text-sm text-slate-700">
-        <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[#0E79B2]" />
-        <span>{item}</span>
-      </li>
-    ))}
-  </ul>
-);
-
-const MiniCheck = ({ text }: { text: string }) => (
-  <div className="mt-6 rounded-2xl border border-[#0E79B2]/20 bg-[#0E79B2]/5 p-4 text-sm text-slate-700">
-    <span className="font-semibold text-[#0E79B2]">Mini-check:</span> {text}
-  </div>
-);
 
 export default function ResultsPage({
   result,
@@ -71,311 +25,37 @@ export default function ResultsPage({
 }) {
   const [showDIY, setShowDIY] = useState(false);
   const showDIYPlan = Boolean(data.diy_security_plan);
-  const [activeBlueprintId, setActiveBlueprintId] = useState<string | null>(
-    null,
-  );
+  const [activeBlueprintId, setActiveBlueprintId] =
+    useState<BlueprintModalState>(null);
   const firstName = data.first_name.trim();
+
   const { safetyLevel, priority, emergency, panatagRating } = getResultsSummary(
     data,
     result,
   );
-  const severityColors = {
-    low: "text-[#2E8B57]",
-    medium: "text-[#FFB300]",
-    high: "text-[#E53E3E]",
-  } as const;
-  const panatagIconColor =
-    panatagRating <= 5
-      ? "text-[#E53E3E]"
-      : panatagRating <= 8
-        ? "text-[#F6C445]"
-        : "text-[#2E8B57]";
-  const blueprintCards: BlueprintCard[] = [
-    {
-      id: "prevention",
-      title: "Prevention & Preparation",
-      summary: "Goal: Stop problems before they start.",
-      content: (
-        <>
-          <p className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-800">Goal:</span> Stop
-            problems before they start.
-          </p>
-          <Section title="15-minute Quick Wins (Do today)">
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl" aria-hidden="true">
-                    💡
-                  </span>
-                  <span className="rounded-full bg-[#2E8B57]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-[#2E8B57]">
-                    Fast Win
-                  </span>
-                </div>
-                <h6 className="mt-3 text-sm font-semibold text-slate-800">
-                  Light + Visibility
-                </h6>
-                <ul className="mt-2 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-                  <li>Focus: gate, front door, garage, side door, dark corners.</li>
-                  <li>Add mini motion lights near these areas.</li>
-                </ul>
-              </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl" aria-hidden="true">
-                    🔒
-                  </span>
-                  <span className="rounded-full bg-[#0E79B2]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-[#0E79B2]">
-                    Preventive
-                  </span>
-                </div>
-                <h6 className="mt-3 text-sm font-semibold text-slate-800">
-                  Locks + Openings
-                </h6>
-                <ul className="mt-2 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-                  <li>Hinges exposed?</li>
-                  <li>Locks smooth?</li>
-                  <li>Sliding windows locked?</li>
-                </ul>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl" aria-hidden="true">
-                    🧰
-                  </span>
-                  <span className="rounded-full bg-[#FFB300]/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-[#B46B00]">
-                    Family Safety
-                  </span>
-                </div>
-                <h6 className="mt-3 text-sm font-semibold text-slate-800">
-                  Emergency Ready
-                </h6>
-                <ul className="mt-2 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-                  <li>Grab Kit: flashlight, power bank, whistle, small cash</li>
-                  <li>Fire: smoke alarms + extinguisher</li>
-                  <li>First aid ready to grab</li>
-                </ul>
-              </div>
-            </div>
-          </Section>
-          <MiniCheck text="If there's a problem tonight - power outage, noise outside, fire risk - can your family respond in the first 60 seconds?" />
-        </>
-      ),
-    },
-    {
-      id: "awareness",
-      title: "For Your Complete Peace of Mind",
-      summary:
-        "Goal: Detect threats early and respond faster without feeling watched.",
-      featured: true,
-      content: (
-        <>
-          <p className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-800">Goal:</span> Detect
-            threats early, document what happened, and respond faster - without
-            feeling watched.
-          </p>
-          <div className="mt-4 rounded-2xl border border-slate-100 bg-[#F7FAFC] p-4 text-sm text-slate-700">
-            <p className="font-semibold text-slate-800">
-              This is where most homes are weakest:
-            </p>
-            <ul className="mt-3 space-y-2">
-              <li>Something happens at night...</li>
-              <li>Nobody is sure what they saw...</li>
-              <li>No evidence, no timeline, no clarity.</li>
-            </ul>
-          </div>
-
-          <Section
-            title="The 3 Layers of Real Home Protection"
-            titleClassName="text-lg md:text-xl font-bold text-slate-900"
-          >
-            <div className="space-y-3">
-              <AccordionItem title="Awareness (Know what is happening)">
-                <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-                  <li>Motion alerts for entry points</li>
-                  <li>Clear visibility of gate/front/garage/side paths</li>
-                </ul>
-              </AccordionItem>
-
-              <AccordionItem title="Evidence (If something happens, you are covered)">
-                <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-                  <li>Recorded footage that clearly shows faces/plates (when possible)</li> 
-                  <li>Reliable storage (not just &quot;I think it recorded&quot;)</li>
-                </ul>
-              </AccordionItem>
-
-              <AccordionItem title="Response (Faster action, less panic)">
-                  <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-                  <li>Phone notifications that are set up correctly (not spammy)</li>
-                  <li>Family knows what to do when an alert triggers</li>
-                </ul>
-              </AccordionItem>
-            </div>
-          </Section>
-          <Section
-            title="A Security System is your best Next Step!"
-            titleClassName="text-lg md:text-xl font-bold text-slate-900"
-          >
-            <div className="rounded-2xl border border-[#0E79B2]/20 bg-[#EAF4FB] p-4">
-              <p className="text-base font-semibold text-slate-800">
-                A properly planned CCTV system gives you:
-              </p>
-              <BulletList
-                items={[
-                  "Early warning before a situation escalates",
-                  "Proof for authorities, barangay reports, or disputes",
-                  "Confidence when you are away (work, school runs, travel)",
-                ]}
-              />
-            </div>
-            <div className="rounded-3xl border border-[#0E79B2]/40 bg-[#0E79B2] p-5 text-center text-white shadow-lg shadow-[#0E79B2]/30">
-              <p className="mt-2 text-sm font-extrabold text-white/90">
-                To complete your piece-of-mind, We offers you a worry-free solution.
-              </p>
-              <a
-                href="tel:09959959229"
-                className="mt-4 inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-extrabold text-[#0E79B2] shadow-lg transition-transform hover:scale-[1.02]"
-              >
-                CALL US NOW
-              </a>
-            </div>
-          </Section>
-        </>
-      ),
-    },
-    {
-      id: "emergency",
-      title: "Emergency Readiness",
-      summary: "Goal: Make sure everyone knows what to do under stress.",
-      content: (
-        <>
-          <p className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-800">Goal:</span> Make
-            sure everyone knows what to do under stress.
-          </p>
-          <Section title="Emergency Readiness (ICE + 911 + Meet-Up Plan)">
-            <div className="space-y-3">
-              <AccordionItem title="ICE Card Setup (🪪)">
-                <p className="text-sm text-slate-600">
-                  Create it. Print it. Save it.
-                </p>
-                <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-                  <li>Full names + birthdays</li>
-                  <li>Allergies / medical conditions</li>
-                  <li>Blood type</li>
-                  <li>Emergency contacts</li>
-                  <li>Home address + landmark directions</li>
-                </ul>
-              </AccordionItem>
-
-              <AccordionItem title="Call the Right Line (📞)">
-                <p className="text-sm text-slate-600">
-                  Save 911 on every phone. In the Philippines, 911 is the nationwide emergency hotline, supported by the government’s Unified 911 rollout.
-                </p>
-              </AccordionItem>
-
-              <AccordionItem title="Meet-Up Plan (📍)">
-                  <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-                  <li>2 exit routes: Main + backup</li>
-                  <li>1 meet-up spot nearby: outside the gate / neighbor’s house / sari-sari store corner</li>
-                </ul>
-              </AccordionItem>
-            </div>
-          </Section>
-          <MiniCheck text="If someone yells Fire! at 2 AM, does everyone know where to go without thinking?" />
-        </>
-      ),
-    },
-  ];
   const activeBlueprint =
-    blueprintCards.find((card) => card.id === activeBlueprintId) ?? null;
+    BLUEPRINT_CARDS.find((card) => card.id === activeBlueprintId) ?? null;
 
   useEffect(() => {
     if (!activeBlueprintId) return;
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setActiveBlueprintId(null);
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeBlueprintId]);
 
-  // Function to determine buttons based on Lead Priority (Hot/Warm/Nurture)
-  const renderActionButtons = () => {
-    const handleCallUs = () => {
-      window.location.href = "tel:09959959229";
-    };
+  const handleCallUs = () => {
+    window.location.href = RESULTS_CALL_HREF;
+  };
 
-    const handleBookVisit = () => {
-      const url = "https://calendly.com/vallarta-troy/30min";
-      window.open(url, "_blank", "noopener,noreferrer");
-    };
-
-    const CommonDIYButton = () => (
-      <button
-        onClick={() => setShowDIY(true)}
-        className="flex-1 bg-white text-[#0E79B2] border border-[#0E79B2]/30 py-3 rounded-xl font-bold hover:bg-[#F7FAFC] transition-colors flex items-center justify-center gap-2"
-      >
-        <FileText className="w-5 h-5" /> DIY Security Plan
-      </button>
-    );
-
-    const CommonCallButton = () => (
-      <button
-        onClick={handleCallUs}
-        className="flex-1 bg-white text-[#0E79B2] border border-[#0E79B2]/30 py-3 rounded-xl font-bold hover:bg-[#F7FAFC] transition-colors flex items-center justify-center gap-2"
-      >
-        <Phone className="w-5 h-5" /> Call Us Now
-      </button>
-    );
-
-    const PrimaryBookButton = () => (
-      <button
-        onClick={handleBookVisit}
-        className="flex-1 bg-[#0E79B2] text-white py-3 rounded-xl font-bold hover:bg-[#0b5e8b] transition-colors flex items-center justify-center gap-2"
-      >
-        <Calendar className="w-5 h-5" /> Book Site Visit (Free)
-      </button>
-    );
-
-    const PrimaryCallButton = () => (
-      <button
-        onClick={handleCallUs}
-        className="flex-1 bg-[#0E79B2] text-white py-3 rounded-xl font-bold hover:bg-[#0b5e8b] transition-colors flex items-center justify-center gap-2"
-      >
-        <Phone className="w-5 h-5" /> Call Us Now
-      </button>
-    );
-
-    if (result.leadTier === "Hot") {
-      // HOT: Book Visit + Call Us
-      return (
-        <>
-          <PrimaryBookButton />
-          <CommonCallButton />
-        </>
-      );
-    } else if (result.leadTier === "Warm") {
-      // WARM: Book Visit + DIY Plan
-      return (
-        <>
-          <PrimaryBookButton />
-          {showDIYPlan && <CommonDIYButton />}
-        </>
-      );
-    } else {
-      // NURTURE (Default): Call Us + DIY Plan
-      return (
-        <>
-          <PrimaryCallButton />
-          {showDIYPlan && <CommonDIYButton />}
-        </>
-      );
-    }
+  const handleBookVisit = () => {
+    window.open(RESULTS_BOOK_VISIT_URL, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -383,7 +63,7 @@ export default function ResultsPage({
       {showDIY && showDIYPlan && (
         <DIYView
           onBack={() => setShowDIY(false)}
-          onCall={() => (window.location.href = "tel:09959959229")}
+          onCall={handleCallUs}
           result={result}
           data={data}
         />
@@ -399,66 +79,20 @@ export default function ResultsPage({
             <h1 className="text-3xl font-bold mb-2">
               {firstName ? `Hi ${firstName}` : "Hi there"}
             </h1>
-            <p className="opacity-90">We Have Finished Your Personalized Home Plan </p>
+            <p className="opacity-90">
+              We Have Finished Your Personalized Home Plan
+            </p>
           </div>
 
           <div className="p-8 space-y-8">
-            {/* Core Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
-                <ShieldCheck
-                  className={`h-9 w-9 ${severityColors[safetyLevel.severity]}`}
-                />
-                <div className="text-xl font-bold leading-tight min-h-2.25rem text-[#2D3748]">
-                  {safetyLevel.label}
-                </div>
-                <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">
-                  Safety Score
-                </div>
-              </div>
-              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
-                <Gauge
-                  className={`h-9 w-9 ${severityColors[priority.severity]}`}
-                />
-                <div className="text-xl font-bold leading-tight min-h-2.25rem text-[#2D3748]">
-                  {priority.label}
-                </div>
-                <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">
-                  Priority Action
-                </div>
-              </div>
-              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
-                <Video className="h-9 w-9 text-[#0E79B2]" />
-                <div className="text-xl font-bold leading-tight min-h-2.25rem text-[#2D3748]">
-                  {result.cameraCount}
-                </div>
-                <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">
-                  Security Cameras Needed
-                </div>
-              </div>
-              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
-                <Siren
-                  className={`h-9 w-9 ${severityColors[emergency.severity]}`}
-                />
-                <div className="text-xl font-bold leading-tight min-h-2.25rem text-[#2D3748]">
-                  {emergency.label}
-                </div>
-                <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">
-                  Emergency Readiness
-                </div>
-              </div>
-              <div className="bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
-                <HouseHeart className={`h-9 w-9 ${panatagIconColor}`} />
-                <div className="text-xl font-bold leading-tight min-h-2.25rem text-[#2D3748]">
-                  {panatagRating}/10
-                </div>
-                <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">
-                  Panatag Rating
-                </div>
-              </div>
-            </div>
+            <ResultsStatsGrid
+              safetyLevel={safetyLevel}
+              priority={priority}
+              emergency={emergency}
+              panatagRating={panatagRating}
+              cameraCount={result.cameraCount}
+            />
 
-            {/* Recommendations */}
             <div>
               <h3 className="font-bold text-2xl mb-4 flex items-center justify-center gap-2">
                 Your Home Safety Blueprint
@@ -467,130 +101,29 @@ export default function ResultsPage({
                 Tap a card to reveal the actions that make your home feel safer,
                 faster.
               </p>
-              <div className="grid gap-4 md:grid-cols-3 mb-8">
-                {blueprintCards.map((card) => {
-                  const isFeatured = Boolean(card.featured);
-                  return (
-                    <button
-                      key={card.id}
-                      type="button"
-                      onClick={() => setActiveBlueprintId(card.id)}
-                      className={[
-                        "relative text-left bg-white border-2 border-slate-300/80 rounded-2xl p-5 shadow-sm transition-all duration-300",
-                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/60",
-                        "hover:-translate-y-1 hover:shadow-lg hover:border-[#0E79B2] hover:ring-2 hover:ring-[#0E79B2]/20",
-                        isFeatured
-                          ? "md:scale-[1.04] md:-translate-y-1 border-[#0E79B2]/70 ring-1 ring-[#0E79B2]/20 bg-linear-to-br from-white via-white to-[#EAF4FB]"
-                          : "",
-                      ].join(" ")}
-                    >
-                      {isFeatured && (
-                        <span className="pointer-events-none absolute -inset-1 rounded-3xl bg-[#0E79B2]/20 blur-2xl opacity-70" />
-                      )}
-                      <div className="relative z-10">
-                        <h4 className="text-center text-xl font-bold text-slate-800">
-                          {card.title}
-                        </h4>
-                        <p className="mt-2 text-center text-xs italic text-slate-500">
-                          {card.summary}
-                        </p>
-                        <p className="mt-3 text-xs font-semibold text-[#0E79B2] flex items-center gap-1">
-                          Click to view details <span aria-hidden="true">→</span>
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              {activeBlueprint && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-                  <button
-                    type="button"
-                    onClick={() => setActiveBlueprintId(null)}
-                    className="absolute inset-0 bg-slate-900/70 backdrop-blur-md"
-                    aria-label="Close blueprint details"
-                  />
-                  <div
-                    role="dialog"
-                    aria-modal="true"
-                    className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-[0_30px_80px_-40px_rgba(15,23,42,0.6)] ring-1 ring-slate-200"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setActiveBlueprintId(null)}
-                      className="absolute right-4 top-4 z-10 rounded-full bg-white/20 p-2 text-white shadow-sm backdrop-blur hover:bg-white/30"
-                      aria-label="Close"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                    <div className="bg-linear-to-r from-[#0E79B2] via-[#1B8CCB] to-[#0E79B2] px-6 py-5 text-white">
-                      <p className="text-xs uppercase tracking-[0.2em] text-white/70">
-                        Your Home Safety Blueprint
-                      </p>
-                      <h4 className="mt-2 text-2xl font-bold">
-                        {activeBlueprint.title}
-                      </h4>
-                    </div>
-                    <div className="max-h-[70vh] overflow-y-auto bg-white px-6 py-6">
-                      <div className="mt-5">{activeBlueprint.content}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
-                <CheckCircle2 className="text-[#2E8B57]" />
-                Safely Secured Homes Approach
-              </h3>
-              <ul className="space-y-3">
-                {result.recommendations.length > 0 ? (
-                  result.recommendations.map((rec, i) => (
-                    <li
-                      key={i}
-                      className="flex gap-3 text-slate-700 bg-[#F7FAFC] p-3 rounded-lg"
-                    >
-                      <span className="text-[#0E79B2] font-bold">•</span> {rec}
-                    </li>
-                  ))
-                ) : (
-                  <li className="text-slate-500 italic">
-                    We focus on security that blends into your home layout—so
-                    you feel safe, not monitored. The recommendations are based
-                    on your selections.
-                  </li>
-                )}
-                {data.priority_areas.length > 0 && (
-                  <li className="flex gap-3 text-slate-700 bg-[#F7FAFC] p-3 rounded-lg">
-                    <span className="text-[#0E79B2] font-bold">•</span>
-                    Key Zones: {data.priority_areas.join(", ")}
-                  </li>
-                )}
-                <li className="flex gap-3 text-slate-700 bg-[#F7FAFC] p-3 rounded-lg">
-                  <p>
-                    <strong>Our baseline promise:</strong> All key zones points
-                    covered with cameras + notifications configured for real
-                    threats (not constant alarm) and we are there for your
-                    safety needs from consult, install, and maintain.
-                  </p>
-                </li>
-              </ul>
+
+              <BlueprintCardsGrid
+                cards={BLUEPRINT_CARDS}
+                onSelect={setActiveBlueprintId}
+              />
+
+              <BlueprintModal
+                activeBlueprint={activeBlueprint}
+                onClose={() => setActiveBlueprintId(null)}
+              />
+
+              <RecommendationsPanel result={result} data={data} />
             </div>
 
-            {/* Next Steps - Dynamic Buttons */}
-            <div className="bg-[#FFB300]/10 border border-[#FFB300]/30 rounded-2xl p-6">
-              <h4 className="font-bold text-[#2D3748] mb-2 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-[#FFB300]" /> Next Step
-              </h4>
-              <p className="text-[#2D3748] mb-4 text-sm">
-                Since your home requires{" "}
-                <strong>{result.cameraCount} cameras</strong>, identifying blind
-                spots, professional camera placement, and layout plan. Click the
-                &ldquo;Call Us Now&ldquo; to reserve onsite assessment for FREE
-                and get a done all for you personalized security system.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                {renderActionButtons()}
-              </div>
-            </div>
+            <NextStepPanel cameraCount={result.cameraCount}>
+              <ResultActionButtons
+                leadTier={result.leadTier}
+                showDIYPlan={showDIYPlan}
+                onShowDIY={() => setShowDIY(true)}
+                onCallUs={handleCallUs}
+                onBookVisit={handleBookVisit}
+              />
+            </NextStepPanel>
           </div>
         </motion.div>
       </div>

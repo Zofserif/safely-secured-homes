@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { initPostHog } from "../posthog";
 
@@ -16,6 +16,10 @@ import {
   submitToEmail,
   submitToFormspree,
 } from "../lib/leads";
+import {
+  registerSshDebugMethods,
+  type LeadSendsStatus,
+} from "../lib/sshDebug";
 import {
   buildFunnelContext,
   trackLeadGenerated,
@@ -40,6 +44,23 @@ type StoredLead = {
 };
 
 const STORAGE_KEY = "ssh_lead_state";
+const LEAD_SENDS_DEBUG_STORAGE_KEY = "ssh_debug_lead_sends_enabled";
+const IS_LOCAL_DEV = process.env.NODE_ENV !== "production";
+
+const readPersistedLeadSendsEnabled = (): boolean | null => {
+  if (typeof window === "undefined") return null;
+  if (!IS_LOCAL_DEV) return null;
+
+  try {
+    const raw = localStorage.getItem(LEAD_SENDS_DEBUG_STORAGE_KEY);
+    if (raw === "true") return true;
+    if (raw === "false") return false;
+  } catch {
+    // Ignore localStorage read errors.
+  }
+
+  return null;
+};
 
 const readSearchParam = (key: string) => {
   if (typeof window === "undefined") return "";
@@ -96,6 +117,10 @@ export default function AppShell({
   const [debugReportsError, setDebugReportsError] = useState<
     boolean | undefined
   >(undefined);
+  const [leadSendsEnabled, setLeadSendsEnabled] = useState<boolean>(() => {
+    if (!IS_LOCAL_DEV) return true;
+    return readPersistedLeadSendsEnabled() ?? false;
+  });
   const [sourceParam, setSourceParam] = useState(() => source?.trim() ?? "");
   const [resolvedResultsKey, setResolvedResultsKey] = useState(
     () => resultsKey?.trim() ?? ""
@@ -115,9 +140,77 @@ export default function AppShell({
   );
   const shouldTrackView = initialView !== "results" || hasResolvedResultsView;
 
+  const setLeadSendsEnabledForDebug = useCallback((enabled: boolean) => {
+    if (!IS_LOCAL_DEV) {
+      console.warn(
+        "[sshDebug] lead send toggles are available only in local development."
+      );
+      return;
+    }
+
+    setLeadSendsEnabled(enabled);
+
+    try {
+      localStorage.setItem(LEAD_SENDS_DEBUG_STORAGE_KEY, String(enabled));
+    } catch {
+      console.warn(
+        "[sshDebug] Unable to persist lead send debug state in localStorage."
+      );
+    }
+  }, []);
+
+  const getLeadSendsStatus = useCallback((): LeadSendsStatus => {
+    const persisted = readPersistedLeadSendsEnabled() !== null;
+    return {
+      enabled: IS_LOCAL_DEV ? leadSendsEnabled : true,
+      environment: IS_LOCAL_DEV ? "development" : "production",
+      persisted,
+    };
+  }, [leadSendsEnabled]);
+
   useEffect(() => {
     initPostHog();
   }, []);
+
+  useEffect(() => {
+    if (!IS_LOCAL_DEV) return;
+    const persisted = readPersistedLeadSendsEnabled();
+    if (persisted !== null) {
+      setLeadSendsEnabled(persisted);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const unregister = registerSshDebugMethods({
+      leadSendsOn: () => {
+        setLeadSendsEnabledForDebug(true);
+        if (IS_LOCAL_DEV) {
+          console.info(
+            "[sshDebug] External lead sends enabled (EmailJS + Formspree)."
+          );
+        }
+      },
+      leadSendsOff: () => {
+        setLeadSendsEnabledForDebug(false);
+        if (IS_LOCAL_DEV) {
+          console.info(
+            "[sshDebug] External lead sends disabled (EmailJS + Formspree)."
+          );
+        }
+      },
+      leadSendsStatus: () => {
+        const status = getLeadSendsStatus();
+        console.info("[sshDebug] Lead send status:", status);
+        return status;
+      },
+    });
+
+    return () => {
+      unregister();
+    };
+  }, [getLeadSendsStatus, setLeadSendsEnabledForDebug]);
 
   useEffect(() => {
     const sourceFromUrl = readSearchParam("source");
@@ -410,13 +503,21 @@ export default function AppShell({
       formSource ??
       (effectiveFormMode === "newsletter" ? "newsletter" : undefined);
 
+    const shouldSendExternalLeads = !IS_LOCAL_DEV || leadSendsEnabled;
     const submissions = [
-      submitToFormspree(data, calcResult, submissionSource),
       submitLeadToSupabase(data, calcResult, submissionSource),
     ];
 
-    if (effectiveFormMode !== "newsletter") {
-      submissions.push(submitToEmail(data, calcResult, submissionSource));
+    if (shouldSendExternalLeads) {
+      submissions.push(submitToFormspree(data, calcResult, submissionSource));
+
+      if (effectiveFormMode !== "newsletter") {
+        submissions.push(submitToEmail(data, calcResult, submissionSource));
+      }
+    } else {
+      console.info(
+        "[sshDebug] Skipping EmailJS and Formspree submissions in local dev. Run window.sshDebug.leadSendsOn() to enable."
+      );
     }
 
     await Promise.all(submissions);

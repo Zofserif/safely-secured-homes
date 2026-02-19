@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { registerSshDebugMethods } from "../../../lib/sshDebug";
 import {
   refreshBonusTimerFromStorage,
   resetBonusTimerForDebug,
@@ -60,18 +61,14 @@ export const useHomeDebugControls = ({
       );
     };
 
-    (
-      window as typeof window & { sshDebug?: Record<string, () => void> }
-    ).sshDebug = {
+    const unregister = registerSshDebugMethods({
       expireBonus,
       reportsSoldOut: setReportsSoldOut,
       normal,
-    };
+    });
 
     return () => {
-      delete (
-        window as typeof window & { sshDebug?: Record<string, () => void> }
-      ).sshDebug;
+      unregister();
     };
   }, []);
 

@@ -396,20 +396,49 @@ export default function WizardForm({
       <h3 className="text-xl font-bold text-center text-[#2D3748]">
         Current Setup
       </h3>
-      <div>
-        <label className="block text-sm font-medium mb-2 text-slate-700 mt-4">
-          Do you currently have a security system?
-        </label>
-        <select
-          className="w-full p-3 rounded-xl border border-slate-300"
-          value={formData.current_setup}
-          onChange={(e) => updateField("current_setup", e.target.value)}
-        >
-          <option value="">Select status</option>
-          {CURRENT_SETUP_VALUES.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <label className="text-sm font-semibold text-[#2D3748]">
+            Do you currently have a security system?
+          </label>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+            Choose one
+          </span>
+        </div>
+        <p className="text-xs text-slate-500">
+          Select one option that best matches your current setup.
+        </p>
+        <div className="space-y-2">
+          {CURRENT_SETUP_VALUES.map((opt) => {
+            const isSelected = formData.current_setup === opt;
+            return (
+              <label
+                key={opt}
+                className={`group flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all ${isSelected ? "border-[#0E79B2] bg-[#0E79B2]/10 ring-1 ring-[#0E79B2]/30 shadow-sm" : "border-slate-200 bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+              >
+                <input
+                  type="radio"
+                  name="current_setup"
+                  value={opt}
+                  checked={isSelected}
+                  onChange={(e) => updateField("current_setup", e.target.value)}
+                  className="sr-only"
+                />
+                <span
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all ${isSelected ? "border-[#0E79B2] bg-[#0E79B2] text-white" : "border-slate-300 bg-white text-transparent group-hover:border-[#0E79B2]/60"}`}
+                  aria-hidden="true"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+                <span
+                  className={`text-sm font-medium leading-snug ${isSelected ? "text-[#0E79B2]" : "text-slate-700 group-hover:text-slate-900"}`}
+                >
+                  {opt}
+                </span>
+              </label>
+            );
+          })}
+        </div>
       </div>
       <button
         onClick={nextStep}
@@ -445,15 +474,18 @@ export default function WizardForm({
     </div>,
 
     // 4. Size & Floors
-    <div key="size" className="space-y-6">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+    <div key="size" className="space-y-4 sm:space-y-6">
+      <h3 className="text-lg sm:text-xl font-bold text-center text-[#2D3748]">
         Home Details
       </h3>
       <div>
-        <label className="block text-sm font-medium mb-2 text-slate-700">
-          Lot Size
-        </label>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <label className="text-sm font-medium text-slate-700">
+            Lot Size
+          </label>
+          <span className="text-[11px] text-slate-500">Choose one</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
           {HOME_SIZE_CARDS.map((opt) => {
             const isSelected = formData.home_size === opt.value;
             return (
@@ -461,23 +493,23 @@ export default function WizardForm({
                 key={opt.value}
                 type="button"
                 onClick={() => updateField("home_size", opt.value)}
-                className={`group overflow-hidden rounded-2xl border text-left transition-all ${isSelected ? "border-[#0E79B2] ring-2 ring-[#0E79B2]/20" : "border-slate-200 hover:border-[#0E79B2]/60"}`}
+                className={`group overflow-hidden rounded-xl sm:rounded-2xl border text-left transition-all ${isSelected ? "border-[#0E79B2] ring-2 ring-[#0E79B2]/20" : "border-slate-200 hover:border-[#0E79B2]/60"}`}
                 aria-pressed={isSelected}
               >
-                <div className="relative aspect-square w-full bg-slate-100">
+                <div className="relative h-20 sm:h-28 w-full bg-slate-100">
                   <Image
                     src={opt.image}
                     alt={opt.label}
                     fill
                     sizes="(min-width: 768px) 50vw, 100vw"
-                    className="object-contain p-3 sm:p-4"
+                    className="object-contain p-2 sm:p-3"
                   />
                 </div>
-                <div className="p-3 text-center">
-                  <div className={`text-sm font-semibold ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}>
+                <div className="p-2 sm:p-3 text-center">
+                  <div className={`text-xs sm:text-sm leading-tight font-semibold ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}>
                     {opt.title ?? opt.label}
                   </div>
-                  <div className="text-[11px] text-slate-500">
+                  <div className="mt-0.5 text-[10px] sm:text-[11px] leading-tight text-slate-500">
                     {opt.subtitle ?? "Approx. bedrooms"}
                   </div>
                 </div>
@@ -496,7 +528,7 @@ export default function WizardForm({
               key={f}
               type="button"
               onClick={() => updateField("floors", f)}
-              className={`flex-1 py-3 rounded-xl border ${formData.floors === f ? "bg-[#0E79B2] text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
+              className={`flex-1 py-2.5 sm:py-3 text-sm font-semibold rounded-xl border ${formData.floors === f ? "bg-[#0E79B2] text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
             >
               {f}
             </button>
@@ -506,7 +538,7 @@ export default function WizardForm({
       <button
       onClick={nextStep}
         disabled={!formData.home_size || !formData.floors}
-        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-4"
+        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-2 sm:mt-4"
       >
         Next
       </button>
@@ -883,18 +915,61 @@ export default function WizardForm({
           </div>
         </label>
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-2">Budget Zone</label>
-        <select
-          className="w-full p-3 rounded-xl border border-slate-300"
-          value={formData.budget_band}
-          onChange={(e) => updateField("budget_band", e.target.value)}
-        >
-          <option value="">Select range</option>
-          {BUDGET_BAND_OPTIONS.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <label className="text-sm font-semibold text-[#2D3748]">
+            Budget Zone
+          </label>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+            Choose one
+          </span>
+        </div>
+        <p className="text-xs text-slate-500">
+          Select one budget range that best matches your current plan.
+        </p>
+        <div className="space-y-2">
+          {BUDGET_BAND_OPTIONS.map((opt) => {
+            const isSelected = formData.budget_band === opt;
+            const trimmedOption = opt.trim();
+            const budgetParts = trimmedOption.match(/^(.*)\((.*)\)$/);
+            const budgetTitle = budgetParts ? budgetParts[1].trim() : trimmedOption;
+            const budgetRange = budgetParts ? `(${budgetParts[2].trim()})` : "";
+
+            return (
+              <label
+                key={opt}
+                className={`group flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all ${isSelected ? "border-[#0E79B2] bg-[#0E79B2]/10 ring-1 ring-[#0E79B2]/30 shadow-sm" : "border-slate-200 bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+              >
+                <input
+                  type="radio"
+                  name="budget_band"
+                  value={opt}
+                  checked={isSelected}
+                  onChange={(e) => updateField("budget_band", e.target.value)}
+                  className="sr-only"
+                />
+                <span
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all ${isSelected ? "border-[#0E79B2] bg-[#0E79B2] text-white" : "border-slate-300 bg-white text-transparent group-hover:border-[#0E79B2]/60"}`}
+                  aria-hidden="true"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+                <span className="min-w-0">
+                  <span
+                    className={`block text-sm font-semibold leading-tight ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}
+                  >
+                    {budgetTitle}
+                  </span>
+                  {budgetRange ? (
+                    <span className="block text-xs text-slate-500">
+                      {budgetRange}
+                    </span>
+                  ) : null}
+                </span>
+              </label>
+            );
+          })}
+        </div>
       </div>
       <button
         onClick={nextStep}

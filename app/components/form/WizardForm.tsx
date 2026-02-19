@@ -1,6 +1,17 @@
 /* eslint-disable react/no-unescaped-entities */
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronLeft, Loader2 } from "lucide-react";
+import {
+  BellRing,
+  Check,
+  ChevronLeft,
+  DoorOpen,
+  Lightbulb,
+  Loader2,
+  ShieldAlert,
+  ToggleLeft,
+  Tv,
+  type LucideIcon,
+} from "lucide-react";
 import Image from "next/image";
 import { useState, type CSSProperties } from "react";
 import {
@@ -16,6 +27,7 @@ import {
   MAIN_GOAL_OPTIONS,
   PRIORITY_AREAS,
   PROPERTY_TYPES,
+  SMART_HOME_FEATURES,
   SMART_HOME_FEATURE_OPTIONS,
   TIMELINE_OPTIONS,
 } from "../../lib/formOptions";
@@ -61,6 +73,53 @@ const createInitialFormData = (mode: "default" | "newsletter"): FormData => {
     email: lead.email || "",
     mobile: lead.mobile || "",
   };
+};
+
+const SMART_HOME_FEATURE_DETAILS: Record<
+  (typeof SMART_HOME_FEATURE_OPTIONS)[number],
+  {
+    title: string;
+    description: string;
+    benefit: string;
+    Icon: LucideIcon;
+  }
+> = {
+  [SMART_HOME_FEATURES.AUTOMATED_LIGHTING_SYSTEM]: {
+    title: "Automated Lighting",
+    description: "Lights turn on/off automatically by schedule or motion.",
+    benefit: "Great for night safety and energy saving.",
+    Icon: Lightbulb,
+  },
+  [SMART_HOME_FEATURES.SMART_VIDEO_DOORBELL]: {
+    title: "Smart Video Doorbell",
+    description: "See and talk to visitors through your phone from anywhere.",
+    benefit: "Useful for deliveries and front-door monitoring.",
+    Icon: BellRing,
+  },
+  [SMART_HOME_FEATURES.AUTOMATIC_ENTRY_EXIT_GATE_OPENERS]: {
+    title: "Automatic Gate Openers",
+    description: "Open and close your gate remotely with your phone or button.",
+    benefit: "Adds convenience and safer vehicle entry/exit.",
+    Icon: DoorOpen,
+  },
+  [SMART_HOME_FEATURES.SMART_ENTERTAINMENT_SYSTEM]: {
+    title: "Smart Entertainment",
+    description: "Control TV, speakers, and media in one connected setup.",
+    benefit: "Better comfort and simpler home scenes.",
+    Icon: Tv,
+  },
+  [SMART_HOME_FEATURES.SMART_ELECTRONIC_SWITCH_SYSTEM]: {
+    title: "Smart Electronic Switches",
+    description: "Convert regular switches to app or voice-controlled switches.",
+    benefit: "Easier daily control for lights and appliances.",
+    Icon: ToggleLeft,
+  },
+  [SMART_HOME_FEATURES.EMERGENCY_DECTION_SYSTEM]: {
+    title: "Emergency Detection",
+    description: "Get alerts for fire, smoke, and water leaks in key areas.",
+    benefit: "Faster response to protect family and property.",
+    Icon: ShieldAlert,
+  },
 };
 
 export default function WizardForm({
@@ -715,14 +774,24 @@ export default function WizardForm({
         </label>
         {Boolean(formData.smart_home_interest) && (
           <div className="mt-4">
+            <p className="mb-3 text-xs font-medium text-slate-600">
+              Pick the features you want. You can select multiple options.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {SMART_HOME_FEATURE_OPTIONS.map((feature) => {
                 const isSelected =
                   getArrayFieldValues("smart_home_features").includes(feature);
+                const featureDetails = SMART_HOME_FEATURE_DETAILS[feature] ?? {
+                  title: feature,
+                  description: "Add this smart feature to your setup.",
+                  benefit: "Improves convenience and home monitoring.",
+                  Icon: ShieldAlert,
+                };
+                const FeatureIcon = featureDetails.Icon;
                 return (
                   <label
                     key={feature}
-                    className={`group flex items-start gap-3 rounded-xl border p-3 transition-all cursor-pointer ${isSelected ? "border-[#0E79B2] bg-[#0E79B2]/10 shadow-sm" : "border-slate-200 hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+                    className={`group relative rounded-2xl border p-4 transition-all cursor-pointer ${isSelected ? "border-[#0E79B2] bg-[#0E79B2]/10 shadow-sm" : "border-slate-200 bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
                   >
                     <input
                       type="checkbox"
@@ -733,16 +802,28 @@ export default function WizardForm({
                       className="sr-only"
                     />
                     <span
-                      className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-all ${isSelected ? "border-[#0E79B2] bg-[#0E79B2] text-white" : "border-slate-300 bg-white text-transparent"}`}
+                      className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-md border transition-all ${isSelected ? "border-[#0E79B2] bg-[#0E79B2] text-white" : "border-slate-300 bg-white text-transparent"}`}
                       aria-hidden="true"
                     >
                       <Check className="h-4 w-4" />
                     </span>
-                    <span
-                      className={`text-sm font-medium leading-snug ${isSelected ? "text-[#0E79B2]" : "text-slate-700 group-hover:text-slate-900"}`}
+                    <div
+                      className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${isSelected ? "bg-[#0E79B2] text-white" : "bg-slate-100 text-slate-600 group-hover:bg-[#0E79B2]/15 group-hover:text-[#0E79B2]"}`}
+                      aria-hidden="true"
                     >
-                      {feature}
-                    </span>
+                      <FeatureIcon className="h-5 w-5" />
+                    </div>
+                    <p
+                      className={`pr-8 text-sm font-semibold leading-tight ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}
+                    >
+                      {featureDetails.title}
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                      {featureDetails.description}
+                    </p>
+                    <p className="mt-2 text-[11px] font-medium text-slate-500">
+                      {featureDetails.benefit}
+                    </p>
                   </label>
                 );
               })}

@@ -295,7 +295,9 @@ export const trackFunnelCtaClicked = (
 };
 
 export const trackPageView = (view: AppView, context?: FunnelContext) => {
-  capture("$pageview", {
+  // Use a non-reserved event name for app-level view changes to avoid
+  // PostHog's internal pageview ratio warnings in custom SPA flows.
+  capture("app_page_viewed", {
     page: view,
     path: APP_VIEW_PATH[view],
   });

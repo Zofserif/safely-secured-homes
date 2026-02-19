@@ -38,15 +38,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Results({
+type SearchParams = Record<string, string | string[] | undefined>;
+
+export default async function Results({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<SearchParams>;
 }) {
+  const resolvedSearchParams = (await searchParams) ?? {};
   const source =
-    typeof searchParams?.source === "string" ? searchParams.source : undefined;
+    typeof resolvedSearchParams.source === "string"
+      ? resolvedSearchParams.source
+      : undefined;
   const resultsKey =
-    typeof searchParams?.r === "string" ? searchParams.r : undefined;
+    typeof resolvedSearchParams.r === "string"
+      ? resolvedSearchParams.r
+      : undefined;
   const formMode = source?.toLowerCase() === "newsletter" ? "newsletter" : "default";
 
   return (

@@ -513,24 +513,31 @@ export default function WizardForm({
     </div>,
 
     // 5. Safety Check
-    <div key="safety-check" className="space-y-4">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+    <div key="safety-check" className="space-y-3 sm:space-y-4">
+      <h3 className="text-lg sm:text-xl font-bold text-center text-[#2D3748]">
         Home Safety Check
       </h3>
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-        <p className="text-sm font-semibold text-[#2D3748]">How this works</p>
-        <p className="text-sm text-slate-600">
+      <div className="rounded-xl sm:rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4 space-y-2 sm:space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs sm:text-sm font-semibold text-[#2D3748]">
+            How this works
+          </p>
+          <span className="text-[11px] sm:text-xs text-slate-600 font-medium">
+            <span>
+              {ratedSafetyCount}/{safetyFields.length} rated
+            </span>
+          </span>
+        </div>
+        <p className="text-[11px] sm:text-sm leading-snug text-slate-600">
           Rate each area by dragging the slider. Left means higher risk. Right
           means safer.
         </p>
         <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs text-slate-600">
+          <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-600">
             <span>Progress</span>
-            <span>
-              {ratedSafetyCount}/{safetyFields.length} rated
-            </span>
+            <span>{safetyCompletionPct}% complete</span>
           </div>
-          <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+          <div className="h-1.5 sm:h-2 rounded-full bg-slate-200 overflow-hidden">
             <div
               className="h-full bg-[#0E79B2] transition-all duration-300"
               style={{ width: `${safetyCompletionPct}%` }}
@@ -539,7 +546,7 @@ export default function WizardForm({
         </div>
       </div>
 
-      <div className="space-y-5 max-h-[480px] overflow-y-auto pr-1">
+      <div className="space-y-3 sm:space-y-5 md:max-h-[480px] md:overflow-y-auto md:pr-1">
         {safetySections.map((section) => {
           const allowsNa = naEnabledSafetyFieldSet.has(section.id);
           const isNaSelected = allowsNa && Boolean(naSafetySelections[section.id]);
@@ -604,16 +611,16 @@ export default function WizardForm({
           return (
             <div
               key={section.id}
-              className={`rounded-2xl border p-5 space-y-4 transition-all ${hasScore ? "border-[#0E79B2]/40 bg-[#F8FBFF] shadow-sm" : "border-slate-200 bg-white"}`}
+              className={`rounded-xl sm:rounded-2xl border p-3.5 sm:p-5 space-y-3 sm:space-y-4 transition-all ${hasScore ? "border-[#0E79B2]/40 bg-[#F8FBFF] shadow-sm" : "border-slate-200 bg-white"}`}
             >
-              <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-[#2D3748] text-base">
+              <div className="flex items-start sm:items-center justify-between gap-2">
+                <h4 className="flex-1 pr-2 font-semibold text-[#2D3748] text-sm sm:text-base leading-tight">
                   {section.title}
                 </h4>
-                <div className="flex items-center gap-3">
+                <div className="shrink-0 flex items-center gap-2 sm:gap-3">
                   {allowsNa && (
                     <label
-                      className={`inline-flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold transition-colors ${isNaSelected ? "text-sky-700" : "text-slate-500 hover:text-slate-700"}`}
+                      className={`inline-flex cursor-pointer items-center gap-1 text-[10px] sm:text-[11px] font-semibold transition-colors whitespace-nowrap ${isNaSelected ? "text-sky-700" : "text-slate-500 hover:text-slate-700"}`}
                     >
                       <input
                         type="checkbox"
@@ -626,7 +633,7 @@ export default function WizardForm({
                     </label>
                   )}
                   <span
-                    className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${safetyState.className}`}
+                    className={`rounded-full border px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap ${safetyState.className}`}
                   >
                     {safetyState.label}
                   </span>
@@ -634,13 +641,15 @@ export default function WizardForm({
               </div>
               <div className="space-y-2">
                 {isNaSelected ? (
-                  <p className="text-xs text-sky-700">
+                  <p className="text-[11px] sm:text-xs leading-snug text-sky-700">
                     Marked as N/A because this space does not exist in your home.
                   </p>
                 ) : (
                   <>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-slate-500">Your rating</span>
+                    <div className="flex items-center justify-between text-[11px] sm:text-xs">
+                      <span className="font-medium text-slate-500">
+                        Your rating
+                      </span>
                       <span className="font-semibold text-[#2D3748]">
                         {ratingLabel}
                       </span>
@@ -651,17 +660,16 @@ export default function WizardForm({
                       max="5"
                       step={0.1}
                       value={sliderValue}
-                      onChange={(e) => {
-                        const rawValue = parseFloat(e.target.value);
-                        setSafetySliderDrafts((prev) => ({
-                          ...prev,
-                          [section.id]: rawValue,
-                        }));
-                      }}
-                      onPointerUp={(e) => {
+                      onInput={(e) => {
                         commitSafetySliderValue(
                           section.id,
-                          parseFloat((e.target as HTMLInputElement).value)
+                          parseFloat(e.currentTarget.value)
+                        );
+                      }}
+                      onChange={(e) => {
+                        commitSafetySliderValue(
+                          section.id,
+                          parseFloat(e.target.value)
                         );
                       }}
                       onBlur={(e) => {
@@ -674,7 +682,7 @@ export default function WizardForm({
                       className="safety-range w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40"
                       aria-label={`${section.title} safety rating`}
                     />
-                    <div className="flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-500">
                       <span>Riskier</span>
                       <span>Safer</span>
                     </div>

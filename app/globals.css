@@ -35,6 +35,8 @@ body {
   background-image: var(--slider-fill);
   background-size: var(--slider-fill-size);
   background-repeat: no-repeat;
+  touch-action: pan-x;
+  -webkit-tap-highlight-color: transparent;
   outline: none;
 }
 

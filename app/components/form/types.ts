@@ -24,10 +24,17 @@ export type SafetyField =
   | "safety_indoor_choke_points"
   | "safety_emergency_readiness";
 
-export type SafetySection = {
-  id: SafetyField;
+export type SafetyCategoryId =
+  | "home_entrance"
+  | "neighborhood_safety_check"
+  | "indoor_outdoor_blindspots"
+  | "emergency_readiness_home";
+
+export type SafetyCategory = {
+  id: SafetyCategoryId;
   title: string;
-  prompts: string[];
+  subtitle: string;
+  legacyFields: SafetyField[];
 };
 
 export type UpdateField = (field: keyof FormData, value: unknown) => void;
@@ -65,10 +72,11 @@ export type HomeDetailsStepProps = {
 
 export type SafetyCheckStepProps = {
   formData: FormData;
-  safetySliderDrafts: Partial<Record<SafetyField, number>>;
-  naSafetySelections: Partial<Record<SafetyField, boolean>>;
-  onToggleNaSafetySelection: (field: SafetyField) => void;
-  onCommitSafetySliderValue: (field: SafetyField, rawValue: number) => void;
+  safetySliderDrafts: Partial<Record<SafetyCategoryId, number>>;
+  onCommitSafetyCategorySliderValue: (
+    categoryId: SafetyCategoryId,
+    rawValue: number
+  ) => void;
   isSafetyComplete: boolean;
   ratedSafetyCount: number;
   safetyCompletionPct: number;
@@ -125,9 +133,7 @@ export type WizardControllerState = {
   isSubmitting: boolean;
   formData: FormData;
   errors: FieldErrors;
-  safetySliderDrafts: Partial<Record<SafetyField, number>>;
-  naSafetySelections: Partial<Record<SafetyField, boolean>>;
-  safetyFields: SafetyField[];
+  safetySliderDrafts: Partial<Record<SafetyCategoryId, number>>;
   ratedSafetyCount: number;
   safetyCompletionPct: number;
   isSafetyComplete: boolean;
@@ -140,8 +146,10 @@ export type WizardControllerActions = {
   nextStep: () => void;
   prevStep: () => void;
   submitFinal: () => void;
-  commitSafetySliderValue: (field: SafetyField, rawValue: number) => void;
-  toggleNaSafetySelection: (field: SafetyField) => void;
+  commitSafetyCategorySliderValue: (
+    categoryId: SafetyCategoryId,
+    rawValue: number
+  ) => void;
 };
 
 export type WizardController = WizardControllerState & WizardControllerActions;

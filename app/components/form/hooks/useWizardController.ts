@@ -5,11 +5,11 @@ import {
 } from "../../../lib/analytics";
 import {
   createInitialFormData,
-  SAFETY_SECTIONS,
+  SAFETY_CATEGORIES,
 } from "../constants";
 import type {
   FieldErrors,
-  SafetyField,
+  SafetyCategoryId,
   WizardController,
   WizardControllerArgs,
 } from "../types";
@@ -24,10 +24,7 @@ export const useWizardController = ({
   const [formData, setFormData] = useState(() => createInitialFormData(mode));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [safetySliderDrafts, setSafetySliderDrafts] = useState<
-    Partial<Record<SafetyField, number>>
-  >({});
-  const [naSafetySelections, setNaSafetySelections] = useState<
-    Partial<Record<SafetyField, boolean>>
+    Partial<Record<SafetyCategoryId, number>>
   >({});
 
   const updateField = (field: keyof typeof formData, value: unknown) => {
@@ -89,50 +86,37 @@ export const useWizardController = ({
     onComplete(formData);
   };
 
-  const clearSafetySliderDraft = (field: SafetyField) => {
-    setSafetySliderDrafts((prev) => {
-      if (typeof prev[field] !== "number") return prev;
-      const updated = { ...prev };
-      delete updated[field];
-      return updated;
-    });
-  };
-
-  const commitSafetySliderValue = (field: SafetyField, rawValue: number) => {
+  const commitSafetyCategorySliderValue = (
+    categoryId: SafetyCategoryId,
+    rawValue: number
+  ) => {
     if (!Number.isFinite(rawValue)) return;
+
+    const category = SAFETY_CATEGORIES.find((item) => item.id === categoryId);
+    if (!category) return;
+
     const clamped = Math.min(5, Math.max(0, rawValue));
     const snapped = Math.round(clamped);
-    setSafetySliderDrafts((prev) => ({ ...prev, [field]: clamped }));
-    updateField(field, 5 - snapped);
-  };
+    const mappedValue = 5 - snapped;
 
-  const toggleNaSafetySelection = (field: SafetyField) => {
-    const nextSelected = !Boolean(naSafetySelections[field]);
+    setSafetySliderDrafts((prev) => ({ ...prev, [categoryId]: clamped }));
 
-    setNaSafetySelections((prev) => {
-      if (nextSelected) {
-        return { ...prev, [field]: true };
-      }
-
+    setFormData((prev) => {
       const updated = { ...prev };
-      delete updated[field];
+      for (const field of category.legacyFields) {
+        updated[field] = mappedValue;
+      }
       return updated;
     });
-
-    clearSafetySliderDraft(field);
-    updateField(field, nextSelected ? 5 : null);
   };
 
-  const safetyFields = SAFETY_SECTIONS.map((section) => section.id);
-  const ratedSafetyCount = safetyFields.filter(
-    (field) => typeof formData[field] === "number",
+  const ratedSafetyCount = SAFETY_CATEGORIES.filter((category) =>
+    category.legacyFields.every((field) => typeof formData[field] === "number")
   ).length;
   const safetyCompletionPct = Math.round(
-    (ratedSafetyCount / safetyFields.length) * 100,
+    (ratedSafetyCount / SAFETY_CATEGORIES.length) * 100,
   );
-  const isSafetyComplete = safetyFields.every(
-    (field) => typeof formData[field] === "number",
-  );
+  const isSafetyComplete = ratedSafetyCount === SAFETY_CATEGORIES.length;
 
   return {
     step,
@@ -140,8 +124,6 @@ export const useWizardController = ({
     formData,
     errors,
     safetySliderDrafts,
-    naSafetySelections,
-    safetyFields,
     ratedSafetyCount,
     safetyCompletionPct,
     isSafetyComplete,
@@ -151,7 +133,6 @@ export const useWizardController = ({
     nextStep,
     prevStep,
     submitFinal,
-    commitSafetySliderValue,
-    toggleNaSafetySelection,
+    commitSafetyCategorySliderValue,
   };
 };

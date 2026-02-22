@@ -13,7 +13,7 @@ import {
 } from "../../lib/formOptions";
 import { readNewsletterLead } from "../../lib/newsletterLead";
 import type { FormData } from "../../lib/types";
-import type { SafetyField, SafetySection, WizardMode } from "./types";
+import type { SafetyCategory, WizardMode } from "./types";
 
 export const createInitialFormData = (mode: WizardMode): FormData => {
   const baseFormData: FormData = {
@@ -55,81 +55,36 @@ export const createInitialFormData = (mode: WizardMode): FormData => {
   };
 };
 
-export const SAFETY_SECTIONS: SafetySection[] = [
+export const SAFETY_CATEGORIES: SafetyCategory[] = [
   {
-    id: "safety_gate_entry",
-    title: "Main Gate + Front Entry",
-    prompts: [
-      "Gate/lock easily reachable from outside?",
-      "Entry area bright at night (no dark approach)?",
-      "Clear view of gate + walkway/approach path?",
+    id: "home_entrance",
+    title: "Home entrance",
+    subtitle: "Check if entry points are secure, visible, and hard to access.",
+    legacyFields: [
+      "safety_gate_entry",
+      "safety_side_back_entry",
+      "safety_windows_terrace",
     ],
   },
   {
-    id: "safety_blindspots",
-    title: "Blindspots (Corners & Shadows)",
-    prompts: [
-      "Any corner/shadow you can't see from inside your home?",
-      "Trees/Vehicles/Gate blocking visibility?",
-      "Has lights implemented to dark zones?",
-    ],
+    id: "neighborhood_safety_check",
+    title: "Your Neighborhood Safety check",
+    subtitle: "Rate outside lighting, visibility, and street-side exposure.",
+    legacyFields: ["safety_driveway_garage"],
   },
   {
-    id: "safety_side_back_entry",
-    title: "Side & Back Entry",
-    prompts: [
-      "Side/Back gate sometimes left unlocked?",
-      "Side/Back path hidden from neighbors view?",
-      "Side/Back entry easy to access by strangers?",
-    ],
+    id: "indoor_outdoor_blindspots",
+    title: "Indoor and outdoor Blindspots",
+    subtitle: "Rate how many hidden areas can be missed around your home.",
+    legacyFields: ["safety_blindspots", "safety_indoor_choke_points"],
   },
   {
-    id: "safety_windows_terrace",
-    title: "Windows + Terrace",
-    prompts: [
-      "Windows without locks or loose grills?",
-      "Climb aids nearby (bins, ladders, ledges)?",
-      "Valuables visible from outside at night?",
-    ],
-  },
-  {
-    id: "safety_driveway_garage",
-    title: "Driveway or Garage",
-    prompts: [
-      "Garage-to-house door unsecured?",
-      "Garage/Driveway dark with hiding spots?",
-      "Tools/bikes/items visible and easy to grab?",
-    ],
-  },
-  {
-    id: "safety_indoor_choke_points",
-    title: "Indoor Entry Choke Points (Halls/Stairs)",
-    prompts: [
-      "Halls/Stairs have night light?",
-      "Has multiple entry points?",
-      "Easy to navigate in case of emergency for exit/entry?",
-    ],
-  },
-  {
-    id: "safety_emergency_readiness",
-    title: "Emergency Readiness Home",
-    prompts: [
-      "Is your family ready on what to do in case of fire?",
-      "Does your home have medicine on-site?",
-      "Has your family planned an emergency evacuation route?",
-    ],
+    id: "emergency_readiness_home",
+    title: "Emergency readiness home",
+    subtitle: "Rate your family’s emergency planning and response readiness.",
+    legacyFields: ["safety_emergency_readiness"],
   },
 ];
-
-export const NA_ENABLED_SAFETY_FIELDS: SafetyField[] = [
-  "safety_side_back_entry",
-  "safety_windows_terrace",
-  "safety_driveway_garage",
-];
-
-export const NA_ENABLED_SAFETY_FIELD_SET = new Set<SafetyField>(
-  NA_ENABLED_SAFETY_FIELDS,
-);
 
 export type SmartHomeFeatureDetail = {
   title: string;

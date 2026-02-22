@@ -28,7 +28,6 @@ export default function WizardForm({
     formData,
     errors,
     safetySliderDrafts,
-    naSafetySelections,
     ratedSafetyCount,
     safetyCompletionPct,
     isSafetyComplete,
@@ -38,8 +37,7 @@ export default function WizardForm({
     nextStep,
     prevStep,
     submitFinal,
-    commitSafetySliderValue,
-    toggleNaSafetySelection,
+    commitSafetyCategorySliderValue,
   } = useWizardController({
     mode,
     onComplete,
@@ -73,9 +71,7 @@ export default function WizardForm({
       <SafetyCheckStep
         formData={formData}
         safetySliderDrafts={safetySliderDrafts}
-        naSafetySelections={naSafetySelections}
-        onToggleNaSafetySelection={toggleNaSafetySelection}
-        onCommitSafetySliderValue={commitSafetySliderValue}
+        onCommitSafetyCategorySliderValue={commitSafetyCategorySliderValue}
         isSafetyComplete={isSafetyComplete}
         ratedSafetyCount={ratedSafetyCount}
         safetyCompletionPct={safetyCompletionPct}

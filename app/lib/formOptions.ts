@@ -39,14 +39,6 @@ export const CURRENT_SETUP_VALUES = [
   CURRENT_SETUP_OPTIONS.UPGRADE,
 ] as const;
 
-export const MAIN_GOAL_OPTIONS = [
-  { label: "👶 Checking my family & piece of mind while away", value: "Family" },
-  { label: "🛡️ Prevent break-ins & eliminate blind spots", value: "Security" },
-  { label: "🏠 Everyday home convinience & control", value: "Smart Home First" },
-  { label: "🔓 Control access & track home entry", value: "Home Access Control" },
-  { label: "🎥 Emergency alert & Capturing evidence for police/insurance", value: "Emergency Recording" },
-] as const;
-
 export const HOME_SIZE_OPTIONS = {
   SMALL: "Small (≤120 sqm) Approx. 1-2 bedrooms",
   MEDIUM: "Medium (121-200 sqm) Approx. 3-4 bedrooms",

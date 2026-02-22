@@ -4,27 +4,31 @@ import {
   FEATURE_OPTIONS,
   FLOOR_OPTIONS,
   HOME_SIZE_VALUES,
-  MAIN_GOAL_OPTIONS,
   PRIORITY_AREAS,
   PROPERTY_TYPES,
   SMART_HOME_FEATURE_OPTIONS,
   TIMELINE_OPTIONS,
 } from "./formOptions";
+import { deriveDiySecurityPlan } from "./diySecurityPlan";
 import { FormData } from "./types";
 
 const PROPERTY_TYPE_VALUES = PROPERTY_TYPES.map((option) => option.value);
-const MAIN_GOAL_VALUES = MAIN_GOAL_OPTIONS.map((option) => option.value);
 const TIMELINE_VALUES = TIMELINE_OPTIONS.map((option) => option.value);
+const LEGACY_MAIN_GOAL_VALUES = [
+  "Family",
+  "Security",
+  "Smart Home First",
+  "Home Access Control",
+  "Emergency Recording",
+] as const;
 
 const SAFETY_MIN = 0;
 const SAFETY_MAX = 5;
 
-export type ResultsSharePayloadV1 = {
-  v: 1;
+type ResultsSharePayloadBase = {
   property_type: string;
   home_size: string;
   floors: string;
-  main_goal: string;
   priority_areas: string[];
   current_setup: string;
   safety_gate_entry: number;
@@ -40,6 +44,15 @@ export type ResultsSharePayloadV1 = {
   diy_security_plan: boolean;
   budget_band: string;
   timeline: string;
+};
+
+export type ResultsSharePayloadV1 = ResultsSharePayloadBase & {
+  v: 1;
+  main_goal: string;
+};
+
+export type ResultsSharePayloadV2 = ResultsSharePayloadBase & {
+  v: 2;
 };
 
 type InvalidField = {
@@ -107,7 +120,7 @@ const normalizeBoolean = (value: unknown): boolean =>
   typeof value === "boolean" ? value : Boolean(value);
 
 const collectInvalidFields = (
-  payload: Partial<ResultsSharePayloadV1>
+  payload: Partial<ResultsSharePayloadV2>
 ): InvalidField[] => {
   const invalid: InvalidField[] = [];
 
@@ -119,9 +132,6 @@ const collectInvalidFields = (
   }
   if (!payload.floors) {
     invalid.push({ field: "floors", value: payload.floors });
-  }
-  if (!payload.main_goal) {
-    invalid.push({ field: "main_goal", value: payload.main_goal });
   }
   if (!payload.priority_areas || payload.priority_areas.length === 0) {
     invalid.push({ field: "priority_areas", value: payload.priority_areas });
@@ -143,15 +153,15 @@ const collectInvalidFields = (
 };
 
 const toPayload = (formData: FormData): {
-  payload: ResultsSharePayloadV1 | null;
+  payload: ResultsSharePayloadV2 | null;
   invalidFields: InvalidField[];
 } => {
-  const payload: Partial<ResultsSharePayloadV1> = {
-    v: 1,
+  const normalizedTimeline = normalizeOption(TIMELINE_VALUES, formData.timeline);
+  const payload: Partial<ResultsSharePayloadV2> = {
+    v: 2,
     property_type: normalizeOption(PROPERTY_TYPE_VALUES, formData.property_type),
     home_size: normalizeOption(HOME_SIZE_VALUES, formData.home_size),
     floors: normalizeOption(FLOOR_OPTIONS, formData.floors),
-    main_goal: normalizeOption(MAIN_GOAL_VALUES, formData.main_goal),
     priority_areas: normalizeOptionArray(
       PRIORITY_AREAS,
       formData.priority_areas,
@@ -176,14 +186,16 @@ const toPayload = (formData: FormData): {
       false
     ),
     smart_home_interest: normalizeBoolean(formData.smart_home_interest),
-    diy_security_plan: normalizeBoolean(formData.diy_security_plan),
+    diy_security_plan: normalizedTimeline
+      ? deriveDiySecurityPlan(normalizedTimeline)
+      : undefined,
     budget_band: normalizeOption(BUDGET_BAND_OPTIONS, formData.budget_band),
-    timeline: normalizeOption(TIMELINE_VALUES, formData.timeline),
+    timeline: normalizedTimeline,
   };
 
   const invalidFields = collectInvalidFields(payload);
 
-  const safetyFields: Array<keyof ResultsSharePayloadV1> = [
+  const safetyFields: Array<keyof ResultsSharePayloadV2> = [
     "safety_gate_entry",
     "safety_blindspots",
     "safety_side_back_entry",
@@ -203,12 +215,12 @@ const toPayload = (formData: FormData): {
     return { payload: null, invalidFields };
   }
 
-  return { payload: payload as ResultsSharePayloadV1, invalidFields: [] };
+  return { payload: payload as ResultsSharePayloadV2, invalidFields: [] };
 };
 
 export const createShareableResultsPayload = (
   formData: FormData
-): ResultsSharePayloadV1 | null => {
+): ResultsSharePayloadV2 | null => {
   const { payload, invalidFields } = toPayload(formData);
 
   if (!payload) {
@@ -228,12 +240,16 @@ export const parseShareableResultsPayload = (
   value: unknown
 ): FormData | null => {
   if (!isRecord(value)) return null;
-  if (value.v !== 1) return null;
+  if (value.v !== 1 && value.v !== 2) return null;
+
+  if (value.v === 1) {
+    const legacyMainGoal = normalizeOption(LEGACY_MAIN_GOAL_VALUES, value.main_goal);
+    if (!legacyMainGoal) return null;
+  }
 
   const propertyType = normalizeOption(PROPERTY_TYPE_VALUES, value.property_type);
   const homeSize = normalizeOption(HOME_SIZE_VALUES, value.home_size);
   const floors = normalizeOption(FLOOR_OPTIONS, value.floors);
-  const mainGoal = normalizeOption(MAIN_GOAL_VALUES, value.main_goal);
   const priorityAreas = normalizeOptionArray(
     PRIORITY_AREAS,
     value.priority_areas,
@@ -271,7 +287,6 @@ export const parseShareableResultsPayload = (
     !propertyType ||
     !homeSize ||
     !floors ||
-    !mainGoal ||
     !priorityAreas ||
     !currentSetup ||
     typeof safetyGateEntry !== "number" ||
@@ -293,7 +308,6 @@ export const parseShareableResultsPayload = (
     property_type: propertyType,
     home_size: homeSize,
     floors,
-    main_goal: mainGoal,
     priority_areas: priorityAreas,
     current_setup: currentSetup,
     safety_gate_entry: safetyGateEntry,
@@ -306,7 +320,7 @@ export const parseShareableResultsPayload = (
     features_must: featuresMust,
     smart_home_features: smartHomeFeatures,
     smart_home_interest: value.smart_home_interest ? "Yes" : "",
-    diy_security_plan: normalizeBoolean(value.diy_security_plan),
+    diy_security_plan: deriveDiySecurityPlan(timeline),
     budget_band: budgetBand,
     timeline,
     first_name: "",

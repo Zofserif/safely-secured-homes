@@ -4,16 +4,22 @@ import {
   FEATURE_OPTIONS,
   FLOOR_OPTIONS,
   HOME_SIZE_VALUES,
-  MAIN_GOAL_OPTIONS,
   PRIORITY_AREAS,
   PROPERTY_TYPES,
   TIMELINE_OPTIONS,
 } from "./formOptions";
+import { deriveDiySecurityPlan } from "./diySecurityPlan";
 import { FormData } from "./types";
 
 const PROPERTY_TYPE_VALUES = PROPERTY_TYPES.map((option) => option.value);
-const MAIN_GOAL_VALUES = MAIN_GOAL_OPTIONS.map((option) => option.value);
 const TIMELINE_VALUES = TIMELINE_OPTIONS.map((option) => option.value);
+const LEGACY_MAIN_GOAL_VALUES = [
+  "Family",
+  "Security",
+  "Smart Home First",
+  "Home Access Control",
+  "Emergency Recording",
+] as const;
 
 const SAFETY_MIN = 0;
 const SAFETY_MAX = 5;
@@ -27,6 +33,21 @@ type ResultsTokenV1 = {
   h: number;
   f: number;
   g: number;
+  a: number[];
+  c: number;
+  s: SafetyTuple;
+  m: number[];
+  i: boolean;
+  d: boolean;
+  b: number;
+  t: number;
+};
+
+type ResultsTokenV2 = {
+  v: 2;
+  p: number;
+  h: number;
+  f: number;
   a: number[];
   c: number;
   s: SafetyTuple;
@@ -180,7 +201,6 @@ export const createResultsToken = (formData: FormData): string => {
   const propertyType = toIndex(PROPERTY_TYPE_VALUES, formData.property_type);
   const homeSize = toIndex(HOME_SIZE_VALUES, formData.home_size);
   const floors = toIndex(FLOOR_OPTIONS, formData.floors);
-  const mainGoal = toIndex(MAIN_GOAL_VALUES, formData.main_goal);
   const priorityAreas = toIndexArray(PRIORITY_AREAS, formData.priority_areas);
   const currentSetup = toIndex(CURRENT_SETUP_VALUES, formData.current_setup);
   const mustFeatures = toIndexArray(FEATURE_OPTIONS, formData.features_must);
@@ -199,9 +219,6 @@ export const createResultsToken = (formData: FormData): string => {
   }
   if (floors < 0) {
     invalidFields.push({ field: "floors", value: formData.floors });
-  }
-  if (mainGoal < 0) {
-    invalidFields.push({ field: "main_goal", value: formData.main_goal });
   }
   if (!priorityAreas) {
     invalidFields.push({
@@ -244,12 +261,11 @@ export const createResultsToken = (formData: FormData): string => {
   const safePriorityAreas = priorityAreas ?? [];
   const safeMustFeatures = mustFeatures ?? [];
 
-  const payload: ResultsTokenV1 = {
-    v: 1,
+  const payload: ResultsTokenV2 = {
+    v: 2,
     p: propertyType,
     h: homeSize,
     f: floors,
-    g: mainGoal,
     a: safePriorityAreas,
     c: currentSetup,
     s: [
@@ -263,7 +279,7 @@ export const createResultsToken = (formData: FormData): string => {
     ],
     m: safeMustFeatures,
     i: Boolean(formData.smart_home_interest),
-    d: Boolean(formData.diy_security_plan),
+    d: deriveDiySecurityPlan(formData.timeline),
     b: budgetBand,
     t: timeline,
   };
@@ -282,16 +298,20 @@ export const parseResultsToken = (token: string): FormData | null => {
     return null;
   }
 
-  if (!isRecord(parsed) || parsed.v !== 1) {
+  if (!isRecord(parsed) || (parsed.v !== 1 && parsed.v !== 2)) {
     return null;
   }
 
-  const { p, h, f, g, a, c, s, m, i, d, b, t } = parsed;
+  const { p, h, f, a, c, s, m, i, d, b, t } = parsed;
+
+  if (parsed.v === 1) {
+    const legacyPayload = parsed as ResultsTokenV1;
+    if (!isValidOptionIndex(legacyPayload.g, LEGACY_MAIN_GOAL_VALUES)) return null;
+  }
 
   if (!isValidOptionIndex(p, PROPERTY_TYPE_VALUES)) return null;
   if (!isValidOptionIndex(h, HOME_SIZE_VALUES)) return null;
   if (!isValidOptionIndex(f, FLOOR_OPTIONS)) return null;
-  if (!isValidOptionIndex(g, MAIN_GOAL_VALUES)) return null;
   if (!isValidIndexArray(a, PRIORITY_AREAS, true)) return null;
   if (!isValidOptionIndex(c, CURRENT_SETUP_VALUES)) return null;
   if (!isValidSafetyTuple(s)) return null;
@@ -305,7 +325,6 @@ export const parseResultsToken = (token: string): FormData | null => {
     property_type: PROPERTY_TYPE_VALUES[p],
     home_size: HOME_SIZE_VALUES[h],
     floors: FLOOR_OPTIONS[f],
-    main_goal: MAIN_GOAL_VALUES[g],
     priority_areas: a.map((index) => PRIORITY_AREAS[index]),
     current_setup: CURRENT_SETUP_VALUES[c],
     safety_gate_entry: s[0],
@@ -318,7 +337,7 @@ export const parseResultsToken = (token: string): FormData | null => {
     features_must: m.map((index) => FEATURE_OPTIONS[index]),
     smart_home_features: [],
     smart_home_interest: i ? "Yes" : "",
-    diy_security_plan: d,
+    diy_security_plan: deriveDiySecurityPlan(TIMELINE_VALUES[t]),
     budget_band: BUDGET_BAND_OPTIONS[b],
     timeline: TIMELINE_VALUES[t],
     first_name: "",

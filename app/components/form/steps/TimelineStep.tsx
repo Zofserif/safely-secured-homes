@@ -1,3 +1,4 @@
+import { deriveDiySecurityPlan } from "../../../lib/diySecurityPlan";
 import { TIMELINE_OPTIONS } from "../../../lib/formOptions";
 import type { TimelineStepProps } from "../types";
 
@@ -17,6 +18,7 @@ export default function TimelineStep({
             key={option.value}
             onClick={() => {
               onUpdateField("timeline", option.value);
+              onUpdateField("diy_security_plan", deriveDiySecurityPlan(option.value));
               onNext();
             }}
             className={`w-full p-4 rounded-xl border text-left hover:border-[#0E79B2] transition-all ${formData.timeline === option.value ? "border-[#0E79B2] bg-[#0E79B2]/5 ring-1 ring-[#0E79B2]" : "border-slate-200"}`}

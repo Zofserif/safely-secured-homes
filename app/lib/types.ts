@@ -2,7 +2,6 @@ export type FormData = {
   property_type: string;
   home_size: string;
   floors: string;
-  main_goal: string;
   priority_areas: string[];
   current_setup: string;
   safety_gate_entry: number | null;

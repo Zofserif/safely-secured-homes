@@ -7,7 +7,6 @@ import ContactStep from "./steps/ContactStep";
 import CurrentSetupStep from "./steps/CurrentSetupStep";
 import HomeDetailsStep from "./steps/HomeDetailsStep";
 import IntroStep from "./steps/IntroStep";
-import MainGoalStep from "./steps/MainGoalStep";
 import PriorityAreasStep from "./steps/PriorityAreasStep";
 import PropertyTypeStep from "./steps/PropertyTypeStep";
 import SafetyCheckStep from "./steps/SafetyCheckStep";
@@ -58,13 +57,6 @@ export default function WizardForm({
     ),
     current_setup: (
       <CurrentSetupStep
-        formData={formData}
-        onNext={nextStep}
-        onUpdateField={updateField}
-      />
-    ),
-    main_goal: (
-      <MainGoalStep
         formData={formData}
         onNext={nextStep}
         onUpdateField={updateField}

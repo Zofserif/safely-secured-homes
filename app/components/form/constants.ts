@@ -20,7 +20,6 @@ export const createInitialFormData = (mode: WizardMode): FormData => {
     property_type: "",
     home_size: "",
     floors: "",
-    main_goal: "",
     priority_areas: [],
     current_setup: "",
     safety_gate_entry: null,

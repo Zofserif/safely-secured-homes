@@ -57,12 +57,6 @@ export type CurrentSetupStepProps = {
   onUpdateField: UpdateField;
 };
 
-export type MainGoalStepProps = {
-  formData: FormData;
-  onNext: () => void;
-  onUpdateField: UpdateField;
-};
-
 export type HomeDetailsStepProps = {
   formData: FormData;
   onNext: () => void;

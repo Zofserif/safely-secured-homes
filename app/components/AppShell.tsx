@@ -11,6 +11,7 @@ import WizardForm from "./form/WizardForm";
 import ResultsPage from "./results/ResultsPage";
 import { FormData, CalculationResult } from "../lib/types";
 import { estimateCameraPlan } from "../lib/calculations";
+import { normalizeDiySecurityPlan } from "../lib/diySecurityPlan";
 import {
   submitLeadToSupabase,
   submitToEmail,
@@ -241,7 +242,7 @@ export default function AppShell({
 
     if (initialView !== "results") {
       if (storedLead) {
-        setFormData(storedLead.formData);
+        setFormData(normalizeDiySecurityPlan(storedLead.formData));
         setResult(storedLead.result);
       }
       return;
@@ -250,8 +251,9 @@ export default function AppShell({
     let isMounted = true;
     const showResults = (data: FormData, calculated?: CalculationResult) => {
       if (!isMounted) return;
-      setFormData(data);
-      setResult(calculated ?? estimateCameraPlan(data));
+      const normalizedData = normalizeDiySecurityPlan(data);
+      setFormData(normalizedData);
+      setResult(calculated ?? estimateCameraPlan(normalizedData));
       setView("results");
       setHasResolvedResultsView(true);
     };
@@ -492,12 +494,13 @@ export default function AppShell({
   };
 
   const handleFormComplete = async (data: FormData) => {
-    const calcResult = estimateCameraPlan(data);
-    setFormData(data);
+    const normalizedData = normalizeDiySecurityPlan(data);
+    const calcResult = estimateCameraPlan(normalizedData);
+    setFormData(normalizedData);
     setResult(calcResult);
-    writeStoredLead(data, calcResult);
+    writeStoredLead(normalizedData, calcResult);
 
-    trackLeadGenerated(data, calcResult, analyticsContext);
+    trackLeadGenerated(normalizedData, calcResult, analyticsContext);
 
     const submissionSource =
       formSource ??
@@ -505,14 +508,16 @@ export default function AppShell({
 
     const shouldSendExternalLeads = !IS_LOCAL_DEV || leadSendsEnabled;
     const submissions = [
-      submitLeadToSupabase(data, calcResult, submissionSource),
+      submitLeadToSupabase(normalizedData, calcResult, submissionSource),
     ];
 
     if (shouldSendExternalLeads) {
-      submissions.push(submitToFormspree(data, calcResult, submissionSource));
+      submissions.push(
+        submitToFormspree(normalizedData, calcResult, submissionSource)
+      );
 
       if (effectiveFormMode !== "newsletter") {
-        submissions.push(submitToEmail(data, calcResult, submissionSource));
+        submissions.push(submitToEmail(normalizedData, calcResult, submissionSource));
       }
     } else {
       console.info(
@@ -533,7 +538,7 @@ export default function AppShell({
     }
 
     const resultsParams = new URLSearchParams();
-    const shareKey = await createDbResultsShareKey(data);
+    const shareKey = await createDbResultsShareKey(normalizedData);
     if (shareKey) {
       resultsParams.set("r", shareKey);
     }

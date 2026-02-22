@@ -9,38 +9,9 @@ export default function BudgetDiyStep({
 }: BudgetDiyStepProps) {
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">
-        Budget & DIY Plan
-      </h3>
-      <div className="rounded-2xl border-2 border-[#0E79B2]/30 bg-[#0E79B2]/5 p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
-            Optional Upgrade
-          </span>
-          <span className="text-[11px] font-medium text-slate-500">DIY Security</span>
-        </div>
-        <label className="mt-4 flex items-start gap-3">
-          <input
-            type="checkbox"
-            className="mt-1 h-5 w-5 rounded text-[#0E79B2]"
-            checked={formData.diy_security_plan}
-            onChange={(event) =>
-              onUpdateField("diy_security_plan", event.target.checked)
-            }
-          />
-          <div>
-            <span className="text-sm font-semibold text-[#2D3748]">
-              DIY Security Plan
-            </span>
-            <p className="text-xs text-slate-500">
-              I want a self-install guide and plan.
-            </p>
-          </div>
-        </label>
-      </div>
       <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <label className="text-sm font-semibold text-[#2D3748]">Budget Zone</label>
+          <label className="text-sm font-semibold text-[#2D3748]">My Budget Zone</label>
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
             Choose one
           </span>

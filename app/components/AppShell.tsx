@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { initPostHog } from "../posthog";
+import {
+  getPostHogDebugStatus,
+  initPostHog,
+  setPostHogEnabledForDebug,
+} from "../posthog";
 
 import Navbar from "./layout/Navbar";
 import Footer from "./layout/Footer";
@@ -20,6 +24,7 @@ import {
 import {
   registerSshDebugMethods,
   type LeadSendsStatus,
+  type PostHogDebugStatus,
 } from "../lib/sshDebug";
 import {
   buildFunnelContext,
@@ -169,6 +174,11 @@ export default function AppShell({
     };
   }, [leadSendsEnabled]);
 
+  const getPostHogStatus = useCallback(
+    (): PostHogDebugStatus => getPostHogDebugStatus(),
+    []
+  );
+
   useEffect(() => {
     initPostHog();
   }, []);
@@ -206,12 +216,35 @@ export default function AppShell({
         console.info("[sshDebug] Lead send status:", status);
         return status;
       },
+      posthogOn: () => {
+        setPostHogEnabledForDebug(true);
+        if (IS_LOCAL_DEV) {
+          console.info(
+            "[sshDebug] PostHog analytics enabled in local development.",
+            getPostHogStatus()
+          );
+        }
+      },
+      posthogOff: () => {
+        setPostHogEnabledForDebug(false);
+        if (IS_LOCAL_DEV) {
+          console.info(
+            "[sshDebug] PostHog analytics disabled in local development.",
+            getPostHogStatus()
+          );
+        }
+      },
+      posthogStatus: () => {
+        const status = getPostHogStatus();
+        console.info("[sshDebug] PostHog status:", status);
+        return status;
+      },
     });
 
     return () => {
       unregister();
     };
-  }, [getLeadSendsStatus, setLeadSendsEnabledForDebug]);
+  }, [getLeadSendsStatus, getPostHogStatus, setLeadSendsEnabledForDebug]);
 
   useEffect(() => {
     const sourceFromUrl = readSearchParam("source");

@@ -1,3 +1,6 @@
+import type { PostHogDebugStatus } from "../posthog";
+export type { PostHogDebugStatus };
+
 export type LeadSendsStatus = {
   enabled: boolean;
   environment: "production" | "development";
@@ -11,6 +14,9 @@ export type SshDebugApi = {
   leadSendsOn?: () => void;
   leadSendsOff?: () => void;
   leadSendsStatus?: () => LeadSendsStatus;
+  posthogOn?: () => void;
+  posthogOff?: () => void;
+  posthogStatus?: () => PostHogDebugStatus;
 };
 
 type SshDebugMethodName = keyof SshDebugApi;

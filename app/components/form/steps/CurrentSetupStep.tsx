@@ -9,9 +9,6 @@ export default function CurrentSetupStep({
 }: CurrentSetupStepProps) {
   return (
     <div key="setup" className="space-y-6">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">
-        Current Setup
-      </h3>
       <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <label className="text-sm font-semibold text-[#2D3748]">

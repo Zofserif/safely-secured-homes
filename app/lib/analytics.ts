@@ -1,4 +1,4 @@
-import posthog from "../posthog";
+import posthog, { isPostHogEnabled } from "../posthog";
 import { FORM_STEPS } from "./formSteps";
 import type { CalculationResult, FormData } from "./types";
 
@@ -76,6 +76,7 @@ const stripEmpty = (props: EventProps) => {
 
 const capture = (event: string, props?: EventProps) => {
   if (!isBrowser()) return;
+  if (!isPostHogEnabled()) return;
   if (props) {
     posthog.capture(event, stripEmpty(props));
     return;

@@ -35,6 +35,16 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
+## Analytics (PostHog)
+
+- Analytics is enabled only when `NEXT_PUBLIC_VERCEL_ENV=production`.
+- Local development and preview deployments do not send PostHog events by default.
+- In local development, you can use:
+  - `window.sshDebug.posthogOn()`
+  - `window.sshDebug.posthogOff()`
+  - `window.sshDebug.posthogStatus()`
+- Local PostHog override state persists across reloads via `localStorage`.
+
 ## Asset Storage Strategy
 
 This project uses a hybrid media strategy:

@@ -3,6 +3,111 @@ import { FormData, CalculationResult } from "./types";
 
 const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT;
 
+type LeadPayloadV2 = {
+  v: 2;
+  source: string;
+  mobile: string;
+  property: {
+    type: string;
+    size: string;
+    floors: string;
+    current_setup: string;
+  };
+  priorities: string[];
+  safety: {
+    home_entrance: number;
+    neighborhood_safety_check: number;
+    indoor_outdoor_blindspots: number;
+    emergency_readiness_home: number;
+  };
+  preferences: {
+    security_features: string[];
+    budget_band: string;
+    timeline: string;
+    diy_security_plan: boolean;
+    smart_home_interest: boolean;
+    smart_home_features: string[];
+  };
+  recommendations: string[];
+};
+
+type LeadInsertBody = {
+  email: string;
+  name: string;
+  tier: string;
+  score: number;
+  camera_count: number;
+  safety_score_total: number;
+  payload: LeadPayloadV2;
+};
+
+const toSafeString = (value: unknown): string =>
+  typeof value === "string" ? value.trim() : "";
+
+const toStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+};
+
+const toSafetyScore = (value: unknown): number => {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(5, Math.round(value)));
+};
+
+const averageSafetyScore = (values: unknown[]): number => {
+  if (values.length === 0) return 0;
+
+  const normalizedValues = values.map(toSafetyScore);
+  const average =
+    normalizedValues.reduce((sum, score) => sum + score, 0) /
+    normalizedValues.length;
+
+  return toSafetyScore(average);
+};
+
+const buildLeadPayloadV2 = (
+  data: FormData,
+  result: CalculationResult,
+  source?: string
+): LeadPayloadV2 => ({
+  v: 2,
+  source: toSafeString(source) || "website",
+  mobile: toSafeString(data.mobile),
+  property: {
+    type: toSafeString(data.property_type),
+    size: toSafeString(data.home_size),
+    floors: toSafeString(data.floors),
+    current_setup: toSafeString(data.current_setup),
+  },
+  priorities: toStringArray(data.priority_areas),
+  safety: {
+    home_entrance: averageSafetyScore([
+      data.safety_gate_entry,
+      data.safety_side_back_entry,
+      data.safety_windows_terrace,
+    ]),
+    neighborhood_safety_check: toSafetyScore(data.safety_driveway_garage),
+    indoor_outdoor_blindspots: averageSafetyScore([
+      data.safety_blindspots,
+      data.safety_indoor_choke_points,
+    ]),
+    emergency_readiness_home: toSafetyScore(data.safety_emergency_readiness),
+  },
+  preferences: {
+    security_features: toStringArray(data.features_must),
+    budget_band: toSafeString(data.budget_band),
+    timeline: toSafeString(data.timeline),
+    diy_security_plan: Boolean(data.diy_security_plan),
+    smart_home_interest: Boolean(data.smart_home_interest),
+    smart_home_features: toStringArray(data.smart_home_features),
+  },
+  recommendations: toStringArray(result.recommendations),
+});
+
 export async function submitToEmail(
   data: FormData,
   result: CalculationResult,
@@ -85,19 +190,29 @@ export async function submitLeadToSupabase(
   result: CalculationResult,
   source?: string
 ) {
-  const safetyScores = {
-    gate_entry: data.safety_gate_entry,
-    blindspots: data.safety_blindspots,
-    side_back_entry: data.safety_side_back_entry,
-    windows_terrace: data.safety_windows_terrace,
-    driveway_garage: data.safety_driveway_garage,
-    indoor_choke_points: data.safety_indoor_choke_points,
-    emergency_readiness: data.safety_emergency_readiness,
+  const safetyScoreTotal = [
+    data.safety_gate_entry,
+    data.safety_blindspots,
+    data.safety_side_back_entry,
+    data.safety_windows_terrace,
+    data.safety_driveway_garage,
+    data.safety_indoor_choke_points,
+    data.safety_emergency_readiness,
+  ].reduce((sum, value) => sum + toSafetyScore(value), 0);
+
+  const fullName = [toSafeString(data.first_name), toSafeString(data.last_name)]
+    .filter((part) => part.length > 0)
+    .join(" ");
+
+  const insertBody: LeadInsertBody = {
+    email: toSafeString(data.email),
+    name: fullName,
+    tier: result.leadTier,
+    score: result.leadScore,
+    camera_count: result.cameraCount,
+    safety_score_total: safetyScoreTotal,
+    payload: buildLeadPayloadV2(data, result, source),
   };
-  const safetyScoreTotal = Object.values(safetyScores).reduce<number>(
-    (sum, value) => (typeof value === "number" ? sum + value : sum),
-    0
-  );
 
   try {
     const response = await fetch("/api/leads", {
@@ -105,20 +220,7 @@ export async function submitLeadToSupabase(
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        email: data.email,
-        name: `${data.first_name} ${data.last_name}`,
-        tier: result.leadTier,
-        score: result.leadScore,
-        camera_count: result.cameraCount,
-        safety_score_total: safetyScoreTotal,
-        payload: {
-          ...data,
-          safety_scores: safetyScores,
-          safety_score_total: safetyScoreTotal,
-          lead_source: source ?? "website",
-        },
-      }),
+      body: JSON.stringify(insertBody),
     });
 
     if (!response.ok) {

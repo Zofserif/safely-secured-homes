@@ -10,6 +10,61 @@ import {
   TIMELINE_VALUES,
 } from "./formOptions";
 
+const getNvrChannelTier = (cameraCount: number): number => {
+  let tier = 4;
+
+  while (tier < cameraCount) {
+    tier *= 2;
+  }
+
+  return tier;
+};
+
+const getPriorityAreaCameraContribution = (
+  area: string,
+  propertyType: string,
+  floors: string,
+  size: string
+): number => {
+  const isCondoApartment = propertyType === "Condo / Apartment";
+  const isFloorTwoOrThree = floors === "2" || floors === "3+";
+  const isLargeHome = size === HOME_SIZE_OPTIONS.LARGE;
+  const isExtraLargeHome = size === HOME_SIZE_OPTIONS.EXTRA_LARGE;
+
+  switch (area) {
+    case PRIORITY_AREA_KEYS.GENERAL_INDOOR_LIVING_AREAS: {
+      let cameras = isCondoApartment ? 1 : 2;
+      if (floors === "2" || size === HOME_SIZE_OPTIONS.MEDIUM) cameras += 1;
+      if (floors === "3+") cameras += 2;
+      if (isLargeHome) cameras += 2;
+      if (isExtraLargeHome) cameras += 3;
+      return cameras;
+    }
+    case PRIORITY_AREA_KEYS.CHILD_ELDERLY_PET:
+      return 1;
+    case PRIORITY_AREA_KEYS.ENTRANCES_CRITICAL_ZONES: {
+      let cameras = 1;
+      if (isFloorTwoOrThree || size === HOME_SIZE_OPTIONS.MEDIUM) cameras += 1;
+      if (isLargeHome) cameras += 2;
+      if (isExtraLargeHome) cameras += 3;
+      return cameras;
+    }
+    case PRIORITY_AREA_KEYS.OUTDOOR_PERIMETER_STREET_VIEW: {
+      let cameras = 1;
+      if (isFloorTwoOrThree || size === HOME_SIZE_OPTIONS.MEDIUM) cameras += 1;
+      if (isLargeHome) cameras += 2;
+      if (isExtraLargeHome) cameras += 4;
+      return cameras;
+    }
+    case PRIORITY_AREA_KEYS.NO_INTERNET_ELECTRICITY_REMOTE_PROPERTY:
+      return 1;
+    case PRIORITY_AREA_KEYS.FRONT_DOOR_VISITOR_CHECKING:
+      return isLargeHome || isExtraLargeHome ? 2 : 1;
+    default:
+      return 0;
+  }
+};
+
 const calculateSafetyTotal = (data: FormData) => {
   const safetyScores = [
     data.safety_gate_entry,
@@ -72,6 +127,7 @@ export const getResultsSummary = (data: FormData, result: CalculationResult): Re
 };
 export const estimateCameraPlan = (data: FormData): CalculationResult => {
   const areas = data.priority_areas ?? [];
+  const propertyType = data.property_type ?? "";
   const floors = data.floors ?? "1";
   const size = data.home_size ?? HOME_SIZE_OPTIONS.SMALL;
   const features = data.features_must ?? [];
@@ -88,24 +144,26 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
     [SMART_HOME_FEATURES.SMART_ENTERTAINMENT_SYSTEM]: 1,
   };
 
-  // Baseline from areas
-  const hasPerimeterCoverage = areas.some((area) => PERIMETER_PRIORITY_AREAS.includes(area as typeof PERIMETER_PRIORITY_AREAS[number]));
-  let cameraCount = hasPerimeterCoverage ? 8 : Math.max(areas.length, 4);
-
-  // Adjust for floors & lot size
-  if (floors === "2") cameraCount += 1;
-  if (floors === "3+") cameraCount += 2;
-  if (size === HOME_SIZE_OPTIONS.LARGE || size === HOME_SIZE_OPTIONS.EXTRA_LARGE) cameraCount += 1;
-
-  // Clamp
-  cameraCount = Math.min(Math.max(cameraCount, 2), 16);
-  
-  // NVR Channel Map
-  const nvrChannel = cameraCount <= 4 ? 4 : cameraCount <= 8 ? 8 : 16;
+  const computedCameraTotal = areas.reduce(
+    (sum, area) =>
+      sum + getPriorityAreaCameraContribution(area, propertyType, floors, size),
+    0
+  );
+  const cameraCount = Math.max(2, computedCameraTotal);
+  const nvrChannel = getNvrChannelTier(cameraCount);
 
   // Scoring Logic
   let score = 0;
-  if (areas.length >= 3 || areas.some((area) => PERIMETER_PRIORITY_AREAS.includes(area as typeof PERIMETER_PRIORITY_AREAS[number]))) score += 2;
+  if (
+    areas.length >= 3 ||
+    areas.some((area) =>
+      PERIMETER_PRIORITY_AREAS.includes(
+        area as (typeof PERIMETER_PRIORITY_AREAS)[number]
+      )
+    )
+  ) {
+    score += 2;
+  }
   if (features.some((f) => f === FEATURES.COLOR_NIGHT || f === FEATURES.HUMAN_VEHICLE_ALERT)) score += 1;
   
   // Updated logic for new fields
@@ -136,8 +194,10 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   else if (score >= 4) tier = "Warm";
 
   // Recommendations
-  const recs = [];
-  if (areas.includes(PRIORITY_AREA_KEYS.OUTDOOR_GATE_DRIVEWAY)) recs.push("Varifocal cameras for plate recognition");
+  const recs: string[] = [];
+  if (areas.includes(PRIORITY_AREA_KEYS.OUTDOOR_PERIMETER_STREET_VIEW)) {
+    recs.push("Varifocal cameras for plate recognition");
+  }
   if (features.includes(FEATURES.HUMAN_VEHICLE_ALERT)) recs.push("Smart filtering for human/vehicle alerts");
   if (data.smart_home_interest) {
     recs.push("Start your Smart Home Starter journey with Smart light and Home Assistant (like Alexa or Google Home) integration for easy control and automation.");

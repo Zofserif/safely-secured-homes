@@ -13,13 +13,6 @@ import { FormData } from "./types";
 
 const PROPERTY_TYPE_VALUES = PROPERTY_TYPES.map((option) => option.value);
 const TIMELINE_VALUES = TIMELINE_OPTIONS.map((option) => option.value);
-const LEGACY_MAIN_GOAL_VALUES = [
-  "Family",
-  "Security",
-  "Smart Home First",
-  "Home Access Control",
-  "Emergency Recording",
-] as const;
 
 const SAFETY_MIN = 0;
 const SAFETY_MAX = 5;
@@ -27,24 +20,8 @@ const SAFETY_FIELD_COUNT = 7;
 
 type SafetyTuple = [number, number, number, number, number, number, number];
 
-type ResultsTokenV1 = {
-  v: 1;
-  p: number;
-  h: number;
-  f: number;
-  g: number;
-  a: number[];
-  c: number;
-  s: SafetyTuple;
-  m: number[];
-  i: boolean;
-  d: boolean;
-  b: number;
-  t: number;
-};
-
-type ResultsTokenV2 = {
-  v: 2;
+type ResultsTokenV3 = {
+  v: 3;
   p: number;
   h: number;
   f: number;
@@ -261,8 +238,8 @@ export const createResultsToken = (formData: FormData): string => {
   const safePriorityAreas = priorityAreas ?? [];
   const safeMustFeatures = mustFeatures ?? [];
 
-  const payload: ResultsTokenV2 = {
-    v: 2,
+  const payload: ResultsTokenV3 = {
+    v: 3,
     p: propertyType,
     h: homeSize,
     f: floors,
@@ -298,16 +275,11 @@ export const parseResultsToken = (token: string): FormData | null => {
     return null;
   }
 
-  if (!isRecord(parsed) || (parsed.v !== 1 && parsed.v !== 2)) {
+  if (!isRecord(parsed) || parsed.v !== 3) {
     return null;
   }
 
   const { p, h, f, a, c, s, m, i, d, b, t } = parsed;
-
-  if (parsed.v === 1) {
-    const legacyPayload = parsed as ResultsTokenV1;
-    if (!isValidOptionIndex(legacyPayload.g, LEGACY_MAIN_GOAL_VALUES)) return null;
-  }
 
   if (!isValidOptionIndex(p, PROPERTY_TYPE_VALUES)) return null;
   if (!isValidOptionIndex(h, HOME_SIZE_VALUES)) return null;

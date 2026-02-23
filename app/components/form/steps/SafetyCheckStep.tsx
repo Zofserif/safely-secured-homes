@@ -112,7 +112,7 @@ export default function SafetyCheckStep({
                   {category.title}
                 </h4>
                 <span
-                  className={`shrink-0 inline-flex min-w-[7.25rem] justify-center rounded-full border px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap ${safetyState.className}`}
+                  className={`shrink-0 inline-flex min-w-29 justify-center rounded-full border px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap ${safetyState.className}`}
                 >
                   {safetyState.label}
                 </span>

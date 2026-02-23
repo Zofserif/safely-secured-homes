@@ -96,25 +96,21 @@ export const FLOOR_OPTIONS = ["1", "2", "3+"] as const;
 
 export const PRIORITY_AREAS = [
   "General Indoor Living Areas",
-  "Monitor my child/elderly/pets",
-  "Main Entrance/Front Door",
-  "Home Office Security",
-  "Outdoor Gate/Driveway Entrance",
-  "Parcel & Mail Drop-off",
-  "Side Entrance/Backdoor",
-  "Whole Backyard/Front yard coverage",
-  "Street View/Outside Perimeter",
-  "Indoor Garage",
-  "Actively Monitoring Outside",
-  "Multiple Floor Security",
-  "No Internet/Electricity Remote Property",
+  "Look out for my child/elderly/pet",
+  "Entrances & Critical Zones",
+  "Outdoor Perimeter or Street View",
+  "No Internet/ Electricity Remote Property",
+  "Front door Visitor Checking",
 ] as const;
 
 export const PRIORITY_AREA_KEYS = {
-  OUTDOOR_GATE_DRIVEWAY: "Outdoor Gate/Driveway Entrance",
-  STREET_VIEW_PERIMETER: "Street View/Outside Perimeter",
-  WHOLE_BACKYARD_FRONT_YARD: "Whole Backyard/Front yard coverage",
-  ACTIVELY_MONITORING_OUTSIDE: "Actively Monitoring Outside",
+  GENERAL_INDOOR_LIVING_AREAS: "General Indoor Living Areas",
+  CHILD_ELDERLY_PET: "Look out for my child/elderly/pet",
+  ENTRANCES_CRITICAL_ZONES: "Entrances & Critical Zones",
+  OUTDOOR_PERIMETER_STREET_VIEW: "Outdoor Perimeter or Street View",
+  NO_INTERNET_ELECTRICITY_REMOTE_PROPERTY:
+    "No Internet/ Electricity Remote Property",
+  FRONT_DOOR_VISITOR_CHECKING: "Front door Visitor Checking",
 } as const;
 
 export const FEATURES = {
@@ -179,7 +175,5 @@ export const TIMELINE_OPTIONS = [
 ] as const;
 
 export const PERIMETER_PRIORITY_AREAS = [
-  PRIORITY_AREA_KEYS.STREET_VIEW_PERIMETER,
-  PRIORITY_AREA_KEYS.WHOLE_BACKYARD_FRONT_YARD,
-  PRIORITY_AREA_KEYS.ACTIVELY_MONITORING_OUTSIDE,
+  PRIORITY_AREA_KEYS.OUTDOOR_PERIMETER_STREET_VIEW,
 ] as const;

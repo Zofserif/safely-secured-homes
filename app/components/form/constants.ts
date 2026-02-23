@@ -1,13 +1,18 @@
 import {
   BellRing,
   DoorOpen,
+  Fence,
   Lightbulb,
   ShieldAlert,
+  Sofa,
   ToggleLeft,
   Tv,
+  Users,
+  WifiOff,
   type LucideIcon,
 } from "lucide-react";
 import {
+  PRIORITY_AREAS,
   SMART_HOME_FEATURE_OPTIONS,
   SMART_HOME_FEATURES,
 } from "../../lib/formOptions";
@@ -93,6 +98,12 @@ export type SmartHomeFeatureDetail = {
   Icon: LucideIcon;
 };
 
+export type PriorityAreaDetail = {
+  title: string;
+  description: string;
+  Icon: LucideIcon;
+};
+
 export const SMART_HOME_FEATURE_DETAILS: Record<
   (typeof SMART_HOME_FEATURE_OPTIONS)[number],
   SmartHomeFeatureDetail
@@ -132,5 +143,41 @@ export const SMART_HOME_FEATURE_DETAILS: Record<
     description: "Get alerts for fire, smoke, and water leaks in key areas.",
     benefit: "Faster response to protect family and property.",
     Icon: ShieldAlert,
+  },
+};
+
+export const PRIORITY_AREA_DETAILS: Record<
+  (typeof PRIORITY_AREAS)[number],
+  PriorityAreaDetail
+> = {
+  "General Indoor Living Areas": {
+    title: "General Indoor Living Areas",
+    description: "Cover common spaces where your family spends most of the day.",
+    Icon: Sofa,
+  },
+  "Look out for my child/elderly/pet": {
+    title: "Look out for my child/elderly/pet",
+    description: "Watch over loved ones and pets when you are in another room or away.",
+    Icon: Users,
+  },
+  "Entrances & Critical Zones": {
+    title: "Entrances & Critical Zones",
+    description: "Monitor main access points and other high-priority zones.",
+    Icon: DoorOpen,
+  },
+  "Outdoor Perimeter or Street View": {
+    title: "Outdoor Perimeter or Street View",
+    description: "Track movement around your gate, yard, and nearby street area.",
+    Icon: Fence,
+  },
+  "No Internet/ Electricity Remote Property": {
+    title: "No Internet/ Electricity Remote Property",
+    description: "Secure remote locations with limited or unreliable connectivity.",
+    Icon: WifiOff,
+  },
+  "Front door Visitor Checking": {
+    title: "Front door Visitor Checking",
+    description: "See who is at your front door before opening or responding.",
+    Icon: BellRing,
   },
 };

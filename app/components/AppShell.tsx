@@ -309,10 +309,10 @@ export default function AppShell({
         return;
       }
 
-      // Backward compatibility for already-issued URL payload links.
-      const legacyTokenData = parseResultsToken(key);
-      if (legacyTokenData) {
-        showResults(legacyTokenData);
+      // First try URL payload tokens (current schema only).
+      const tokenData = parseResultsToken(key);
+      if (tokenData) {
+        showResults(tokenData);
         return;
       }
 

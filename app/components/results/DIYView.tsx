@@ -67,7 +67,7 @@ export default function DIYView({
             </ul>
           </div>
           <p>
-            <strong className="text-slate-700">NVR size:</strong> {result.nvrChannel} Channel (choose 8 or 16 if you plan to expand).
+            <strong className="text-slate-700">NVR size:</strong> {result.nvrChannel} Channel (choose the next standard tier: 8, 16, 32, or 64 if you plan to expand).
           </p>
           <p>
             <strong className="text-slate-700">HDD for retention:</strong> see the storage table below. We recommend at least {storageLabel}.
@@ -379,7 +379,7 @@ export default function DIYView({
                   <li><strong>8MP (4K):</strong> best for wide areas or zooming later. High-end pick.</li>
                 </ul>
               </div>
-              <p><strong>NVR size:</strong> ${result.nvrChannel} Channel (choose 8 or 16 if you plan to expand).</p>
+              <p><strong>NVR size:</strong> ${result.nvrChannel} Channel (choose the next standard tier: 8, 16, 32, or 64 if you plan to expand).</p>
               <p><strong>HDD for retention:</strong> see the storage table below. We recommend at least ${storageLabel}.</p>
               <p><strong>Cable (CAT6):</strong> at least 50 meters per camera. Confirm routes from each camera to the NVR.</p>
               <div class="subsection">

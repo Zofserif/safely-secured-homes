@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { LEAD_SCORE_MAX } from "../../lib/leadScoring";
 import type {
   LeadScoreBreakdownAnswer,
   LeadScoreBreakdownItem,
@@ -50,6 +51,7 @@ type LeadPayloadV3 = LeadPayloadBase & {
   scoring: {
     model_version: string;
     lead_score: number;
+    lead_score_max: number;
     lead_tier: LeadTier;
     breakdown: LeadScoreBreakdownItem[];
   };
@@ -196,12 +198,17 @@ const sanitizeLeadPayloadV3 = (value: unknown): LeadPayloadV3 | null => {
     breakdown.push(sanitized);
   }
 
+  const sanitizedLeadScoreMax = toNonNegativeInteger(scoring.lead_score_max);
+  const leadScoreMax =
+    sanitizedLeadScoreMax > 0 ? sanitizedLeadScoreMax : LEAD_SCORE_MAX;
+
   return {
     v: 3,
     ...sanitizeLeadPayloadBase(value),
     scoring: {
       model_version: toSafeString(scoring.model_version),
       lead_score: toNonNegativeInteger(scoring.lead_score),
+      lead_score_max: leadScoreMax,
       lead_tier: toLeadTier(scoring.lead_tier),
       breakdown,
     },

@@ -1,4 +1,5 @@
 import { sendLeadEmail } from "./email";
+import { LEAD_SCORE_MAX } from "./leadScoring";
 import {
   getSafetyCategoryScores,
   getSafetySummary,
@@ -45,6 +46,7 @@ type LeadPayloadV3 = LeadPayloadBase & {
   scoring: {
     model_version: string;
     lead_score: number;
+    lead_score_max: number;
     lead_tier: LeadTier;
     breakdown: LeadScoreBreakdownItem[];
   };
@@ -118,6 +120,7 @@ const buildLeadPayloadV3 = (
   scoring: {
     model_version: toSafeString(result.leadScoringModelVersion) || "unknown",
     lead_score: result.leadScore,
+    lead_score_max: LEAD_SCORE_MAX,
     lead_tier: result.leadTier,
     breakdown: toLeadScoreBreakdown(result.leadScoreBreakdown),
   },

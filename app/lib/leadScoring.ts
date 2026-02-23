@@ -9,7 +9,7 @@ import {
 } from "./formOptions";
 import type { LeadScoreBreakdownItem, LeadTier } from "./types";
 
-export const LEAD_SCORING_MODEL_VERSION = "answer-map-v1";
+export const LEAD_SCORING_MODEL_VERSION = "answer-map-v3";
 
 type SafetyAverageBucket = "safety_average_gte_3" | "safety_average_lt_3";
 
@@ -51,30 +51,30 @@ export type LeadScoreCalculationResult = {
 
 const PRIORITY_AREA_POINTS: Record<(typeof PRIORITY_AREAS)[number], number> = {
   [PRIORITY_AREA_KEYS.GENERAL_INDOOR_LIVING_AREAS]: 0,
-  [PRIORITY_AREA_KEYS.CHILD_ELDERLY_PET]: 1,
+  [PRIORITY_AREA_KEYS.CHILD_ELDERLY_PET]: 0,
   [PRIORITY_AREA_KEYS.ENTRANCES_CRITICAL_ZONES]: 0,
-  [PRIORITY_AREA_KEYS.OUTDOOR_PERIMETER_STREET_VIEW]: 1,
+  [PRIORITY_AREA_KEYS.OUTDOOR_PERIMETER_STREET_VIEW]: 0,
   [PRIORITY_AREA_KEYS.NO_INTERNET_ELECTRICITY_REMOTE_PROPERTY]: 0,
   [PRIORITY_AREA_KEYS.FRONT_DOOR_VISITOR_CHECKING]: 0,
 };
 
 const CURRENT_SETUP_POINTS: Record<(typeof CURRENT_SETUP_VALUES)[number], number> =
   {
-    "No, this is a new installation": 2,
+    "No, this is a new installation": 1,
     "Yes, but it's broken/old (Needs replacement)": 0,
-    "Yes, looking to expand/upgrade": 2,
+    "Yes, looking to expand/upgrade": 1,
   };
 
 const BUDGET_BAND_POINTS: Record<(typeof BUDGET_BAND_OPTIONS)[number], number> = {
   "Starter Value (₱30K - ₱50K)": 0,
   "My Needed Features (₱50K - ₱75K)": 1,
-  "Premium Features (₱75K+) ": 2,
+  "Premium Features (₱75K+) ": 1,
 };
 
 const TIMELINE_POINTS: Record<string, number> = {
-  [TIMELINE_VALUES.ASAP]: 3,
+  [TIMELINE_VALUES.ASAP]: 2,
   [TIMELINE_VALUES.THIS_MONTH]: 1,
-  [TIMELINE_VALUES.BEFORE_MOVE_IN]: 0,
+  [TIMELINE_VALUES.BEFORE_MOVE_IN]: 2,
   [TIMELINE_VALUES.RESEARCHING]: 0,
 };
 
@@ -112,8 +112,19 @@ const LEAD_SCORE_QUESTION_DEFINITIONS: readonly LeadScoreQuestionDefinition[] = 
     answerPoints: LEAD_SCORE_ANSWER_POINTS.priority_areas,
     maxPoints: 2,
     getSelectedAnswers: ({ priority_areas }) => priority_areas,
-    getBonusPoints: (_, selectedAnswers) =>
-      selectedAnswers.length >= 3 ? 2 : 0,
+    getBonusPoints: (_, selectedAnswers) => {
+      const validSelectionCount = selectedAnswers.filter((answer) =>
+        Object.prototype.hasOwnProperty.call(
+          LEAD_SCORE_ANSWER_POINTS.priority_areas,
+          answer
+        )
+      ).length;
+      const moreThanHalfMin = Math.floor(PRIORITY_AREAS.length / 2) + 1;
+
+      if (validSelectionCount >= moreThanHalfMin) return 2;
+      if (validSelectionCount >= 1) return 1;
+      return 0;
+    },
   },
   {
     id: "current_setup_urgency",
@@ -137,7 +148,7 @@ const LEAD_SCORE_QUESTION_DEFINITIONS: readonly LeadScoreQuestionDefinition[] = 
     label: "Timeline urgency",
     questionKey: "timeline",
     answerPoints: LEAD_SCORE_ANSWER_POINTS.timeline,
-    maxPoints: 3,
+    maxPoints: 2,
     getSelectedAnswers: ({ timeline }) => (timeline ? [timeline] : []),
   },
   {
@@ -145,7 +156,7 @@ const LEAD_SCORE_QUESTION_DEFINITIONS: readonly LeadScoreQuestionDefinition[] = 
     label: "Smart home feature bonus",
     questionKey: "smart_home_features",
     answerPoints: LEAD_SCORE_ANSWER_POINTS.smart_home_features,
-    maxPoints: 6,
+    maxPoints: 1,
     getSelectedAnswers: ({ smart_home_features }) => smart_home_features,
   },
   {
@@ -166,7 +177,7 @@ export const LEAD_SCORE_MAX = LEAD_SCORE_QUESTION_DEFINITIONS.reduce<number>(
 );
 
 export const LEAD_TIER_PERCENT_THRESHOLDS = {
-  HOT: 0.8,
+  HOT: 0.7,
   WARM: 0.5,
 } as const;
 

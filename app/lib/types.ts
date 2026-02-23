@@ -27,6 +27,23 @@ export type LeadTier = 'Hot' | 'Warm' | 'Nurture';
 
 export type SeverityLevel = "low" | "medium" | "high";
 
+export type LeadScoreBreakdownAnswer = {
+  answer: string;
+  points: number;
+};
+
+export type LeadScoreBreakdownItem = {
+  id: string;
+  label: string;
+  questionKey: string;
+  selectedAnswers: string[];
+  matchedAnswers: LeadScoreBreakdownAnswer[];
+  matchedPoints: number;
+  bonusPoints: number;
+  maxPoints: number;
+  points: number;
+};
+
 export type ResultsSummary = {
   safetyTotal: number;
   safetyMax: number;
@@ -53,5 +70,7 @@ export type CalculationResult = {
   storage1TB: boolean;
   leadScore: number;
   leadTier: LeadTier;
+  leadScoringModelVersion: string;
   recommendations: string[];
+  leadScoreBreakdown?: LeadScoreBreakdownItem[];
 };

@@ -1,14 +1,15 @@
-import { FormData, LeadTier, CalculationResult, ResultsSummary } from "./types";
 import {
-  BUDGET_BANDS,
-  CURRENT_SETUP_OPTIONS,
+  FormData,
+  CalculationResult,
+  ResultsSummary,
+} from "./types";
+import {
   FEATURES,
   HOME_SIZE_OPTIONS,
-  PERIMETER_PRIORITY_AREAS,
   PRIORITY_AREA_KEYS,
-  SMART_HOME_FEATURES,
-  TIMELINE_VALUES,
 } from "./formOptions";
+import { calculateLeadScore, getLeadTierFromScore } from "./leadScoring";
+import { getSafetySummary } from "./safetyScores";
 
 const getNvrChannelTier = (cameraCount: number): number => {
   let tier = 4;
@@ -65,29 +66,17 @@ const getPriorityAreaCameraContribution = (
   }
 };
 
-const calculateSafetyTotal = (data: FormData) => {
-  const safetyScores = [
-    data.safety_gate_entry,
-    data.safety_blindspots,
-    data.safety_side_back_entry,
-    data.safety_windows_terrace,
-    data.safety_driveway_garage,
-    data.safety_indoor_choke_points,
-    data.safety_emergency_readiness,
-  ];
-  return safetyScores.reduce((sum: number, value) => sum + (typeof value === "number" ? value : 0), 0);
-};
-
 export const getResultsSummary = (data: FormData, result: CalculationResult): ResultsSummary => {
-  const safetyTotal = calculateSafetyTotal(data);
-  const safetyMax = 35;
-  const emergencyReadinessScore = typeof data.safety_emergency_readiness === "number" ? data.safety_emergency_readiness : 0;
+  const safety = getSafetySummary(data);
+  const safetyTotal = safety.total;
+  const safetyMax = safety.max;
+  const emergencyReadinessScore = safety.emergencyReadinessScore;
 
-  const safetyLevel = safetyTotal <= 10
-    ? { label: "Protected", range: "0-10 Low", severity: "low" as const }
-    : safetyTotal <= 20
-      ? { label: "Alert", range: "11-20 Medium", severity: "medium" as const }
-      : { label: "Urgent Action", range: "21-35 High", severity: "high" as const };
+  const safetyLevel = safetyTotal <= 6
+    ? { label: "Protected", range: "0-6 Low", severity: "low" as const }
+    : safetyTotal <= 11
+      ? { label: "Alert", range: "7-11 Medium", severity: "medium" as const }
+      : { label: "Urgent Action", range: "12-20 High", severity: "high" as const };
 
   const priority = result.leadTier === "Hot"
     ? { label: "Emergency Secure", severity: "high" as const }
@@ -103,17 +92,17 @@ export const getResultsSummary = (data: FormData, result: CalculationResult): Re
 
   const safetyRiskScore = safetyTotal;
   const priorityRisk = Math.min(result.leadScore, 9);
-  const rangeScore = Math.min(44, Math.max(0, safetyRiskScore + priorityRisk));
+  const rangeScore = Math.min(29, Math.max(0, safetyRiskScore + priorityRisk));
   let panatagRating = 10;
-  if (rangeScore >= 39) panatagRating = 1;
-  else if (rangeScore >= 34) panatagRating = 2;
-  else if (rangeScore >= 29) panatagRating = 3;
-  else if (rangeScore >= 24) panatagRating = 4;
-  else if (rangeScore >= 19) panatagRating = 5;
-  else if (rangeScore >= 14) panatagRating = 6;
-  else if (rangeScore >= 9) panatagRating = 7;
-  else if (rangeScore >= 6) panatagRating = 8;
-  else if (rangeScore >= 3) panatagRating = 9;
+  if (rangeScore >= 26) panatagRating = 1;
+  else if (rangeScore >= 22) panatagRating = 2;
+  else if (rangeScore >= 19) panatagRating = 3;
+  else if (rangeScore >= 16) panatagRating = 4;
+  else if (rangeScore >= 13) panatagRating = 5;
+  else if (rangeScore >= 9) panatagRating = 6;
+  else if (rangeScore >= 6) panatagRating = 7;
+  else if (rangeScore >= 4) panatagRating = 8;
+  else if (rangeScore >= 2) panatagRating = 9;
 
   return {
     safetyTotal,
@@ -130,19 +119,12 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   const propertyType = data.property_type ?? "";
   const floors = data.floors ?? "1";
   const size = data.home_size ?? HOME_SIZE_OPTIONS.SMALL;
-  const features = data.features_must ?? [];
+  const featuresMust = data.features_must ?? [];
   const smartHomeFeatures = data.smart_home_features ?? [];
   const currentSetup = data.current_setup ?? "";
   const budgetBand = data.budget_band ?? "";
   const timeline = data.timeline ?? "";
-  const smartHomeWeights: Partial<Record<string, number>> = {
-    [SMART_HOME_FEATURES.EMERGENCY_DECTION_SYSTEM]: 2,
-    [SMART_HOME_FEATURES.SMART_VIDEO_DOORBELL]: 2,
-    [SMART_HOME_FEATURES.AUTOMATIC_ENTRY_EXIT_GATE_OPENERS]: 2,
-    [SMART_HOME_FEATURES.AUTOMATED_LIGHTING_SYSTEM]: 1,
-    [SMART_HOME_FEATURES.SMART_ELECTRONIC_SWITCH_SYSTEM]: 1,
-    [SMART_HOME_FEATURES.SMART_ENTERTAINMENT_SYSTEM]: 1,
-  };
+  const safetyAverage = getSafetySummary(data).average;
 
   const computedCameraTotal = areas.reduce(
     (sum, area) =>
@@ -152,53 +134,23 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   const cameraCount = Math.max(2, computedCameraTotal);
   const nvrChannel = getNvrChannelTier(cameraCount);
 
-  // Scoring Logic
-  let score = 0;
-  if (
-    areas.length >= 3 ||
-    areas.some((area) =>
-      PERIMETER_PRIORITY_AREAS.includes(
-        area as (typeof PERIMETER_PRIORITY_AREAS)[number]
-      )
-    )
-  ) {
-    score += 2;
-  }
-  if (features.some((f) => f === FEATURES.COLOR_NIGHT || f === FEATURES.HUMAN_VEHICLE_ALERT)) score += 1;
-  
-  // Updated logic for new fields
-  if (currentSetup === CURRENT_SETUP_OPTIONS.NEW_INSTALL || currentSetup === CURRENT_SETUP_OPTIONS.BROKEN_OLD) score += 1;
-  if (budgetBand === BUDGET_BANDS.PREMIUM || budgetBand === BUDGET_BANDS.FEATURE_RICH) score += 2;
-  if (timeline === TIMELINE_VALUES.ASAP) score += 3;
-  const smartHomeBonus = smartHomeFeatures.reduce(
-    (sum, feature) => sum + (smartHomeWeights[feature] ?? 0),
-    0
-  );
-  score += Math.min(6, smartHomeBonus);
-  const safetyScores = [
-    data.safety_gate_entry,
-    data.safety_blindspots,
-    data.safety_side_back_entry,
-    data.safety_windows_terrace,
-    data.safety_driveway_garage,
-    data.safety_indoor_choke_points,
-    data.safety_emergency_readiness,
-  ].filter((value): value is number => typeof value === "number");
-  const safetyAverage = safetyScores.length
-    ? safetyScores.reduce((sum, value) => sum + value, 0) / safetyScores.length
-    : 0;
-  if (safetyAverage >= 3) score += 1;
-
-  let tier: LeadTier = "Nurture";
-  if (score >= 7) tier = "Hot";
-  else if (score >= 4) tier = "Warm";
+  const { leadScore, leadScoreBreakdown, leadScoringModelVersion } =
+    calculateLeadScore({
+      priority_areas: areas,
+      smart_home_features: smartHomeFeatures,
+      current_setup: currentSetup,
+      budget_band: budgetBand,
+      timeline,
+      safety_average: safetyAverage,
+    });
+  const tier = getLeadTierFromScore(leadScore);
 
   // Recommendations
   const recs: string[] = [];
   if (areas.includes(PRIORITY_AREA_KEYS.OUTDOOR_PERIMETER_STREET_VIEW)) {
     recs.push("Varifocal cameras for plate recognition");
   }
-  if (features.includes(FEATURES.HUMAN_VEHICLE_ALERT)) recs.push("Smart filtering for human/vehicle alerts");
+  if (featuresMust.includes(FEATURES.HUMAN_VEHICLE_ALERT)) recs.push("Smart filtering for human/vehicle alerts");
   if (data.smart_home_interest) {
     recs.push("Start your Smart Home Starter journey with Smart light and Home Assistant (like Alexa or Google Home) integration for easy control and automation.");
   }
@@ -207,8 +159,10 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
     cameraCount,
     nvrChannel,
     storage1TB: true, // simplified
-    leadScore: score,
+    leadScore,
     leadTier: tier,
-    recommendations: recs
+    leadScoringModelVersion,
+    recommendations: recs,
+    leadScoreBreakdown,
   };
 };

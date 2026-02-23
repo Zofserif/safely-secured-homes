@@ -1,10 +1,19 @@
 import { sendLeadEmail } from "./email";
-import { FormData, CalculationResult } from "./types";
+import {
+  getSafetyCategoryScores,
+  getSafetySummary,
+  type SafetyCategoryScores,
+} from "./safetyScores";
+import type {
+  CalculationResult,
+  FormData,
+  LeadScoreBreakdownItem,
+  LeadTier,
+} from "./types";
 
 const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT;
 
-type LeadPayloadV2 = {
-  v: 2;
+type LeadPayloadBase = {
   source: string;
   mobile: string;
   property: {
@@ -31,6 +40,16 @@ type LeadPayloadV2 = {
   recommendations: string[];
 };
 
+type LeadPayloadV3 = LeadPayloadBase & {
+  v: 3;
+  scoring: {
+    model_version: string;
+    lead_score: number;
+    lead_tier: LeadTier;
+    breakdown: LeadScoreBreakdownItem[];
+  };
+};
+
 type LeadInsertBody = {
   email: string;
   name: string;
@@ -38,7 +57,7 @@ type LeadInsertBody = {
   score: number;
   camera_count: number;
   safety_score_total: number;
-  payload: LeadPayloadV2;
+  payload: LeadPayloadV3;
 };
 
 const toSafeString = (value: unknown): string =>
@@ -53,28 +72,11 @@ const toStringArray = (value: unknown): string[] => {
     .filter((item) => item.length > 0);
 };
 
-const toSafetyScore = (value: unknown): number => {
-  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
-  return Math.max(0, Math.min(5, Math.round(value)));
-};
-
-const averageSafetyScore = (values: unknown[]): number => {
-  if (values.length === 0) return 0;
-
-  const normalizedValues = values.map(toSafetyScore);
-  const average =
-    normalizedValues.reduce((sum, score) => sum + score, 0) /
-    normalizedValues.length;
-
-  return toSafetyScore(average);
-};
-
-const buildLeadPayloadV2 = (
+const buildLeadPayloadBase = (
   data: FormData,
-  result: CalculationResult,
+  safetyCategories: SafetyCategoryScores,
   source?: string
-): LeadPayloadV2 => ({
-  v: 2,
+): LeadPayloadBase => ({
   source: toSafeString(source) || "website",
   mobile: toSafeString(data.mobile),
   property: {
@@ -84,19 +86,7 @@ const buildLeadPayloadV2 = (
     current_setup: toSafeString(data.current_setup),
   },
   priorities: toStringArray(data.priority_areas),
-  safety: {
-    home_entrance: averageSafetyScore([
-      data.safety_gate_entry,
-      data.safety_side_back_entry,
-      data.safety_windows_terrace,
-    ]),
-    neighborhood_safety_check: toSafetyScore(data.safety_driveway_garage),
-    indoor_outdoor_blindspots: averageSafetyScore([
-      data.safety_blindspots,
-      data.safety_indoor_choke_points,
-    ]),
-    emergency_readiness_home: toSafetyScore(data.safety_emergency_readiness),
-  },
+  safety: safetyCategories,
   preferences: {
     security_features: toStringArray(data.features_must),
     budget_band: toSafeString(data.budget_band),
@@ -105,7 +95,32 @@ const buildLeadPayloadV2 = (
     smart_home_interest: Boolean(data.smart_home_interest),
     smart_home_features: toStringArray(data.smart_home_features),
   },
+  recommendations: [],
+});
+
+const toLeadScoreBreakdown = (value: unknown): LeadScoreBreakdownItem[] => {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (item): item is LeadScoreBreakdownItem =>
+      typeof item === "object" && item !== null
+  );
+};
+
+const buildLeadPayloadV3 = (
+  data: FormData,
+  result: CalculationResult,
+  safetyCategories: SafetyCategoryScores,
+  source?: string
+): LeadPayloadV3 => ({
+  v: 3,
+  ...buildLeadPayloadBase(data, safetyCategories, source),
   recommendations: toStringArray(result.recommendations),
+  scoring: {
+    model_version: toSafeString(result.leadScoringModelVersion) || "unknown",
+    lead_score: result.leadScore,
+    lead_tier: result.leadTier,
+    breakdown: toLeadScoreBreakdown(result.leadScoreBreakdown),
+  },
 });
 
 export async function submitToEmail(
@@ -190,15 +205,8 @@ export async function submitLeadToSupabase(
   result: CalculationResult,
   source?: string
 ) {
-  const safetyScoreTotal = [
-    data.safety_gate_entry,
-    data.safety_blindspots,
-    data.safety_side_back_entry,
-    data.safety_windows_terrace,
-    data.safety_driveway_garage,
-    data.safety_indoor_choke_points,
-    data.safety_emergency_readiness,
-  ].reduce<number>((sum, value) => sum + toSafetyScore(value), 0);
+  const safetySummary = getSafetySummary(data);
+  const safetyCategories = getSafetyCategoryScores(data);
 
   const fullName = [toSafeString(data.first_name), toSafeString(data.last_name)]
     .filter((part) => part.length > 0)
@@ -210,8 +218,8 @@ export async function submitLeadToSupabase(
     tier: result.leadTier,
     score: result.leadScore,
     camera_count: result.cameraCount,
-    safety_score_total: safetyScoreTotal,
-    payload: buildLeadPayloadV2(data, result, source),
+    safety_score_total: safetySummary.total,
+    payload: buildLeadPayloadV3(data, result, safetyCategories, source),
   };
 
   try {

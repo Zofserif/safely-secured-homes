@@ -1,5 +1,6 @@
 import posthog, { isPostHogEnabled } from "../posthog";
 import { FORM_STEPS } from "./formSteps";
+import { getSafetySummary } from "./safetyScores";
 import type { CalculationResult, FormData } from "./types";
 
 const ENABLE_LEGACY_DUAL_WRITE = true;
@@ -88,33 +89,6 @@ const getEmailDomain = (email: string) => {
   const atIndex = email.indexOf("@");
   if (atIndex === -1) return "";
   return email.slice(atIndex + 1).toLowerCase();
-};
-
-const getSafetyScores = (data: FormData) =>
-  [
-    data.safety_gate_entry,
-    data.safety_blindspots,
-    data.safety_side_back_entry,
-    data.safety_windows_terrace,
-    data.safety_driveway_garage,
-    data.safety_indoor_choke_points,
-    data.safety_emergency_readiness,
-  ].filter((value): value is number => typeof value === "number");
-
-const getSafetySummary = (data: FormData) => {
-  const values = getSafetyScores(data);
-  if (values.length === 0) {
-    return {
-      total: undefined,
-      average: undefined,
-    };
-  }
-
-  const total = values.reduce((sum, value) => sum + value, 0);
-  return {
-    total,
-    average: total / values.length,
-  };
 };
 
 const normalizeContext = (context?: FunnelContext): FunnelContext => {

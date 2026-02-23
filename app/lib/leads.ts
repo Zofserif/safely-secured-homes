@@ -198,7 +198,7 @@ export async function submitLeadToSupabase(
     data.safety_driveway_garage,
     data.safety_indoor_choke_points,
     data.safety_emergency_readiness,
-  ].reduce((sum, value) => sum + toSafetyScore(value), 0);
+  ].reduce<number>((sum, value) => sum + toSafetyScore(value), 0);
 
   const fullName = [toSafeString(data.first_name), toSafeString(data.last_name)]
     .filter((part) => part.length > 0)

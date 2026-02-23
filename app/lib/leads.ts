@@ -1,4 +1,5 @@
 import { sendLeadEmail } from "./email";
+import { getResultsSummary } from "./calculations";
 import { LEAD_SCORE_MAX } from "./leadScoring";
 import {
   getSafetyCategoryScores,
@@ -38,6 +39,7 @@ type LeadPayloadBase = {
     smart_home_interest: boolean;
     smart_home_features: string[];
   };
+  panatag_home_rating: number;
   recommendations: string[];
 };
 
@@ -74,9 +76,13 @@ const toStringArray = (value: unknown): string[] => {
     .filter((item) => item.length > 0);
 };
 
+const toPanatagHomeRating = (value: number): number =>
+  Math.max(1, Math.min(10, Math.round(value)));
+
 const buildLeadPayloadBase = (
   data: FormData,
   safetyCategories: SafetyCategoryScores,
+  panatagHomeRating: number,
   source?: string
 ): LeadPayloadBase => ({
   source: toSafeString(source) || "website",
@@ -97,6 +103,7 @@ const buildLeadPayloadBase = (
     smart_home_interest: Boolean(data.smart_home_interest),
     smart_home_features: toStringArray(data.smart_home_features),
   },
+  panatag_home_rating: toPanatagHomeRating(panatagHomeRating),
   recommendations: [],
 });
 
@@ -112,10 +119,11 @@ const buildLeadPayloadV3 = (
   data: FormData,
   result: CalculationResult,
   safetyCategories: SafetyCategoryScores,
+  panatagHomeRating: number,
   source?: string
 ): LeadPayloadV3 => ({
   v: 3,
-  ...buildLeadPayloadBase(data, safetyCategories, source),
+  ...buildLeadPayloadBase(data, safetyCategories, panatagHomeRating, source),
   recommendations: toStringArray(result.recommendations),
   scoring: {
     model_version: toSafeString(result.leadScoringModelVersion) || "unknown",
@@ -156,6 +164,8 @@ export async function submitToFormspree(
   result: CalculationResult,
   source?: string
 ) {
+  const { panatagRating } = getResultsSummary(data, result);
+
   const payload = {
     ...data,
     _subject: `New Lead: ${data.first_name} ${data.last_name} [${result.leadTier}]`,
@@ -163,6 +173,7 @@ export async function submitToFormspree(
     summary_nvr_channel: result.nvrChannel,
     summary_lead_score: result.leadScore,
     summary_lead_tier: result.leadTier,
+    summary_panatag_home_rating: panatagRating,
     summary_recommendations: result.recommendations.join(", "),
     lead_source: source ?? "website",
   };
@@ -210,6 +221,7 @@ export async function submitLeadToSupabase(
 ) {
   const safetySummary = getSafetySummary(data);
   const safetyCategories = getSafetyCategoryScores(data);
+  const { panatagRating } = getResultsSummary(data, result);
 
   const fullName = [toSafeString(data.first_name), toSafeString(data.last_name)]
     .filter((part) => part.length > 0)
@@ -222,7 +234,13 @@ export async function submitLeadToSupabase(
     score: result.leadScore,
     camera_count: result.cameraCount,
     safety_score_total: safetySummary.total,
-    payload: buildLeadPayloadV3(data, result, safetyCategories, source),
+    payload: buildLeadPayloadV3(
+      data,
+      result,
+      safetyCategories,
+      panatagRating,
+      source
+    ),
   };
 
   try {

@@ -20,7 +20,7 @@ export default function SafetyCheckStep({
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:p-3 space-y-1.5 sm:space-y-2">
         <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
           <p className="font-medium text-slate-600 leading-snug">
-            Rate each area from 0 (high risk) to 5 (safer).
+            Move each slider based on your home condition: left is riskiest, right is safest.
           </p>
           <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 whitespace-nowrap">
             {ratedSafetyCount}/{safetyCategories.length} rated
@@ -150,8 +150,8 @@ export default function SafetyCheckStep({
                   aria-label={`${category.title} safety rating`}
                 />
                 <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-500">
-                  <span>0 = High risk</span>
-                  <span>5 = Safer</span>
+                  <span>Riskiest</span>
+                  <span>Safest</span>
                 </div>
               </div>
             </div>

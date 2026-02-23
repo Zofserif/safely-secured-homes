@@ -1,5 +1,7 @@
 import type { FormData } from "./types";
 
+// Category scores are stored as risk-oriented values:
+// 0 = safer, 5 = higher risk. Results summary mappings consume this scale.
 export type SafetyCategoryScores = {
   home_entrance: number;
   neighborhood_safety_check: number;
@@ -14,6 +16,7 @@ export type SafetySummary = {
   emergencyReadinessScore: number;
 };
 
+// Normalizes any unknown input into an integer risk score on the stored 0..5 scale.
 export const toSafetyScore = (value: unknown): number => {
   if (typeof value !== "number" || !Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(5, Math.round(value)));
@@ -26,6 +29,7 @@ const averageSafetyScore = (values: unknown[]): number => {
   return toSafetyScore(total / values.length);
 };
 
+// These are normalized category risk scores used by resultsScoring/getResultsSummary.
 export const getSafetyCategoryScores = (data: FormData): SafetyCategoryScores => ({
   home_entrance: averageSafetyScore([
     data.safety_gate_entry,
@@ -40,6 +44,7 @@ export const getSafetyCategoryScores = (data: FormData): SafetyCategoryScores =>
   emergency_readiness_home: toSafetyScore(data.safety_emergency_readiness),
 });
 
+// Aggregate risk summary that drives Safety Score and Emergency Readiness classifications.
 export const getSafetySummary = (data: FormData): SafetySummary => {
   const categoryScores = getSafetyCategoryScores(data);
   const total = Object.values(categoryScores).reduce<number>(

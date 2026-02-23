@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:results-scoring": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-results-scoring.mts"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

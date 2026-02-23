@@ -1,4 +1,4 @@
-import {
+import type {
   FormData,
   CalculationResult,
   ResultsSummary,
@@ -9,7 +9,16 @@ import {
   PRIORITY_AREA_KEYS,
 } from "./formOptions";
 import { calculateLeadScore, getLeadTierFromScore } from "./leadScoring";
-import { getSafetySummary } from "./safetyScores";
+import {
+  getSafetyCategoryScores,
+  getSafetySummary,
+} from "./safetyScores";
+import {
+  getEmergencyReadinessFromRiskScore,
+  getPanatagRatingFromSafetyCategories,
+  getPriorityActionFromLeadTier,
+  getSafetyLevelFromTotalRiskScore,
+} from "./resultsScoring";
 
 const getNvrChannelTier = (cameraCount: number): number => {
   let tier = 4;
@@ -68,41 +77,15 @@ const getPriorityAreaCameraContribution = (
 
 export const getResultsSummary = (data: FormData, result: CalculationResult): ResultsSummary => {
   const safety = getSafetySummary(data);
+  const safetyCategoryScores = getSafetyCategoryScores(data);
   const safetyTotal = safety.total;
   const safetyMax = safety.max;
   const emergencyReadinessScore = safety.emergencyReadinessScore;
 
-  const safetyLevel = safetyTotal <= 6
-    ? { label: "Protected", range: "0-6 Low", severity: "low" as const }
-    : safetyTotal <= 11
-      ? { label: "Alert", range: "7-11 Medium", severity: "medium" as const }
-      : { label: "Urgent Action", range: "12-20 High", severity: "high" as const };
-
-  const priority = result.leadTier === "Hot"
-    ? { label: "Emergency Secure", severity: "high" as const }
-    : result.leadTier === "Warm"
-      ? { label: "Book & Secure", severity: "medium" as const }
-      : { label: "Plan & Assess", severity: "low" as const };
-
-  const emergency = emergencyReadinessScore === 0
-    ? { label: "Good", severity: "low" as const }
-    : emergencyReadinessScore <= 3
-      ? { label: "Not There", severity: "medium" as const }
-      : { label: "Worse", severity: "high" as const };
-
-  const safetyRiskScore = safetyTotal;
-  const priorityRisk = Math.min(result.leadScore, 9);
-  const rangeScore = Math.min(29, Math.max(0, safetyRiskScore + priorityRisk));
-  let panatagRating = 10;
-  if (rangeScore >= 26) panatagRating = 1;
-  else if (rangeScore >= 22) panatagRating = 2;
-  else if (rangeScore >= 19) panatagRating = 3;
-  else if (rangeScore >= 16) panatagRating = 4;
-  else if (rangeScore >= 13) panatagRating = 5;
-  else if (rangeScore >= 9) panatagRating = 6;
-  else if (rangeScore >= 6) panatagRating = 7;
-  else if (rangeScore >= 4) panatagRating = 8;
-  else if (rangeScore >= 2) panatagRating = 9;
+  const safetyLevel = getSafetyLevelFromTotalRiskScore(safetyTotal);
+  const priority = getPriorityActionFromLeadTier(result.leadTier);
+  const emergency = getEmergencyReadinessFromRiskScore(emergencyReadinessScore);
+  const panatagRating = getPanatagRatingFromSafetyCategories(safetyCategoryScores);
 
   return {
     safetyTotal,

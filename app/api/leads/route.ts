@@ -39,6 +39,7 @@ type LeadPayloadBase = {
     smart_home_interest: boolean;
     smart_home_features: string[];
   };
+  panatag_home_rating: number;
   recommendations: string[];
 };
 
@@ -93,6 +94,12 @@ const toNonNegativeInteger = (value: unknown): number =>
 const toSafetyScore = (value: unknown): number =>
   Math.max(0, Math.min(5, Math.round(toFiniteNumber(value))));
 
+const toPanatagHomeRating = (value: unknown): number => {
+  const normalized = Math.round(toFiniteNumber(value));
+  if (normalized <= 0) return 0;
+  return Math.max(1, Math.min(10, normalized));
+};
+
 const toLeadTier = (value: unknown): LeadTier =>
   value === "Hot" || value === "Warm" || value === "Nurture"
     ? value
@@ -132,6 +139,7 @@ const sanitizeLeadPayloadBase = (payload: Record<string, unknown>): LeadPayloadB
       smart_home_interest: toBoolean(preferences.smart_home_interest),
       smart_home_features: toStringArray(preferences.smart_home_features),
     },
+    panatag_home_rating: toPanatagHomeRating(payload.panatag_home_rating),
     recommendations: toStringArray(payload.recommendations),
   };
 };

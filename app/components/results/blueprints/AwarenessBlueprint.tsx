@@ -1,69 +1,75 @@
-import AccordionItem from "../../AccordionItem";
-import { RESULTS_CALL_HREF } from "../constants";
-import { BulletList, Section } from "./shared";
+import {
+  BlueprintLead,
+  BulletList,
+  ChecklistCard,
+  GoalBanner,
+  InfoCallout,
+  Section,
+} from "./shared";
 
 export default function AwarenessBlueprint() {
   return (
     <>
-      <p className="text-sm text-slate-600 pb-1">
-        A guard Dog is also asleep at night. When we rely our safety in a
-        traditional solution in modern world, we receive an inconsistent
-        results. A family&apos;s safety and comfort should stay awake 24/7.
-      </p>
-      <p className="text-sm text-slate-600">
-        <span className="font-semibold text-slate-800">Our Goal:</span> To
-        detect threats early, document what happened, and respond faster.
-      </p>
-      <div className="mt-4 rounded-2xl border border-slate-100 bg-[#F7FAFC] p-4 text-sm text-slate-700">
-        <p className="font-semibold text-slate-800">
-          This is where most homes are weakest:
+      <BlueprintLead>
+        Even a guard dog sleeps at night. Home safety should stay awake 24/7,
+        with visibility, proof, and a clear response plan.
+      </BlueprintLead>
+      <GoalBanner goal="Detect threats early, document what happened, and respond faster." />
+
+      <InfoCallout title="Where most homes are weakest" tone="warning">
+        <p>
+          When an incident happens, families are often unsure what they saw and
+          do not have usable evidence.
         </p>
-        <p className="mt-1 text-slate-600">
-          When something happens last night, nobody is sure what they saw, and
-          no evidence. Nobody is there to prevent, detect, and protect until its
-          too late.
+        <p>
+          Huwag hintayin na may mangyari bago kumilos. Build your system before
+          you need it.
         </p>
-        <p className="mt-1 text-slate-600">
-          Don&apos;t make the mistake of most filipino family does. Saka lang gagawa
-          ng paraan kapag may nangyari na.
-        </p>
-      </div>
+      </InfoCallout>
 
       <Section
-        title="3 Layers of Protection to get Ahead in 99% Filipino Homes"
+        title="3 Layers of Protection to Stay Ahead in Most Filipino Homes"
         titleClassName="text-lg md:text-xl font-bold text-slate-900"
       >
-        <div className="space-y-3">
-          <AccordionItem title="Awareness (Know what is happening)">
-            <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-              <li>Motion alerts for entry points</li>
-              <li>Clear visibility of gate/front/garage/side paths</li>
-            </ul>
-          </AccordionItem>
-
-          <AccordionItem title="Evidence (If something happens, you are covered)">
-            <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-              <li>
-                Recorded footage that clearly shows faces/plates (when possible)
-              </li>
-              <li>
-                Reliable storage (not just &quot;I think it recorded&quot;)
-              </li>
-            </ul>
-          </AccordionItem>
-
-          <AccordionItem title="Response (Faster action, less panic)">
-            <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-              <li>
-                Phone notifications that are set up correctly (not spammy)
-              </li>
-              <li>Family knows what to do when an alert triggers</li>
-            </ul>
-          </AccordionItem>
+        <div className="grid gap-3">
+          <ChecklistCard
+            icon="👀"
+            badge="Layer 1"
+            accent="blue"
+            title="Awareness"
+            description="Know what is happening in real time."
+            items={[
+              "Enable motion alerts for key entry points.",
+              "Keep clear camera visibility on gate, front area, garage, and side paths.",
+            ]}
+          />
+          <ChecklistCard
+            icon="🧾"
+            badge="Layer 2"
+            accent="green"
+            title="Evidence"
+            description="If something happens, you are covered."
+            items={[
+              "Capture footage that clearly shows faces or plates when possible.",
+              "Use reliable storage, not guesswork recording.",
+            ]}
+          />
+          <ChecklistCard
+            icon="⚡"
+            badge="Layer 3"
+            accent="amber"
+            title="Response"
+            description="Act faster with less panic."
+            items={[
+              "Set up notifications correctly so alerts stay useful, not spammy.",
+              "Make sure the family knows what to do when an alert triggers.",
+            ]}
+          />
         </div>
       </Section>
+
       <Section
-        title="That's why A Smart Safety System is your best Next Step"
+        title="Why a Smart Safety System is Your Best Next Step"
         titleClassName="text-lg md:text-xl font-bold text-slate-900"
       >
         <div className="rounded-2xl border border-[#0E79B2]/20 bg-[#EAF4FB] p-4">
@@ -74,20 +80,15 @@ export default function AwarenessBlueprint() {
             items={[
               "Early warning before a situation happens (Awareness)",
               "Proof for authorities, barangay reports, or disputes (Evidence)",
-              "Confidence when you are away at home (Response)",
+              "Confidence when you are away from home (Response)",
             ]}
           />
         </div>
         <div className="rounded-3xl border border-[#0E79B2]/40 bg-[#0E79B2] p-5 text-center text-white shadow-lg shadow-[#0E79B2]/30">
           <p className="mt-2 text-sm font-extrabold text-white/90">
-            To achieve 100 Panatag Rating, a complete Home assessment if for you!
+            Want to reach a 100 Panatag Rating? A complete home assessment is
+            your best next step.
           </p>
-          <a
-            href={RESULTS_CALL_HREF}
-            className="mt-4 inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-extrabold text-[#0E79B2] shadow-lg transition-transform hover:scale-[1.02]"
-          >
-            CALL US NOW
-          </a>
         </div>
       </Section>
     </>

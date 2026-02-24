@@ -285,8 +285,11 @@ export default function AppShell({
     const showResults = (data: FormData, calculated?: CalculationResult) => {
       if (!isMounted) return;
       const normalizedData = normalizeDiySecurityPlan(data);
+      const resolvedResult = calculated ?? estimateCameraPlan(normalizedData);
+      writeStoredLead(normalizedData, resolvedResult);
+      setStoredLead({ formData: normalizedData, result: resolvedResult });
       setFormData(normalizedData);
-      setResult(calculated ?? estimateCameraPlan(normalizedData));
+      setResult(resolvedResult);
       setView("results");
       setHasResolvedResultsView(true);
     };

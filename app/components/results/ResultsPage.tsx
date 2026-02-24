@@ -20,6 +20,8 @@ import DIYView from "./DIYView";
 
 const BLUEPRINT_COMPLETION_STORAGE_PREFIX =
   "ssh_results_blueprint_completion_v1:";
+const AUDIT_BOOKED_QUERY_PARAM = "auditBooked";
+const AUDIT_BOOKED_QUERY_VALUE = "1";
 
 const DEFAULT_BLUEPRINT_COMPLETION: BlueprintCompletionState = {
   prevention: false,
@@ -63,6 +65,15 @@ const readBlueprintCompletionState = (
   } catch {
     return createDefaultBlueprintCompletion();
   }
+};
+
+const hasAuditBookedSignal = (): boolean => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const url = new URL(window.location.href);
+  return url.searchParams.get(AUDIT_BOOKED_QUERY_PARAM) === AUDIT_BOOKED_QUERY_VALUE;
 };
 
 const createDefaultGainPointsByBlueprint = (): Record<BlueprintCardId, number> => ({
@@ -156,12 +167,22 @@ export default function ResultsPage({
   const [showDIY, setShowDIY] = useState(false);
   const showDIYPlan = Boolean(data.diy_security_plan);
   const normalizedEmail = data.email.trim().toLowerCase() || "unknown";
+  const shouldAutoCompleteAwareness = hasAuditBookedSignal();
   const completionStorageKey = `${BLUEPRINT_COMPLETION_STORAGE_PREFIX}${normalizedEmail}`;
   const [activeBlueprintId, setActiveBlueprintId] =
     useState<BlueprintModalState>(null);
   const [blueprintCompletion, setBlueprintCompletion] =
     useState<BlueprintCompletionState>(() => {
-      return readBlueprintCompletionState(completionStorageKey);
+      const initialState = readBlueprintCompletionState(completionStorageKey);
+
+      if (!shouldAutoCompleteAwareness || initialState.awareness) {
+        return initialState;
+      }
+
+      return {
+        ...initialState,
+        awareness: true,
+      };
     });
   const firstName = data.first_name.trim();
 
@@ -213,6 +234,21 @@ export default function ResultsPage({
       JSON.stringify(blueprintCompletion),
     );
   }, [blueprintCompletion, completionStorageKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !shouldAutoCompleteAwareness) return;
+
+    const url = new URL(window.location.href);
+    if (
+      url.searchParams.get(AUDIT_BOOKED_QUERY_PARAM) !== AUDIT_BOOKED_QUERY_VALUE
+    ) {
+      return;
+    }
+
+    url.searchParams.delete(AUDIT_BOOKED_QUERY_PARAM);
+    const nextPath = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState({}, "", nextPath);
+  }, [shouldAutoCompleteAwareness]);
 
   useEffect(() => {
     if (!activeBlueprintId) return;
@@ -293,6 +329,7 @@ export default function ResultsPage({
               />
 
               <BlueprintModal
+                key={activeBlueprint?.id ?? "none"}
                 activeBlueprint={activeBlueprint}
                 onClose={() => setActiveBlueprintId(null)}
                 isCompleted={isActiveBlueprintCompleted}

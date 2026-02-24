@@ -1,48 +1,71 @@
-import AccordionItem from "../../AccordionItem";
-import { MiniCheck, Section } from "./shared";
+import {
+  BlueprintLead,
+  ChecklistCard,
+  GoalBanner,
+  InfoCallout,
+  MiniCheck,
+  Section,
+} from "./shared";
 
 export default function EmergencyBlueprint() {
   return (
     <>
-      <p className="text-sm text-slate-600 pb-1">
-        Help is always &quot;on the way&quot; but are they there when we need them the most? We need to prepare for moments to actwhen help is needed most.
-      </p>
-      <p className="text-sm text-slate-600">
-        <span className="font-semibold text-slate-800">Our Goal:</span> To make our family stay calm under stress
-      </p>
+      <BlueprintLead>
+        Help is often &quot;on the way,&quot; but your first response starts at
+        home. Preparation helps your family stay calm when every second counts.
+      </BlueprintLead>
+      <GoalBanner goal="Make the family calm and ready under stress." />
+
+      <InfoCallout title="Quick reminder" tone="info">
+        <p>
+          Save emergency numbers on every phone now, not during an emergency.
+        </p>
+      </InfoCallout>
+
       <Section title="I MEET 911 (ICE + 911 + Meet-Up Plan)">
-        <div className="space-y-3">
-          <AccordionItem title="ICE Card Setup (🪪)">
-            <p className="text-sm text-slate-600">Create it. Print it. Save it.</p>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-              <li>Full names + birthdays</li>
-              <li>Allergies / medical conditions</li>
-              <li>Blood type</li>
-              <li>Emergency contacts</li>
-              <li>Home address + landmark directions</li>
-            </ul>
-          </AccordionItem>
+        <div className="grid gap-3">
+          <ChecklistCard
+            icon="🪪"
+            badge="ICE"
+            accent="blue"
+            title="ICE Card Setup"
+            description="Create it, print it, and save it on every phone."
+            items={[
+              "Include full names and birthdays.",
+              "Add allergies, medical conditions, and blood type.",
+              "List emergency contacts and your full home address with landmarks.",
+            ]}
+          />
 
-          <AccordionItem title="Call the Right Line (📞)">
-            <p className="text-sm text-slate-600">
-              Save 911 on every phone. In the Philippines, 911 is the nationwide
-              emergency hotline, supported by the government&apos;s Unified 911
-              rollout.
-            </p>
-          </AccordionItem>
+          <ChecklistCard
+            icon="📞"
+            badge="911"
+            accent="green"
+            title="Call the Right Line"
+            description="In the Philippines, 911 is the national emergency hotline."
+            items={[
+              "Save 911 on each family phone now.",
+              "Teach kids and elders what to say first: name, address, and emergency.",
+              "Keep backup emergency contacts written near the main door.",
+            ]}
+          />
 
-          <AccordionItem title="Meet-Up Plan (📍)">
-            <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-4 marker:text-[#0E79B2]">
-              <li>2 exit routes: Main + backup</li>
-              <li>
-                1 meet-up spot nearby: outside the gate / neighbor&apos;s house /
-                sari-sari store corner
-              </li>
-            </ul>
-          </AccordionItem>
+          <ChecklistCard
+            icon="📍"
+            badge="Meet-Up"
+            accent="amber"
+            title="Meet-Up Plan"
+            description="Set routes and a meet-up point everyone can remember."
+            items={[
+              "Prepare 2 exit routes: main and backup.",
+              "Set 1 nearby meet-up location outside the house.",
+              "Practice once so everyone can respond without confusion.",
+            ]}
+          />
         </div>
       </Section>
-      <MiniCheck text="If someone yells Fire! at 2 AM, does your family know where to go without thinking? I know your family will and let's make every home a Panatag Safe & Sound Certified" />
+
+      <MiniCheck text="If someone yells 'Fire!' at 2 AM, does your family know exactly where to go without stopping to think?" />
     </>
   );
 }

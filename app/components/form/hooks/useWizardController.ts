@@ -96,10 +96,13 @@ export const useWizardController = ({
     if (!category) return;
 
     const clamped = Math.min(5, Math.max(0, rawValue));
-    const snapped = Math.round(clamped);
-    const mappedValue = 5 - snapped;
+    const clampedOneDecimal = Number(clamped.toFixed(1));
+    const mappedValue = Number((5 - clampedOneDecimal).toFixed(1));
 
-    setSafetySliderDrafts((prev) => ({ ...prev, [categoryId]: clamped }));
+    setSafetySliderDrafts((prev) => ({
+      ...prev,
+      [categoryId]: clampedOneDecimal,
+    }));
 
     setFormData((prev) => {
       const updated = { ...prev };

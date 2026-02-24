@@ -116,6 +116,11 @@ export type ResultsScoringBreakdown = {
   panatag: PanatagComputation;
 };
 
+export type PanatagDisplay = {
+  panatag10Precise: number;
+  panatag100: number;
+};
+
 const clampNumber = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
 
@@ -227,6 +232,24 @@ export const getEmergencyReadinessFromRiskScore = (
 export const getPanatagRatingFromSafetyCategories = (
   categoryRiskScores: SafetyCategoryScores
 ): number => computePanatagComputation(categoryRiskScores).outputRating;
+
+export const getPanatagDisplayFromSafetyCategories = (
+  categoryRiskScores: SafetyCategoryScores
+): PanatagDisplay => {
+  const computation = computePanatagComputation(categoryRiskScores);
+  const panatag10Precise = Number(
+    clampNumber(
+      computation.normalizedScore,
+      PANATAG_SCALE.MIN_RATING,
+      PANATAG_SCALE.MAX_RATING
+    ).toFixed(1)
+  );
+
+  return {
+    panatag10Precise,
+    panatag100: Math.round(panatag10Precise * 10),
+  };
+};
 
 export const buildResultsScoringBreakdown = (
   args: BuildResultsScoringBreakdownArgs

@@ -105,15 +105,19 @@ const normalizeOptionArray = (
 };
 
 const normalizeSafetyScore = (value: unknown): number | undefined => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return undefined;
+  }
+
+  const normalized = Number(value.toFixed(1));
   if (
-    typeof value !== "number" ||
-    !Number.isInteger(value) ||
-    value < SAFETY_MIN ||
-    value > SAFETY_MAX
+    normalized < SAFETY_MIN ||
+    normalized > SAFETY_MAX
   ) {
     return undefined;
   }
-  return value;
+
+  return normalized;
 };
 
 const normalizeBoolean = (value: unknown): boolean =>

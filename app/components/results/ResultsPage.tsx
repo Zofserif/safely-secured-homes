@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getResultsSummary } from "../../lib/calculations";
+import { getPanatagDisplayFromSafetyCategories } from "../../lib/resultsScoring";
+import { getSafetyCategoryScoresPrecise } from "../../lib/safetyScores";
 import type { CalculationResult, FormData } from "../../lib/types";
 import { BLUEPRINT_CARDS } from "./blueprints";
 import { RESULTS_BOOK_VISIT_URL, RESULTS_CALL_HREF } from "./constants";
@@ -25,10 +27,13 @@ export default function ResultsPage({
     useState<BlueprintModalState>(null);
   const firstName = data.first_name.trim();
 
-  const { safetyLevel, priority, emergency, panatagRating } = getResultsSummary(
+  const { safetyLevel, priority, emergency } = getResultsSummary(
     data,
     result,
   );
+  const panatagRating100 = getPanatagDisplayFromSafetyCategories(
+    getSafetyCategoryScoresPrecise(data),
+  ).panatag100;
 
   const activeBlueprint =
     BLUEPRINT_CARDS.find((card) => card.id === activeBlueprintId) ?? null;
@@ -85,7 +90,7 @@ export default function ResultsPage({
               safetyLevel={safetyLevel}
               priority={priority}
               emergency={emergency}
-              panatagRating={panatagRating}
+              panatagRating100={panatagRating100}
               cameraCount={result.cameraCount}
             />
 

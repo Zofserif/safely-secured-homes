@@ -7,21 +7,23 @@ export const BLUEPRINT_CARDS: BlueprintCard[] = [
   {
     id: "prevention",
     title: "Prevention & Preparation",
-    summary: "Goal: Stop problems before they start.",
+    summary: "Complete to get 10% of the remaining Panatag Home Rating.",
+    ratingGainShare: 0.1,
     content: <PreventionBlueprint />,
   },
   {
     id: "awareness",
     title: "For Your Complete Peace of Mind",
-    summary:
-      "Goal: Detect threats early and respond faster without feeling watched.",
+    summary: "Complete to get 80% of the remaining Panatag Home Rating.",
+    ratingGainShare: 0.8,
     featured: true,
     content: <AwarenessBlueprint />,
   },
   {
     id: "emergency",
     title: "Emergency Readiness",
-    summary: "Goal: Make sure everyone knows what to do under stress.",
+    summary: "Complete to get 10% of the remaining Panatag Home Rating.",
+    ratingGainShare: 0.1,
     content: <EmergencyBlueprint />,
   },
 ];

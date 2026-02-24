@@ -4,11 +4,15 @@ import type { BlueprintCard } from "../types";
 type BlueprintModalProps = {
   activeBlueprint: BlueprintCard | null;
   onClose: () => void;
+  isCompleted: boolean;
+  onToggleComplete: () => void;
 };
 
 export default function BlueprintModal({
   activeBlueprint,
   onClose,
+  isCompleted,
+  onToggleComplete,
 }: BlueprintModalProps) {
   if (!activeBlueprint) return null;
 
@@ -38,6 +42,20 @@ export default function BlueprintModal({
         </div>
         <div className="max-h-[70vh] overflow-y-auto bg-white px-6 py-4">
           {activeBlueprint.content}
+        </div>
+        <div className="border-t border-slate-200 bg-white px-6 py-4">
+          <button
+            type="button"
+            onClick={onToggleComplete}
+            className={[
+              "w-full rounded-xl px-4 py-3 text-sm font-bold transition-colors",
+              isCompleted
+                ? "border border-[#0E79B2]/30 bg-white text-[#0E79B2] hover:bg-[#F7FAFC]"
+                : "bg-[#0E79B2] text-white hover:bg-[#0b5e8b]",
+            ].join(" ")}
+          >
+            {isCompleted ? "Mark as Incomplete" : "Mark as Complete"}
+          </button>
         </div>
       </div>
     </div>

@@ -4,15 +4,147 @@ import { getResultsSummary } from "../../lib/calculations";
 import { getPanatagDisplayFromSafetyCategories } from "../../lib/resultsScoring";
 import { getSafetyCategoryScoresPrecise } from "../../lib/safetyScores";
 import type { CalculationResult, FormData } from "../../lib/types";
-import { BLUEPRINT_CARDS } from "./blueprints";
 import { RESULTS_BOOK_VISIT_URL, RESULTS_CALL_HREF } from "./constants";
+import { BLUEPRINT_CARDS } from "./blueprints";
 import BlueprintCardsGrid from "./components/BlueprintCardsGrid";
 import BlueprintModal from "./components/BlueprintModal";
 import NextStepPanel from "./components/NextStepPanel";
 import ResultActionButtons from "./components/ResultActionButtons";
 import ResultsStatsGrid from "./components/ResultsStatsGrid";
-import type { BlueprintModalState } from "./types";
+import type {
+  BlueprintCardId,
+  BlueprintCompletionState,
+  BlueprintModalState,
+} from "./types";
 import DIYView from "./DIYView";
+
+const BLUEPRINT_COMPLETION_STORAGE_PREFIX =
+  "ssh_results_blueprint_completion_v1:";
+
+const DEFAULT_BLUEPRINT_COMPLETION: BlueprintCompletionState = {
+  prevention: false,
+  emergency: false,
+  awareness: false,
+};
+
+const createDefaultBlueprintCompletion = (): BlueprintCompletionState => ({
+  ...DEFAULT_BLUEPRINT_COMPLETION,
+});
+
+const sanitizeBlueprintCompletionState = (
+  value: unknown,
+): BlueprintCompletionState => {
+  const source =
+    typeof value === "object" && value !== null
+      ? (value as Partial<Record<keyof BlueprintCompletionState, unknown>>)
+      : {};
+
+  return {
+    prevention: source.prevention === true,
+    emergency: source.emergency === true,
+    awareness: source.awareness === true,
+  };
+};
+
+const readBlueprintCompletionState = (
+  storageKey: string,
+): BlueprintCompletionState => {
+  if (typeof window === "undefined") {
+    return createDefaultBlueprintCompletion();
+  }
+
+  const rawState = sessionStorage.getItem(storageKey);
+  if (!rawState) {
+    return createDefaultBlueprintCompletion();
+  }
+
+  try {
+    return sanitizeBlueprintCompletionState(JSON.parse(rawState));
+  } catch {
+    return createDefaultBlueprintCompletion();
+  }
+};
+
+const createDefaultGainPointsByBlueprint = (): Record<BlueprintCardId, number> => ({
+  prevention: 0,
+  emergency: 0,
+  awareness: 0,
+});
+
+const computeBlueprintGainPoints = (
+  remainingGap: number,
+): Record<BlueprintCardId, number> => {
+  const safeRemainingGap = Math.max(0, Math.floor(remainingGap));
+  const gainPointsByBlueprint = createDefaultGainPointsByBlueprint();
+
+  if (safeRemainingGap === 0) {
+    return gainPointsByBlueprint;
+  }
+
+  const weightedCards = BLUEPRINT_CARDS.map((card, index) => {
+    const rawGain = safeRemainingGap * card.ratingGainShare;
+    const basePoints = Math.floor(rawGain);
+    const remainder = rawGain - basePoints;
+
+    gainPointsByBlueprint[card.id] = basePoints;
+
+    return {
+      id: card.id,
+      index,
+      ratingGainShare: card.ratingGainShare,
+      remainder,
+    };
+  });
+
+  const basePointTotal = Object.values(gainPointsByBlueprint).reduce<number>(
+    (sum, value) => sum + value,
+    0,
+  );
+  let delta = safeRemainingGap - basePointTotal;
+
+  const increasePriority = [...weightedCards].sort((a, b) => {
+    if (b.remainder !== a.remainder) return b.remainder - a.remainder;
+    if (b.ratingGainShare !== a.ratingGainShare) {
+      return b.ratingGainShare - a.ratingGainShare;
+    }
+    return a.index - b.index;
+  });
+
+  const decreasePriority = [...weightedCards].sort((a, b) => {
+    if (a.remainder !== b.remainder) return a.remainder - b.remainder;
+    if (a.ratingGainShare !== b.ratingGainShare) {
+      return a.ratingGainShare - b.ratingGainShare;
+    }
+    return a.index - b.index;
+  });
+
+  let cursor = 0;
+  while (delta > 0 && increasePriority.length > 0) {
+    const target = increasePriority[cursor % increasePriority.length];
+    gainPointsByBlueprint[target.id] += 1;
+    delta -= 1;
+    cursor += 1;
+  }
+
+  cursor = 0;
+  let stalledCount = 0;
+  while (delta < 0 && decreasePriority.length > 0) {
+    const target = decreasePriority[cursor % decreasePriority.length];
+    if (gainPointsByBlueprint[target.id] > 0) {
+      gainPointsByBlueprint[target.id] -= 1;
+      delta += 1;
+      stalledCount = 0;
+    } else {
+      stalledCount += 1;
+      if (stalledCount >= decreasePriority.length) {
+        break;
+      }
+    }
+    cursor += 1;
+  }
+
+  return gainPointsByBlueprint;
+};
 
 export default function ResultsPage({
   result,
@@ -23,20 +155,64 @@ export default function ResultsPage({
 }) {
   const [showDIY, setShowDIY] = useState(false);
   const showDIYPlan = Boolean(data.diy_security_plan);
+  const normalizedEmail = data.email.trim().toLowerCase() || "unknown";
+  const completionStorageKey = `${BLUEPRINT_COMPLETION_STORAGE_PREFIX}${normalizedEmail}`;
   const [activeBlueprintId, setActiveBlueprintId] =
     useState<BlueprintModalState>(null);
+  const [blueprintCompletion, setBlueprintCompletion] =
+    useState<BlueprintCompletionState>(() => {
+      return readBlueprintCompletionState(completionStorageKey);
+    });
   const firstName = data.first_name.trim();
 
   const { safetyLevel, priority, emergency } = getResultsSummary(
     data,
     result,
   );
-  const panatagRating100 = getPanatagDisplayFromSafetyCategories(
+  const basePanatagRating100 = getPanatagDisplayFromSafetyCategories(
     getSafetyCategoryScoresPrecise(data),
   ).panatag100;
+  const remainingPanatagGap = Math.max(0, 100 - basePanatagRating100);
+  const gainPointsByBlueprint = computeBlueprintGainPoints(remainingPanatagGap);
+  const appliedGain = BLUEPRINT_CARDS.reduce<number>(
+    (sum, card) =>
+      sum + (blueprintCompletion[card.id] ? gainPointsByBlueprint[card.id] : 0),
+    0,
+  );
+  const projectedPanatagRating100 = Math.max(
+    0,
+    Math.min(
+      100,
+      basePanatagRating100 + appliedGain,
+    ),
+  );
+  const displayBlueprintCards = BLUEPRINT_CARDS.map((card) => {
+    const gain = gainPointsByBlueprint[card.id];
+    const isCompleted = blueprintCompletion[card.id];
+    const summary = isCompleted
+      ? `Added +${gain} Panatag Score`
+      : `Add +${gain} Panatag Score`;
+
+    return {
+      ...card,
+      summary,
+    };
+  });
 
   const activeBlueprint =
     BLUEPRINT_CARDS.find((card) => card.id === activeBlueprintId) ?? null;
+  const isActiveBlueprintCompleted = activeBlueprint
+    ? blueprintCompletion[activeBlueprint.id]
+    : false;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    sessionStorage.setItem(
+      completionStorageKey,
+      JSON.stringify(blueprintCompletion),
+    );
+  }, [blueprintCompletion, completionStorageKey]);
 
   useEffect(() => {
     if (!activeBlueprintId) return;
@@ -57,6 +233,15 @@ export default function ResultsPage({
 
   const handleBookVisit = () => {
     window.open(RESULTS_BOOK_VISIT_URL, "_blank", "noopener,noreferrer");
+  };
+
+  const handleToggleComplete = () => {
+    if (!activeBlueprintId) return;
+
+    setBlueprintCompletion((current) => ({
+      ...current,
+      [activeBlueprintId]: !current[activeBlueprintId],
+    }));
   };
 
   return (
@@ -90,7 +275,7 @@ export default function ResultsPage({
               safetyLevel={safetyLevel}
               priority={priority}
               emergency={emergency}
-              panatagRating100={panatagRating100}
+              panatagRating100={projectedPanatagRating100}
               cameraCount={result.cameraCount}
             />
 
@@ -103,13 +288,15 @@ export default function ResultsPage({
               </p>
 
               <BlueprintCardsGrid
-                cards={BLUEPRINT_CARDS}
+                cards={displayBlueprintCards}
                 onSelect={setActiveBlueprintId}
               />
 
               <BlueprintModal
                 activeBlueprint={activeBlueprint}
                 onClose={() => setActiveBlueprintId(null)}
+                isCompleted={isActiveBlueprintCompleted}
+                onToggleComplete={handleToggleComplete}
               />
             </div>
 

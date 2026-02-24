@@ -4,11 +4,13 @@ import { MiniCheck, Section } from "./shared";
 export default function EmergencyBlueprint() {
   return (
     <>
-      <p className="text-sm text-slate-600">
-        <span className="font-semibold text-slate-800">Goal:</span> Make sure
-        everyone knows what to do under stress.
+      <p className="text-sm text-slate-600 pb-1">
+        Help is always &quot;on the way&quot; but are they there when we need them the most? We need to prepare for moments to actwhen help is needed most.
       </p>
-      <Section title="Emergency Readiness (ICE + 911 + Meet-Up Plan)">
+      <p className="text-sm text-slate-600">
+        <span className="font-semibold text-slate-800">Our Goal:</span> To make our family stay calm under stress
+      </p>
+      <Section title="I MEET 911 (ICE + 911 + Meet-Up Plan)">
         <div className="space-y-3">
           <AccordionItem title="ICE Card Setup (🪪)">
             <p className="text-sm text-slate-600">Create it. Print it. Save it.</p>
@@ -40,7 +42,7 @@ export default function EmergencyBlueprint() {
           </AccordionItem>
         </div>
       </Section>
-      <MiniCheck text="If someone yells Fire! at 2 AM, does everyone know where to go without thinking?" />
+      <MiniCheck text="If someone yells Fire! at 2 AM, does your family know where to go without thinking? I know your family will and let's make every home a Panatag Safe & Sound Certified" />
     </>
   );
 }

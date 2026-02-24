@@ -2,7 +2,7 @@ import type { BlueprintCard } from "../types";
 
 type BlueprintCardsGridProps = {
   cards: BlueprintCard[];
-  onSelect: (id: string) => void;
+  onSelect: (id: BlueprintCard["id"]) => void;
 };
 
 export default function BlueprintCardsGrid({
@@ -34,9 +34,11 @@ export default function BlueprintCardsGrid({
               <h4 className="text-center text-xl font-bold text-slate-800">
                 {card.title}
               </h4>
-              <p className="mt-2 text-center text-xs italic text-slate-500">
-                {card.summary}
-              </p>
+              <div className="mt-3 flex justify-center">
+                <span className="inline-flex items-center rounded-full border border-[#0E79B2]/30 bg-[#EAF4FB] px-3 py-1 text-xs font-semibold text-[#0E79B2]">
+                  {card.summary}
+                </span>
+              </div>
               <p className="mt-3 text-xs font-semibold text-[#0E79B2] flex items-center gap-1">
                 Click to view details <span aria-hidden="true">→</span>
               </p>

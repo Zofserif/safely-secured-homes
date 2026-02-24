@@ -648,7 +648,11 @@ export default function AppShell({
       )}
 
       {view === "results" && formData && result && (
-        <ResultsPage result={result} data={formData} />
+        <ResultsPage
+          key={formData.email.trim().toLowerCase() || "unknown"}
+          result={result}
+          data={formData}
+        />
       )}
 
       {isResultsLoading && <div className="min-h-screen bg-white" />}

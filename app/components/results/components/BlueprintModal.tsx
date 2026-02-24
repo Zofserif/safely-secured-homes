@@ -76,6 +76,10 @@ export default function BlueprintModal({
         </button>
         <div className="bg-linear-to-r from-[#0E79B2] via-[#1B8CCB] to-[#0E79B2] px-5 py-5 text-white sm:px-6">
           <h4 className=" text-2xl font-bold">{activeBlueprint.title}</h4>
+          <p className="mt-1 text-sm text-white/90">
+            <span className="font-semibold text-white">Goal:</span>{" "}
+            {activeBlueprint.goal}
+          </p>
         </div>
         <div
           ref={contentRef}

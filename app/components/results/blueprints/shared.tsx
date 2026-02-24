@@ -48,16 +48,19 @@ export const BlueprintLead = ({
   children: ReactNode;
   className?: string;
 }) => (
-  <p className={`text-sm leading-relaxed text-slate-600 ${className}`}>{children}</p>
-);
-
-export const GoalBanner = ({ goal }: { goal: string }) => (
-  <div className="mt-3 rounded-2xl border border-[#0E79B2]/20 bg-[#EAF4FB] px-4 py-3">
-    <p className="text-sm font-semibold text-slate-800">
-      Our Goal:
-      <span className="ml-1 font-medium text-slate-700">{goal}</span>
+  <blockquote
+    className={`rounded-2xl border border-[#0E79B2]/20 bg-[#F3F9FD] px-5 py-4 text-sm leading-relaxed text-slate-700 ${className}`}
+  >
+    <p className="relative pl-4 italic">
+      <span
+        aria-hidden="true"
+        className="absolute left-0 top-0 text-base font-semibold text-[#0E79B2]"
+      >
+        &quot;
+      </span>
+      {children}
     </p>
-  </div>
+  </blockquote>
 );
 
 type ChecklistCardAccent = "blue" | "green" | "amber";

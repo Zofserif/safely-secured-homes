@@ -1,7 +1,6 @@
 import {
   BlueprintLead,
   ChecklistCard,
-  GoalBanner,
   MiniCheck,
   Section,
 } from "./shared";
@@ -10,9 +9,10 @@ export default function PreventionBlueprint() {
   return (
     <>
       <BlueprintLead>
-        There&apos;s a famous saying  &quot;Prevention is better than cure.&quot;
+        A father once waited for danger before checking the house. After one
+        tense night, he built a simple bedtime routine, and his family started
+        sleeping with real peace of mind.
       </BlueprintLead>
-      <GoalBanner goal="Stop problems before they happen." />
 
       <Section title="Make This Your Tonight Checklist">
         <div className="grid gap-4 md:grid-cols-3">

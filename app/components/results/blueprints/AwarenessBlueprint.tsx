@@ -2,7 +2,6 @@ import {
   BlueprintLead,
   BulletList,
   ChecklistCard,
-  GoalBanner,
   InfoCallout,
   Section,
 } from "./shared";
@@ -14,7 +13,6 @@ export default function AwarenessBlueprint() {
         Even a guard dog sleeps at night. Home safety should stay awake 24/7,
         with visibility, proof, and a clear response plan.
       </BlueprintLead>
-      <GoalBanner goal="Detect threats early, document what happened, and respond faster." />
 
       <InfoCallout title="Where most homes are weakest" tone="warning">
         <p>

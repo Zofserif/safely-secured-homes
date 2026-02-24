@@ -6,6 +6,7 @@ export type BlueprintCardId = "prevention" | "emergency" | "awareness";
 export type BlueprintCard = {
   id: BlueprintCardId;
   title: string;
+  goal: string;
   summary: string;
   ratingGainShare: number;
   featured?: boolean;

@@ -1,7 +1,6 @@
 import {
   BlueprintLead,
   ChecklistCard,
-  GoalBanner,
   InfoCallout,
   MiniCheck,
   Section,
@@ -14,7 +13,6 @@ export default function EmergencyBlueprint() {
         Help is often &quot;on the way,&quot; but your first response starts at
         home. Preparation helps your family stay calm when every second counts.
       </BlueprintLead>
-      <GoalBanner goal="Make the family calm and ready under stress." />
 
       <InfoCallout title="Quick reminder" tone="info">
         <p>

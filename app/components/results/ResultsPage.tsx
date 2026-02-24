@@ -3,14 +3,10 @@ import { useEffect, useState } from "react";
 import { getResultsSummary } from "../../lib/calculations";
 import type { CalculationResult, FormData } from "../../lib/types";
 import { BLUEPRINT_CARDS } from "./blueprints";
-import {
-  RESULTS_BOOK_VISIT_URL,
-  RESULTS_CALL_HREF,
-} from "./constants";
+import { RESULTS_BOOK_VISIT_URL, RESULTS_CALL_HREF } from "./constants";
 import BlueprintCardsGrid from "./components/BlueprintCardsGrid";
 import BlueprintModal from "./components/BlueprintModal";
 import NextStepPanel from "./components/NextStepPanel";
-import RecommendationsPanel from "./components/RecommendationsPanel";
 import ResultActionButtons from "./components/ResultActionButtons";
 import ResultsStatsGrid from "./components/ResultsStatsGrid";
 import type { BlueprintModalState } from "./types";
@@ -75,12 +71,12 @@ export default function ResultsPage({
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-3xl shadow-xl overflow-hidden"
         >
-          <div className="bg-[#0E79B2] p-8 text-white text-center">
+          <div className="bg-[#0E79B2] p-4 text-white text-center">
             <h1 className="text-3xl font-bold mb-2">
-              {firstName ? `Hi ${firstName}` : "Hi there"}
+              {firstName ? `Hi ${firstName}!` : "Hi there!"}
             </h1>
             <p className="opacity-90">
-              We Have Finished Your Personalized Home Plan
+              We Have Finished Your Home Safety Assessment
             </p>
           </div>
 
@@ -98,8 +94,7 @@ export default function ResultsPage({
                 Your Home Safety Blueprint
               </h3>
               <p className="text-center text-sm text-slate-600 mb-6">
-                Tap a card to reveal the actions that make your home feel safer,
-                faster.
+                Tap a card to see how it can improve your panatag home rating
               </p>
 
               <BlueprintCardsGrid
@@ -111,8 +106,6 @@ export default function ResultsPage({
                 activeBlueprint={activeBlueprint}
                 onClose={() => setActiveBlueprintId(null)}
               />
-
-              <RecommendationsPanel result={result} data={data} />
             </div>
 
             <NextStepPanel cameraCount={result.cameraCount}>

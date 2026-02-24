@@ -85,7 +85,7 @@ export default function ResultsPage({
             </p>
           </div>
 
-          <div className="p-8 space-y-8">
+          <div className="p-6 space-y-6">
             <ResultsStatsGrid
               safetyLevel={safetyLevel}
               priority={priority}
@@ -95,11 +95,11 @@ export default function ResultsPage({
             />
 
             <div>
-              <h3 className="font-bold text-2xl mb-4 flex items-center justify-center gap-2">
-                Your Home Safety Blueprint
+              <h3 className="font-bold text-2xl mb-2 flex items-center justify-center gap-2">
+                How to Improve Your Panatag Home Rating
               </h3>
               <p className="text-center text-sm text-slate-600 mb-6">
-                Tap a card to see how it can improve your panatag home rating
+                Tap a card to see your Home Safety Blueprint
               </p>
 
               <BlueprintCardsGrid

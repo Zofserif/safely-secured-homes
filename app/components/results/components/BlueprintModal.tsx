@@ -34,13 +34,10 @@ export default function BlueprintModal({
           <X className="h-4 w-4" />
         </button>
         <div className="bg-linear-to-r from-[#0E79B2] via-[#1B8CCB] to-[#0E79B2] px-6 py-5 text-white">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/70">
-            Your Home Safety Blueprint
-          </p>
-          <h4 className="mt-2 text-2xl font-bold">{activeBlueprint.title}</h4>
+          <h4 className=" text-2xl font-bold">{activeBlueprint.title}</h4>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto bg-white px-6 py-6">
-          <div className="mt-5">{activeBlueprint.content}</div>
+        <div className="max-h-[70vh] overflow-y-auto bg-white px-6 py-4">
+          {activeBlueprint.content}
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Gauge, HouseHeart, ShieldCheck, Siren, Video } from "lucide-react";
 import type { ResultsSummary } from "../../../lib/types";
 
@@ -23,6 +24,8 @@ export default function ResultsStatsGrid({
   cameraCount,
 }: ResultsStatsGridProps) {
   const clampedPanatag100 = Math.max(0, Math.min(100, panatagRating100));
+  // The colors are defined here to ensure the gauge and icon colors stay consistent, even though the HouseHeart icon is currently commented out. This way, if we decide to add the icon back in the future, the color logic is already in place.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const panatagIconColor =
     clampedPanatag100 <= 50
       ? "text-[#E53E3E]"

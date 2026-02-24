@@ -16,10 +16,10 @@ export type SafetySummary = {
   emergencyReadinessScore: number;
 };
 
-// Normalizes any unknown input into an integer risk score on the stored 0..5 scale.
+// Normalizes any unknown input into a floored integer risk score on the stored 0..5 scale.
 export const toSafetyScore = (value: unknown): number => {
   if (typeof value !== "number" || !Number.isFinite(value)) return 0;
-  return Math.max(0, Math.min(5, Math.round(value)));
+  return Math.max(0, Math.min(5, Math.floor(value)));
 };
 
 // Preserves one-decimal precision on the same stored 0..5 risk scale.

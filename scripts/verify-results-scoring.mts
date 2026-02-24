@@ -218,6 +218,34 @@ assertEqual(
   { label: "Worse", severity: "high" }
 );
 
+// Floor-based safety normalization from decimal slider-derived risk values.
+const decimalFloorFixtureData = createRiskFormData({
+  homeRisk: 2.9,
+  neighborhoodRisk: 2.9,
+  blindspotsRisk: 3.9,
+  emergencyRisk: 3.9,
+});
+assertEqual(
+  "Decimal risk values are floored in category scores",
+  getSafetyCategoryScores(decimalFloorFixtureData),
+  {
+    home_entrance: 2,
+    neighborhood_safety_check: 2,
+    indoor_outdoor_blindspots: 3,
+    emergency_readiness_home: 3,
+  }
+);
+assertEqual(
+  "Decimal floor fixture safety summary reflects floored totals",
+  getSafetySummary(decimalFloorFixtureData),
+  {
+    total: 10,
+    average: 2.5,
+    max: 20,
+    emergencyReadinessScore: 3,
+  }
+);
+
 // Panatag deterministic scenarios using visible score fixtures.
 assertEqual(
   "Panatag 5,5,5 + emergency 5 => 10",
@@ -310,6 +338,20 @@ const summaryFixtures: Array<{
       emergency: { label: "Worse", severity: "high" },
       emergencyReadinessScore: 5,
       panatagRating: 1,
+    },
+  },
+  {
+    name: "decimal-risk floor behavior near threshold",
+    data: decimalFloorFixtureData,
+    result: createResult("Warm"),
+    expected: {
+      safetyTotal: 10,
+      safetyMax: 20,
+      safetyLevel: { label: "Alert", range: "7-11 Medium", severity: "medium" },
+      priority: { label: "Book & Secure", severity: "medium" },
+      emergency: { label: "Not There", severity: "medium" },
+      emergencyReadinessScore: 3,
+      panatagRating: 5,
     },
   },
 ];

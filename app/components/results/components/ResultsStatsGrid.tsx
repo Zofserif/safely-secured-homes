@@ -1,3 +1,5 @@
+import { animate, useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Gauge, HouseHeart, ShieldCheck, Siren, Video } from "lucide-react";
 import type { ResultsSummary } from "../../../lib/types";
@@ -6,6 +8,7 @@ type ResultsStatsGridProps = {
   safetyLevel: ResultsSummary["safetyLevel"];
   priority: ResultsSummary["priority"];
   emergency: ResultsSummary["emergency"];
+  basePanatagRating100: number;
   panatagRating100: number;
   cameraCount: number;
 };
@@ -16,14 +19,50 @@ const severityColors = {
   high: "text-[#E53E3E]",
 } as const;
 
+const clampPanatag100 = (value: number): number => Math.max(0, Math.min(100, value));
+
 export default function ResultsStatsGrid({
   safetyLevel,
   priority,
   emergency,
+  basePanatagRating100,
   panatagRating100,
   cameraCount,
 }: ResultsStatsGridProps) {
-  const clampedPanatag100 = Math.max(0, Math.min(100, panatagRating100));
+  const shouldReduceMotion = useReducedMotion() ?? false;
+  const clampedBasePanatag100 = clampPanatag100(basePanatagRating100);
+  const clampedTargetPanatag100 = clampPanatag100(panatagRating100);
+  const [animatedPanatag100, setAnimatedPanatag100] = useState<number>(
+    clampedBasePanatag100,
+  );
+  const animatedPanatagRef = useRef<number>(clampedBasePanatag100);
+
+  useEffect(() => {
+    const controls = animate(
+      animatedPanatagRef.current,
+      clampedTargetPanatag100,
+      {
+        duration: shouldReduceMotion ? 0 : 1.4,
+        ease: [0.22, 1, 0.36, 1],
+        onUpdate: (latest) => {
+          const clampedLatest = clampPanatag100(latest);
+          animatedPanatagRef.current = clampedLatest;
+          setAnimatedPanatag100(clampedLatest);
+        },
+        onComplete: () => {
+          animatedPanatagRef.current = clampedTargetPanatag100;
+          setAnimatedPanatag100(clampedTargetPanatag100);
+        },
+      },
+    );
+
+    return () => {
+      controls.stop();
+    };
+  }, [clampedTargetPanatag100, shouldReduceMotion]);
+
+  const clampedPanatag100 = clampPanatag100(animatedPanatag100);
+  const displayedPanatag100 = Math.round(clampedPanatag100);
   // The colors are defined here to ensure the gauge and icon colors stay consistent, even though the HouseHeart icon is currently commented out. This way, if we decide to add the icon back in the future, the color logic is already in place.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const panatagIconColor =
@@ -106,7 +145,7 @@ export default function ResultsStatsGrid({
             </g>
           </svg>
           <div className="absolute inset-0 flex items-center justify-center text-[2rem] font-bold leading-none text-[#2D3748]">
-            {clampedPanatag100}
+            {displayedPanatag100}
           </div>
         </div>
         <div className="text-[0.7rem] leading-snug text-slate-500 uppercase tracking-wider min-h-[1.9rem]">

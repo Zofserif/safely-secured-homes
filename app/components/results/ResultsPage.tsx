@@ -20,6 +20,8 @@ import DIYView from "./DIYView";
 
 const BLUEPRINT_COMPLETION_STORAGE_PREFIX =
   "ssh_results_blueprint_completion_v1:";
+const AWARENESS_PENDING_STORAGE_PREFIX = "ssh_results_awareness_pending_v1:";
+const AWARENESS_PENDING_VALUE = "1";
 const AUDIT_BOOKED_QUERY_PARAM = "auditBooked";
 const AUDIT_BOOKED_QUERY_VALUE = "1";
 
@@ -65,6 +67,24 @@ const readBlueprintCompletionState = (
   } catch {
     return createDefaultBlueprintCompletion();
   }
+};
+
+const readAwarenessPendingState = (storageKey: string): boolean => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return sessionStorage.getItem(storageKey) === AWARENESS_PENDING_VALUE;
+};
+
+const setAwarenessPendingState = (storageKey: string): void => {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(storageKey, AWARENESS_PENDING_VALUE);
+};
+
+const clearAwarenessPendingState = (storageKey: string): void => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(storageKey);
 };
 
 const hasAuditBookedSignal = (): boolean => {
@@ -169,6 +189,7 @@ export default function ResultsPage({
   const normalizedEmail = data.email.trim().toLowerCase() || "unknown";
   const shouldAutoCompleteAwareness = hasAuditBookedSignal();
   const completionStorageKey = `${BLUEPRINT_COMPLETION_STORAGE_PREFIX}${normalizedEmail}`;
+  const awarenessPendingStorageKey = `${AWARENESS_PENDING_STORAGE_PREFIX}${normalizedEmail}`;
   const [activeBlueprintId, setActiveBlueprintId] =
     useState<BlueprintModalState>(null);
   const [blueprintCompletion, setBlueprintCompletion] =
@@ -251,6 +272,66 @@ export default function ResultsPage({
   }, [shouldAutoCompleteAwareness]);
 
   useEffect(() => {
+    if (!blueprintCompletion.awareness) return;
+    clearAwarenessPendingState(awarenessPendingStorageKey);
+  }, [awarenessPendingStorageKey, blueprintCompletion.awareness]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const applyDeferredAwarenessCompletion = () => {
+      if (!readAwarenessPendingState(awarenessPendingStorageKey)) {
+        return;
+      }
+
+      if (blueprintCompletion.awareness) {
+        clearAwarenessPendingState(awarenessPendingStorageKey);
+        return;
+      }
+
+      clearAwarenessPendingState(awarenessPendingStorageKey);
+      setBlueprintCompletion((current) =>
+        current.awareness
+          ? current
+          : {
+              ...current,
+              awareness: true,
+            },
+      );
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+      applyDeferredAwarenessCompletion();
+    };
+
+    const handleWindowFocus = () => {
+      applyDeferredAwarenessCompletion();
+    };
+
+    const handlePageShow = () => {
+      applyDeferredAwarenessCompletion();
+    };
+
+    const frame = window.requestAnimationFrame(() => {
+      applyDeferredAwarenessCompletion();
+    });
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleWindowFocus);
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleWindowFocus);
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, [awarenessPendingStorageKey, blueprintCompletion.awareness]);
+
+  useEffect(() => {
     if (!activeBlueprintId) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -273,22 +354,19 @@ export default function ResultsPage({
 
   const handleToggleComplete = () => {
     if (!activeBlueprintId) return;
+    const blueprintId = activeBlueprintId;
+    const shouldMarkComplete = !blueprintCompletion[blueprintId];
 
     setBlueprintCompletion((current) => ({
       ...current,
-      [activeBlueprintId]: !current[activeBlueprintId],
+      [blueprintId]: shouldMarkComplete,
     }));
+
+    setActiveBlueprintId(null);
   };
 
   const handleAwarenessBookAudit = () => {
-    setBlueprintCompletion((current) =>
-      current.awareness
-        ? current
-        : {
-            ...current,
-            awareness: true,
-          },
-    );
+    setAwarenessPendingState(awarenessPendingStorageKey);
     setActiveBlueprintId(null);
   };
 
@@ -338,6 +416,7 @@ export default function ResultsPage({
               safetyLevel={safetyLevel}
               priority={priority}
               emergency={emergency}
+              basePanatagRating100={basePanatagRating100}
               panatagRating100={projectedPanatagRating100}
               cameraCount={result.cameraCount}
             />

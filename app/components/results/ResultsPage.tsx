@@ -280,6 +280,33 @@ export default function ResultsPage({
     }));
   };
 
+  const handleAwarenessBookAudit = () => {
+    setBlueprintCompletion((current) =>
+      current.awareness
+        ? current
+        : {
+            ...current,
+            awareness: true,
+          },
+    );
+    setActiveBlueprintId(null);
+  };
+
+  const handleSelectBlueprint = (id: BlueprintCardId) => {
+    if (id === "awareness") {
+      setBlueprintCompletion((current) =>
+        current.awareness
+          ? {
+              ...current,
+              awareness: false,
+            }
+          : current,
+      );
+    }
+
+    setActiveBlueprintId(id);
+  };
+
   return (
     <div className="min-h-screen bg-[#F7FAFC] py-20 px-4">
       {showDIY && showDIYPlan && (
@@ -325,7 +352,7 @@ export default function ResultsPage({
 
               <BlueprintCardsGrid
                 cards={displayBlueprintCards}
-                onSelect={setActiveBlueprintId}
+                onSelect={handleSelectBlueprint}
               />
 
               <BlueprintModal
@@ -334,6 +361,7 @@ export default function ResultsPage({
                 onClose={() => setActiveBlueprintId(null)}
                 isCompleted={isActiveBlueprintCompleted}
                 onToggleComplete={handleToggleComplete}
+                onAwarenessBookAudit={handleAwarenessBookAudit}
               />
             </div>
 

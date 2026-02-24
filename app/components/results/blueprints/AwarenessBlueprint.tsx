@@ -82,8 +82,8 @@ export default function AwarenessBlueprint() {
             ]}
           />
         </div>
-        <div className="rounded-3xl border border-[#0E79B2]/40 bg-[#0E79B2] p-5 text-center text-white shadow-lg shadow-[#0E79B2]/30">
-          <p className="mt-2 text-sm font-extrabold text-white/90">
+        <div className="rounded-3xl border border-[#0E79B2]/40 bg-linear-to-r from-[#0E79B2] to-[#146E9E] p-5 text-center text-white shadow-xl shadow-[#0E79B2]/35">
+          <p className="text-lg font-black leading-tight text-white md:text-2xl">
             Want to reach a 100 Panatag Rating? A complete home assessment is
             your best next step.
           </p>

@@ -43,7 +43,7 @@ export default function PreventionBlueprint() {
 
           <ChecklistCard
             icon="🧰"
-            badge="Family Safety"
+            badge="Be Ready"
             accent="amber"
             title="Emergency Ready"
             description="Keep essentials ready to grab."

@@ -8,6 +8,7 @@ type BlueprintModalProps = {
   onClose: () => void;
   isCompleted: boolean;
   onToggleComplete: () => void;
+  onAwarenessBookAudit: () => void;
 };
 
 const hasReachedBottom = (container: HTMLDivElement) => {
@@ -21,6 +22,7 @@ export default function BlueprintModal({
   onClose,
   isCompleted,
   onToggleComplete,
+  onAwarenessBookAudit,
 }: BlueprintModalProps) {
   const isAwarenessBlueprint = activeBlueprint?.id === "awareness";
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -93,9 +95,12 @@ export default function BlueprintModal({
             isAwarenessBlueprint ? (
               <a
                 href={RESULTS_BOOK_VISIT_URL}
-                className="inline-flex w-full items-center justify-center rounded-xl bg-[#0E79B2] px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-[#0b5e8b]"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={onAwarenessBookAudit}
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-linear-to-r from-[#0E79B2] to-[#146E9E] px-5 py-4 text-base font-extrabold tracking-wide text-white shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0b5e8b] hover:to-[#0b5e8b] md:text-lg"
               >
-                Book a Home Audit (FREE)
+                Book a Home Audit (FREE) Now
               </a>
             ) : (
               <button

@@ -109,18 +109,20 @@ export const ChecklistCard = ({
 
   return (
     <div className={`rounded-2xl border bg-white p-4 shadow-sm ${styles.border}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-2">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-start gap-2">
           {icon && (
             <span className="text-base" aria-hidden="true">
               {icon}
             </span>
           )}
-          <h6 className="text-sm font-semibold text-slate-900">{title}</h6>
+          <h6 className="min-w-0 pr-2 text-sm font-semibold text-slate-900">
+            {title}
+          </h6>
         </div>
         {badge && (
           <span
-            className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${styles.badge}`}
+            className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap ${styles.badge}`}
           >
             {badge}
           </span>

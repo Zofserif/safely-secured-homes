@@ -416,7 +416,6 @@ export default function ResultsPage({
               safetyLevel={safetyLevel}
               priority={priority}
               emergency={emergency}
-              basePanatagRating100={basePanatagRating100}
               panatagRating100={projectedPanatagRating100}
               cameraCount={result.cameraCount}
             />

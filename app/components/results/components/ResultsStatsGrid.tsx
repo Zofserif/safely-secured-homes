@@ -8,7 +8,6 @@ type ResultsStatsGridProps = {
   safetyLevel: ResultsSummary["safetyLevel"];
   priority: ResultsSummary["priority"];
   emergency: ResultsSummary["emergency"];
-  basePanatagRating100: number;
   panatagRating100: number;
   cameraCount: number;
 };
@@ -19,42 +18,77 @@ const severityColors = {
   high: "text-[#E53E3E]",
 } as const;
 
+const INITIAL_PANATAG_START_100 = 0;
+const INITIAL_ANIMATION_DURATION_SECONDS = 5.8;
+const UPDATE_ANIMATION_DURATION_SECONDS = 1.9;
+const INITIAL_SUSPENSE_PROGRESS_RATIO = 0.18;
+const INITIAL_SUSPENSE_TIME_RATIO = 0.42;
 const clampPanatag100 = (value: number): number => Math.max(0, Math.min(100, value));
 
 export default function ResultsStatsGrid({
   safetyLevel,
   priority,
   emergency,
-  basePanatagRating100,
   panatagRating100,
   cameraCount,
 }: ResultsStatsGridProps) {
   const shouldReduceMotion = useReducedMotion() ?? false;
-  const clampedBasePanatag100 = clampPanatag100(basePanatagRating100);
   const clampedTargetPanatag100 = clampPanatag100(panatagRating100);
   const [animatedPanatag100, setAnimatedPanatag100] = useState<number>(
-    clampedBasePanatag100,
+    INITIAL_PANATAG_START_100,
   );
-  const animatedPanatagRef = useRef<number>(clampedBasePanatag100);
+  const animatedPanatagRef = useRef<number>(INITIAL_PANATAG_START_100);
+  const hasPlayedInitialAnimationRef = useRef(false);
 
   useEffect(() => {
-    const controls = animate(
-      animatedPanatagRef.current,
-      clampedTargetPanatag100,
-      {
-        duration: shouldReduceMotion ? 0 : 1.4,
-        ease: [0.22, 1, 0.36, 1],
-        onUpdate: (latest) => {
-          const clampedLatest = clampPanatag100(latest);
-          animatedPanatagRef.current = clampedLatest;
-          setAnimatedPanatag100(clampedLatest);
-        },
-        onComplete: () => {
-          animatedPanatagRef.current = clampedTargetPanatag100;
-          setAnimatedPanatag100(clampedTargetPanatag100);
-        },
-      },
-    );
+    const isInitialAnimation = !hasPlayedInitialAnimationRef.current;
+    const fromValue = hasPlayedInitialAnimationRef.current
+      ? animatedPanatagRef.current
+      : INITIAL_PANATAG_START_100;
+    const suspenseValue =
+      fromValue +
+      (clampedTargetPanatag100 - fromValue) * INITIAL_SUSPENSE_PROGRESS_RATIO;
+    hasPlayedInitialAnimationRef.current = true;
+
+    const updateAnimatedValue = (latest: number) => {
+      const clampedLatest = clampPanatag100(latest);
+      animatedPanatagRef.current = clampedLatest;
+      setAnimatedPanatag100(clampedLatest);
+    };
+
+    const syncAnimationCompletion = () => {
+      animatedPanatagRef.current = clampedTargetPanatag100;
+      setAnimatedPanatag100(clampedTargetPanatag100);
+    };
+
+    const controls = shouldReduceMotion
+      ? animate(fromValue, clampedTargetPanatag100, {
+          duration: 0,
+          ease: [0.22, 1, 0.36, 1],
+          onUpdate: updateAnimatedValue,
+          onComplete: syncAnimationCompletion,
+        })
+      : isInitialAnimation
+        ? animate(
+            fromValue,
+            [fromValue, suspenseValue, clampedTargetPanatag100],
+            {
+              duration: INITIAL_ANIMATION_DURATION_SECONDS,
+              times: [0, INITIAL_SUSPENSE_TIME_RATIO, 1],
+              ease: [
+                [0.55, 0.02, 0.75, 0.35],
+                [0.18, 1, 0.3, 1],
+              ],
+              onUpdate: updateAnimatedValue,
+              onComplete: syncAnimationCompletion,
+            },
+          )
+        : animate(fromValue, clampedTargetPanatag100, {
+            duration: UPDATE_ANIMATION_DURATION_SECONDS,
+            ease: [0.22, 1, 0.36, 1],
+            onUpdate: updateAnimatedValue,
+            onComplete: syncAnimationCompletion,
+          });
 
     return () => {
       controls.stop();

@@ -19,12 +19,17 @@ export default function ResultActionButtons({
   onCallUs,
   onBookVisit,
 }: ResultActionButtonsProps) {
+  const primaryButtonClass =
+    "flex-1 rounded-xl bg-linear-to-r from-[#0E79B2] to-[#0b5e8b] px-4 py-3 text-white font-extrabold shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0b5e8b] hover:to-[#09527b] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40 flex items-center justify-center gap-2";
+  const secondaryButtonClass =
+    "flex-1 rounded-xl border border-[#0E79B2]/25 bg-white px-4 py-3 font-bold text-[#0E79B2] shadow-sm transition-colors hover:bg-[#F3F9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/30 flex items-center justify-center gap-2";
+
   const actionMap: Record<ResultActionKey, ReactElement | null> = {
     primary_book: (
       <button
         key="primary_book"
         onClick={onBookVisit}
-        className="flex-1 bg-[#0E79B2] text-white py-3 rounded-xl font-bold hover:bg-[#0b5e8b] transition-colors flex items-center justify-center gap-2"
+        className={primaryButtonClass}
       >
         <Calendar className="w-5 h-5" /> Book Site Visit (Free)
       </button>
@@ -33,7 +38,7 @@ export default function ResultActionButtons({
       <button
         key="common_call"
         onClick={onCallUs}
-        className="flex-1 bg-white text-[#0E79B2] border border-[#0E79B2]/30 py-3 rounded-xl font-bold hover:bg-[#F7FAFC] transition-colors flex items-center justify-center gap-2"
+        className={secondaryButtonClass}
       >
         <Phone className="w-5 h-5" /> Call Us Now
       </button>
@@ -42,7 +47,7 @@ export default function ResultActionButtons({
       <button
         key="primary_call"
         onClick={onCallUs}
-        className="flex-1 bg-[#0E79B2] text-white py-3 rounded-xl font-bold hover:bg-[#0b5e8b] transition-colors flex items-center justify-center gap-2"
+        className={primaryButtonClass}
       >
         <Phone className="w-5 h-5" /> Call Us Now
       </button>
@@ -51,7 +56,7 @@ export default function ResultActionButtons({
       <button
         key="common_diy"
         onClick={onShowDIY}
-        className="flex-1 bg-white text-[#0E79B2] border border-[#0E79B2]/30 py-3 rounded-xl font-bold hover:bg-[#F7FAFC] transition-colors flex items-center justify-center gap-2"
+        className={secondaryButtonClass}
       >
         <FileText className="w-5 h-5" /> DIY Security Plan
       </button>

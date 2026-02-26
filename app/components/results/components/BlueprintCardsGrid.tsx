@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import type { BlueprintCard } from "../types";
 
 type BlueprintCardsGridProps = {
@@ -10,7 +11,7 @@ export default function BlueprintCardsGrid({
   onSelect,
 }: BlueprintCardsGridProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-3 mb-8">
+    <div className="mb-6 grid gap-3 md:grid-cols-3 md:gap-4">
       {cards.map((card) => {
         const isFeatured = Boolean(card.featured);
         return (
@@ -19,29 +20,33 @@ export default function BlueprintCardsGrid({
             type="button"
             onClick={() => onSelect(card.id)}
             className={[
-              "relative text-left bg-white border-2 border-slate-300/80 rounded-2xl p-5 shadow-sm transition-all duration-300",
+              "group relative cursor-pointer rounded-2xl border border-slate-300/80 bg-white p-4 text-left shadow-sm transition-all duration-300 ease-out active:scale-[0.99] sm:p-5",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/60",
-              "hover:-translate-y-1 hover:shadow-lg hover:border-[#0E79B2] hover:ring-2 hover:ring-[#0E79B2]/20",
+              "hover:-translate-y-1 hover:border-[#0E79B2]/70 hover:shadow-lg hover:ring-2 hover:ring-[#0E79B2]/15",
               isFeatured
-                ? "md:scale-[1.04] md:-translate-y-1 border-[#0E79B2]/70 ring-1 ring-[#0E79B2]/20 bg-linear-to-br from-white via-white to-[#EAF4FB]"
+                ? "border-[#0E79B2]/55 ring-1 ring-[#0E79B2]/20 bg-linear-to-br from-white via-white to-[#EAF4FB] md:scale-[1.02]"
                 : "",
             ].join(" ")}
           >
             {isFeatured && (
-              <span className="pointer-events-none absolute -inset-1 rounded-3xl bg-[#0E79B2]/20 blur-2xl opacity-70" />
+              <span className="pointer-events-none absolute -inset-1 rounded-3xl bg-[#0E79B2]/15 blur-2xl opacity-60" />
             )}
             <div className="relative z-10">
-              <h4 className="text-center text-xl font-bold text-slate-800">
+              <h4 className="text-center text-lg font-bold text-slate-800 sm:text-xl">
                 {card.title}
               </h4>
+              <p className="mt-2 text-center text-sm font-medium text-slate-600">
+                {card.summary}
+              </p>
               <div className="mt-3 flex justify-center">
-                <span className="inline-flex items-center rounded-full border border-[#0E79B2]/30 bg-[#EAF4FB] px-3 py-1 text-xs font-semibold text-[#0E79B2]">
-                  {card.summary}
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#0E79B2]/45 bg-white px-3 py-1.5 text-xs font-bold text-[#0E79B2] transition-all group-hover:border-[#0E79B2] group-hover:bg-[#EAF4FB]">
+                  Open Insight
+                  <ArrowRight
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
+                  />
                 </span>
               </div>
-              <p className="mt-3 text-xs font-semibold text-[#0E79B2] flex items-center gap-1">
-                Click to view details <span aria-hidden="true">→</span>
-              </p>
             </div>
           </button>
         );

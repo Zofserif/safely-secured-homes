@@ -144,7 +144,7 @@ export default function ResultsStatsGrid({
         </div>
       </div>
 
-      <div className="order-1 md:order-3 col-span-2 md:col-span-1 bg-[#F7FAFC] p-4 rounded-xl border border-slate-100 text-center flex flex-col items-center gap-2">
+      <div className="order-1 md:order-3 col-span-2 md:col-span-1 rounded-xl border border-[#0E79B2]/25 bg-linear-to-b from-[#EFF7FD] to-white p-4 text-center shadow-md shadow-[#0E79B2]/10 ring-1 ring-[#0E79B2]/10 flex flex-col items-center gap-2">
         {/* <HouseHeart className={`h-9 w-9 ${panatagIconColor}`} /> */}
         <div className="relative h-24 w-24">
           <svg

@@ -100,7 +100,7 @@ export default function BlueprintModal({
                 onClick={onAwarenessBookAudit}
                 className="inline-flex w-full items-center justify-center rounded-2xl bg-linear-to-r from-[#0E79B2] to-[#146E9E] px-5 py-4 text-base font-extrabold tracking-wide text-white shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0b5e8b] hover:to-[#0b5e8b] md:text-lg"
               >
-                Book a Home Audit (FREE) Now
+                Book an On-site Safety Check (FREE) Now
               </a>
             ) : (
               <button

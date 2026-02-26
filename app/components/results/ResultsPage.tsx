@@ -206,6 +206,7 @@ export default function ResultsPage({
       };
     });
   const firstName = data.first_name.trim();
+  const heroGreeting = firstName ? `Hi ${firstName}!` : "Hi there!";
 
   const { safetyLevel, priority, emergency } = getResultsSummary(
     data,
@@ -232,8 +233,8 @@ export default function ResultsPage({
     const gain = gainPointsByBlueprint[card.id];
     const isCompleted = blueprintCompletion[card.id];
     const summary = isCompleted
-      ? `Added +${gain} Panatag Score`
-      : `Add +${gain} Panatag Score`;
+      ? `Unlocked: +${gain} Panatag Rating`
+      : `+${gain} Panatag Rating`;
 
     return {
       ...card,
@@ -386,7 +387,7 @@ export default function ResultsPage({
   };
 
   return (
-    <div className="min-h-screen bg-[#F7FAFC] py-20 px-4">
+    <div className="min-h-screen bg-[#F7FAFC] px-4 py-14 sm:py-16">
       {showDIY && showDIYPlan && (
         <DIYView
           onBack={() => setShowDIY(false)}
@@ -402,31 +403,40 @@ export default function ResultsPage({
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-3xl shadow-xl overflow-hidden"
         >
-          <div className="bg-[#0E79B2] p-4 text-white text-center">
-            <h1 className="text-3xl font-bold mb-2">
-              {firstName ? `Hi ${firstName}!` : "Hi there!"}
+          <div className="bg-linear-to-r from-[#0E79B2] via-[#1B8CCB] to-[#0E79B2] px-5 py-5 text-center text-white sm:px-6">
+            <h1 className="text-2xl font-bold leading-tight sm:text-3xl">
+              <span className="block">{heroGreeting}</span>
+              <span className="mt-1 block text-xl font-semibold leading-tight text-white/95 sm:text-2xl">
+                Your panatag home plan is ready
+              </span>
             </h1>
-            <p className="opacity-90">
-              We Have Finished Your Home Safety Assessment
-            </p>
           </div>
 
-          <div className="p-6 space-y-6">
-            <ResultsStatsGrid
-              safetyLevel={safetyLevel}
-              priority={priority}
-              emergency={emergency}
-              panatagRating100={projectedPanatagRating100}
-              cameraCount={result.cameraCount}
-            />
+          <div className="space-y-5 p-5 sm:p-6">
+            <section>
+              <div className="mt-3">
+                <ResultsStatsGrid
+                  safetyLevel={safetyLevel}
+                  priority={priority}
+                  emergency={emergency}
+                  panatagRating100={projectedPanatagRating100}
+                  cameraCount={result.cameraCount}
+                />
+              </div>
+            </section>
 
             <div>
-              <h3 className="font-bold text-2xl mb-2 flex items-center justify-center gap-2">
-                How to Improve Your Panatag Home Rating
-              </h3>
-              <p className="text-center text-sm text-slate-600 mb-6">
-                Tap a card to see your Home Safety Blueprint
-              </p>
+              <div className="mb-5 text-center">
+                <span className="inline-flex items-center rounded-full border border-[#0E79B2]/30 bg-[#EAF4FB] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0E79B2]">
+                  Step 1 of 2
+                </span>
+                <h3 className="mt-2.5 text-xl font-bold text-slate-900 sm:text-2xl">
+                  Open Your 3 Safety Insights
+                </h3>
+                <p className="mt-1.5 text-sm font-medium text-slate-700">
+                  Tap a card to see what to do next.
+                </p>
+              </div>
 
               <BlueprintCardsGrid
                 cards={displayBlueprintCards}

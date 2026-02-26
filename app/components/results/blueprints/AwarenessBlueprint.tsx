@@ -10,8 +10,13 @@ export default function AwarenessBlueprint() {
   return (
     <>
       <BlueprintLead>
-        Even a guard dog sleeps at night. Home safety should stay awake 24/7,
-        with visibility, proof, and a clear response plan.
+        If it ain&apos;t broke don&apos;t fix it -- Bert Lance
+        <br />
+        <br /> 
+        <div className="text-sm text-slate-500 not-italic">
+        A famous expression that is often used to justify inaction, but when it comes to home safety, waiting for something to go wrong can have serious consequences.
+        A saying for our family should be different in this case: &quot;If it ain&apos;t broke, don&apos;t risk it.&quot; We don&apos;t want to wait for something to break before we take an action.
+        </div>
       </BlueprintLead>
 
       <InfoCallout title="Where most homes are weakest" tone="warning">
@@ -84,8 +89,7 @@ export default function AwarenessBlueprint() {
         </div>
         <div className="rounded-3xl border border-[#0E79B2]/40 bg-linear-to-r from-[#0E79B2] to-[#146E9E] p-5 text-center text-white shadow-xl shadow-[#0E79B2]/35">
           <p className="text-lg font-black leading-tight text-white md:text-2xl">
-            Want to reach a 100 Panatag Rating? A complete home assessment is
-            your best next step.
+            Want to reach a 100 Panatag Rating? A complete on-site safety check is you best next step.
           </p>
         </div>
       </Section>

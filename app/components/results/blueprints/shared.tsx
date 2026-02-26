@@ -51,7 +51,7 @@ export const BlueprintLead = ({
   <blockquote
     className={`rounded-2xl border border-[#0E79B2]/20 bg-[#F3F9FD] px-5 py-4 text-sm leading-relaxed text-slate-700 ${className}`}
   >
-    <p className="relative pl-4 italic">
+    <div className="relative pl-4 italic">
       <span
         aria-hidden="true"
         className="absolute left-0 top-0 text-base font-semibold text-[#0E79B2]"
@@ -59,7 +59,7 @@ export const BlueprintLead = ({
         &quot;
       </span>
       {children}
-    </p>
+    </div>
   </blockquote>
 );
 
@@ -96,6 +96,8 @@ export const ChecklistCard = ({
   description,
   badge,
   icon,
+  titleAction,
+  action,
   accent = "blue",
 }: {
   title: string;
@@ -103,6 +105,8 @@ export const ChecklistCard = ({
   description?: string;
   badge?: string;
   icon?: string;
+  titleAction?: ReactNode;
+  action?: ReactNode;
   accent?: ChecklistCardAccent;
 }) => {
   const styles = CHECKLIST_ACCENT_STYLES[accent];
@@ -116,9 +120,10 @@ export const ChecklistCard = ({
               {icon}
             </span>
           )}
-          <h6 className="min-w-0 pr-2 text-sm font-semibold text-slate-900">
-            {title}
-          </h6>
+          <div className="flex min-w-0 flex-1 items-start justify-between gap-2 pr-2">
+            <h6 className="min-w-0 text-sm font-semibold text-slate-900">{title}</h6>
+            {titleAction && <div className="shrink-0">{titleAction}</div>}
+          </div>
         </div>
         {badge && (
           <span
@@ -148,6 +153,12 @@ export const ChecklistCard = ({
           </li>
         ))}
       </ul>
+
+      {action && (
+        <div className="mt-4 border-t border-slate-200 pt-4">
+          {action}
+        </div>
+      )}
     </div>
   );
 };

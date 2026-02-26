@@ -19,7 +19,7 @@ import type { HomePageProps } from "./types";
 export { resetBonusTimerForDebug } from "./hooks/useBonusTimer";
 
 export default function HomePage({
-  onNavigate,
+  onPrimaryCtaClick,
   reportsRemaining,
   reportsLoading,
   reportsError,
@@ -30,7 +30,7 @@ export default function HomePage({
   const nowMs = useSharedClockNowMs();
   const bonusEndsAt = useBonusEndsAt();
   const testimonials = useHomeTestimonials();
-  const showTestimonials = false;
+  const showTestimonials = true;
 
   const {
     effectiveReportsRemaining,
@@ -55,20 +55,24 @@ export default function HomePage({
     <div className="overflow-x-hidden bg-[#F7FAFC]">
       {showCertModal && <CertModal onClose={() => setShowCertModal(false)} />}
 
-      <HomeHeroSection onNavigate={onNavigate} cta={cta} scarcity={scarcity} />
+      <HomeHeroSection onPrimaryCtaClick={onPrimaryCtaClick} cta={cta} scarcity={scarcity} />
       <HomePainPointsSection />
-      {showTestimonials && <HomeTestimonialsSection testimonials={testimonials} />}
-      <HomeAboutSection onOpenCertModal={() => setShowCertModal(true)} />
       <HomeWhyTrustSection />
-      <HomeSimpleStepsSection />
+      <HomeSimpleStepsSection cta={cta} onPrimaryCtaClick={onPrimaryCtaClick} />
+      {showTestimonials && <HomeTestimonialsSection testimonials={testimonials} />}
       <HomeReasonsAndFeaturesSection
         expandedReason={expandedReason}
         onToggleReason={(index) => {
           setExpandedReason((current) => (current === index ? null : index));
         }}
       />
+      <HomeAboutSection onOpenCertModal={() => setShowCertModal(true)} />
       <HomeFaqSection />
-      <HomeCtaBannerSection onNavigate={onNavigate} cta={cta} scarcity={scarcity} />
+      <HomeCtaBannerSection
+        onPrimaryCtaClick={onPrimaryCtaClick}
+        cta={cta}
+        scarcity={scarcity}
+      />
     </div>
   );
 }

@@ -75,9 +75,9 @@ export default function HomeAboutSection({
             </h2>
             <div className="space-y-6 text-slate-300 text-lg leading-relaxed font-light">
               <p>
-                You lie in bed at night running through the checklist. You&apos;ve
-                looked into smart home security, but it&apos;s a dizzying maze of
-                confusing gadgets.
+                Security decisions can feel overwhelming when every product claims
+                to be the best. Our role is to turn that noise into a clear plan
+                you can trust.
               </p>
               <div className="pl-6 border-l-4 border-[#0E79B2] my-8">
                 <p className="text-white text-xl italic font-serif">
@@ -86,21 +86,14 @@ export default function HomeAboutSection({
                 </p>
               </div>
               <p>
-                Hi I’m <strong>Troy</strong>, founder of Safely Secured Homes.
-                Growing up, my parents were often away for work, and as the eldest
-                I looked after my younger brother. That responsibility shaped my
-                mission: make home safety simple, reliable, and stress-free.
+                Hi I’m <strong>Troy</strong>, founder of Safely Secured Homes. My
+                mission is simple: make home safety reliable, privacy-conscious, and
+                easy for every member of the family to use.
               </p>
-              <div className="pl-6 border-l-4 border-[#0E79B2] my-8">
-                <p className="text-white text-xl italic font-serif">
-                  &quot;So let me personally help you secure what matters most.&quot;
-                </p>
-              </div>
               <p>
-                Because every family deserves to feel safe and in control of their
-                home. My team and I are ready to do the same for you. We’ve helped
-                families and business owners sleep better at night and we’re
-                dedicated to your complete satisfaction.
+                My team and I have helped families and business owners across Luzon
+                build practical setups that fit real routines, not generic
+                templates.
               </p>
             </div>
           </div>

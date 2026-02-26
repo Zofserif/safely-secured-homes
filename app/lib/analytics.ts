@@ -13,6 +13,7 @@ const APP_VIEW_PATH: Record<AppView, string> = {
 };
 
 const FUNNEL_PAGE_PATH: Record<FunnelPage, string> = {
+  home: "/",
   apply: "/apply",
   form: "/form",
   results: "/results",
@@ -25,6 +26,7 @@ type EventProps = Record<string, unknown>;
 export type FlowSource = "apply" | "newsletter" | "direct" | "unknown";
 export type FlowMode = "default" | "newsletter";
 export type FunnelPage =
+  | "home"
   | "apply"
   | "form"
   | "results"
@@ -262,7 +264,7 @@ export const trackPageView = (view: AppView, context?: FunnelContext) => {
     path: APP_VIEW_PATH[view],
   });
 
-  if (view === "form" || view === "results") {
+  if (view === "home" || view === "form" || view === "results") {
     trackFunnelPageViewed(view, context);
   }
 };

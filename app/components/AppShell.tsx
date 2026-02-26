@@ -13,6 +13,7 @@ import Footer from "./layout/Footer";
 import HomePage, { resetBonusTimerForDebug } from "./home/HomePage";
 import WizardForm from "./form/WizardForm";
 import ResultsPage from "./results/ResultsPage";
+import type { HomeCtaLocation, HomeCtaTarget } from "./home/types";
 import { FormData, CalculationResult } from "../lib/types";
 import { estimateCameraPlan } from "../lib/calculations";
 import { normalizeDiySecurityPlan } from "../lib/diySecurityPlan";
@@ -29,6 +30,7 @@ import {
 import {
   buildFunnelContext,
   trackLeadGenerated,
+  trackFunnelCtaClicked,
   trackFunnelOutcomeViewed,
   trackPageView,
   type AppView,
@@ -52,6 +54,11 @@ type StoredLead = {
 const STORAGE_KEY = "ssh_lead_state";
 const LEAD_SENDS_DEBUG_STORAGE_KEY = "ssh_debug_lead_sends_enabled";
 const IS_LOCAL_DEV = process.env.NODE_ENV !== "production";
+const HOME_CTA_TARGET_PATH: Record<HomeCtaTarget, string> = {
+  form: "/form",
+  results: "/results",
+  newsletter: "/newsletter",
+};
 
 const readPersistedLeadSendsEnabled = (): boolean | null => {
   if (typeof window === "undefined") return null;
@@ -287,7 +294,6 @@ export default function AppShell({
       const normalizedData = normalizeDiySecurityPlan(data);
       const resolvedResult = calculated ?? estimateCameraPlan(normalizedData);
       writeStoredLead(normalizedData, resolvedResult);
-      setStoredLead({ formData: normalizedData, result: resolvedResult });
       setFormData(normalizedData);
       setResult(resolvedResult);
       setView("results");
@@ -616,11 +622,29 @@ export default function AppShell({
     }
   };
 
+  const handleHomePrimaryCtaClick = (
+    target: HomeCtaTarget,
+    location: HomeCtaLocation
+  ) => {
+    trackFunnelCtaClicked(
+      "home",
+      {
+        cta_id: "home_primary_cta",
+        cta_location: location,
+        target_path: HOME_CTA_TARGET_PATH[target],
+      },
+      analyticsContext
+    );
+
+    handleNavigation(target);
+  };
+
   return (
     <div className="font-sans text-[#2D3748]">
       {view !== "form" && (
         <Navbar
           onNavigate={handleNavigation}
+          onPrimaryCtaClick={handleHomePrimaryCtaClick}
           hideCta={view === "results" || (reportsSoldOut && !hasExistingPlan)}
           hasExistingPlan={hasExistingPlan}
         />
@@ -628,7 +652,7 @@ export default function AppShell({
 
       {view === "home" && (
         <HomePage
-          onNavigate={handleNavigation}
+          onPrimaryCtaClick={handleHomePrimaryCtaClick}
           reportsRemaining={effectiveReportsRemaining}
           reportsLoading={effectiveReportsLoading}
           reportsError={effectiveReportsError}

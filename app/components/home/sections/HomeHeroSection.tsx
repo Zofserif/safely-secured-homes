@@ -1,16 +1,17 @@
-/* eslint-disable react/no-unescaped-entities */
-
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { CheckCircle2, ChevronRight, Gift, ShieldCheck } from "lucide-react";
 import type { HomeCtaState, HomeScarcityState } from "../types";
 
 export default function HomeHeroSection({
-  onNavigate,
+  onPrimaryCtaClick,
   cta,
   scarcity,
 }: {
-  onNavigate: (p: string) => void;
+  onPrimaryCtaClick: (
+    target: HomeCtaState["target"],
+    location: "hero_primary"
+  ) => void;
   cta: HomeCtaState;
   scarcity: HomeScarcityState;
 }) {
@@ -54,36 +55,28 @@ export default function HomeHeroSection({
           <div className="inline-flex items-center gap-2 bg-white border border-[#BEE9E8] rounded-full px-4 py-1.5 mb-6 lg:mb-8 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-[#2E8B57] animate-pulse"></span>
             <span className="text-[#2D3748] font-semibold text-xs uppercase tracking-wide">
-              For Families Who Want Protection Without Losing Comfort
+              For Filipino Families Who Want Security Without Stress
             </span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-7xl font-bold text-[#2D3748] mb-4 sm:mb-6 lg:mb-8 leading-[1.1] tracking-tight">
-            A Panatag Family's
+            Your Personalized
             <br />
             <span className="text-transparent bg-clip-text bg-linear-to-r from-[#2D3748] via-[#0E79B2] to-[#2D3748] decoration-[#0E79B2] decoration-4 underline underline-offset-4">
-              Safe and Smart Plan
+              Safe & Smart Home Plan
             </span>
-            <span className="text-[#0E79B2] font-serif italic"> Today</span>
           </h1>
 
           <p className="text-slate-600 text-base sm:text-lg lg:text-xl leading-relaxed mb-3 sm:mb-4 lg:mb-5 max-w-xl">
-            In 60 seconds, get a <strong>FREE home security plan</strong> so you
-            know your family is safe, even when you’re away. Designed for Filipino
-            homes: check on your kids, your entrance, or your whole house without
-            sacrificing comfort.
-          </p>
-          <p className="text-slate-500 text-sm sm:text-base lg:text-base italic leading-relaxed mb-6 sm:mb-8 lg:mb-10 max-w-xl">
-            If your plan doesn’t fit your home, message or call us within 7 days
-            and we’ll revise it for free until it’s clear and practical for your
-            layout. Privacy-first: We won’t recommend placements that make your
-            family feel watched or uncomfortable.
+            In 60 seconds, get a <strong>free home panatag plan</strong> tailored
+            to your layout, priorities, and routine so your family stays protected,
+            whether you&apos;re in traffic, at work, or out of town.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-stretch">
             <div className="flex flex-col gap-2 w-full sm:flex-3">
               <button
-                onClick={() => onNavigate(cta.target)}
+                onClick={() => onPrimaryCtaClick(cta.target, "hero_primary")}
                 disabled={cta.disabled}
                 className="bg-[#0E79B2] hover:bg-[#0b5e8b] text-white text-xl px-10 py-5 rounded-2xl font-extrabold shadow-xl shadow-[#0E79B2]/25 transition-all hover:-translate-y-1 hover:shadow-2xl flex items-center justify-center gap-3 group w-full h-full disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none"
               >
@@ -103,14 +96,14 @@ export default function HomeHeroSection({
                       "Availability check failed. Please try again shortly."}
                     {!scarcity.loading && !scarcity.error && scarcity.soldOut && (
                       <>
-                        All 15 reports are claimed. Report will refresh in:{" "}
-                        {scarcity.countdownLabel}.
+                        Today&apos;s 15 complimentary plans are already claimed. New
+                        slots open in{scarcity.countdownLabel}.
                       </>
                     )}
                     {!scarcity.loading && !scarcity.error && !scarcity.soldOut && (
                       <>
-                        Only {scarcity.reportsRemaining}/15 Plan remaining until
-                        {scarcity.countdownLabel}
+                        {scarcity.reportsRemaining}/15 complimentary plans left
+                        for this cycle{scarcity.countdownLabel}
                       </>
                     )}
                   </span>
@@ -129,7 +122,7 @@ export default function HomeHeroSection({
                       Free Bonus Included
                     </p>
                     <p className="text-[clamp(10px,0.85vw,12px)] font-extrabold text-[#2D3748] leading-snug">
-                      5 Home Security Must-Have Secrets you can do Today!
+                      5 practical home security upgrades you can do today.
                     </p>
                   </div>
                 </div>

@@ -1,5 +1,8 @@
 export type HomePageProps = {
-  onNavigate: (p: string) => void;
+  onPrimaryCtaClick: (
+    target: HomeCtaTarget,
+    location: HomeCtaLocation
+  ) => void;
   reportsRemaining: number | null;
   reportsLoading: boolean;
   reportsError: boolean;
@@ -7,6 +10,11 @@ export type HomePageProps = {
 };
 
 export type HomeCtaTarget = "newsletter" | "results" | "form";
+export type HomeCtaLocation =
+  | "hero_primary"
+  | "midpage_primary"
+  | "cta_banner_primary"
+  | "navbar_primary";
 
 export type HomeCtaState = {
   target: HomeCtaTarget;

@@ -60,10 +60,10 @@ export const useHomeCtaAndScarcity = ({
         : "form";
   const ctaLabel =
     reportsSoldOut && !hasExistingPlan
-      ? "JOIN THE WAITINGLIST"
+      ? "JOIN THE PRIORITY WAITLIST"
       : hasExistingPlan
-        ? "SEE MY GENERATED PLAN"
-        : "GET MY FREE PLAN NOW";
+        ? "SEE MY PLAN"
+        : "GET MY FREE PLAN";
   const ctaDisabled = ctaTarget === "form" && reportsSoldOut && !hasExistingPlan;
 
   const refreshEndsAt = hasClock ? getNextFridayMidnightGmt8(nowMs) : null;

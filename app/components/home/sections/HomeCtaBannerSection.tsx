@@ -1,11 +1,14 @@
 import type { HomeCtaState, HomeScarcityState } from "../types";
 
 export default function HomeCtaBannerSection({
-  onNavigate,
+  onPrimaryCtaClick,
   cta,
   scarcity,
 }: {
-  onNavigate: (p: string) => void;
+  onPrimaryCtaClick: (
+    target: HomeCtaState["target"],
+    location: "cta_banner_primary"
+  ) => void;
   cta: HomeCtaState;
   scarcity: HomeScarcityState;
 }) {
@@ -19,12 +22,12 @@ export default function HomeCtaBannerSection({
               Ready for a Panatag Home?
             </h2>
             <p className="text-slate-300 text-xl mb-12">
-              Get your plan now plus{" "}
+              Get your free plan plus{" "}
               <span className="text-[#63B3ED] font-bold">FREE Bonus</span>: 5
-              Secrets to a Panatag Home: The Smart Home Security Checklist.
+              practical checklist tips for safer daily routines at home.
             </p>
             <button
-              onClick={() => onNavigate(cta.target)}
+              onClick={() => onPrimaryCtaClick(cta.target, "cta_banner_primary")}
               disabled={cta.disabled}
               className="bg-[#0E79B2] hover:bg-[#0b5e8b] text-white text-xl px-14 py-6 rounded-full font-extrabold shadow-lg shadow-[#0E79B2]/25 transition-all hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100"
             >
@@ -43,14 +46,15 @@ export default function HomeCtaBannerSection({
                     "Availability check failed. Please try again shortly."}
                   {!scarcity.loading && !scarcity.error && scarcity.soldOut && (
                     <>
-                      All 15 reports are claimed until{scarcity.countdownLabel}.
-                      Check back soon for the free bonus.
+                      Today&apos;s 15 complimentary plans are currently claimed
+                      until{scarcity.countdownLabel}. Check back soon for the
+                      free bonus.
                     </>
                   )}
                   {!scarcity.loading && !scarcity.error && !scarcity.soldOut && (
                     <>
-                      Only {scarcity.reportsRemaining}/15 reports remaining until
-                      {scarcity.countdownLabel}
+                      {scarcity.reportsRemaining}/15 complimentary plans left for
+                      this cycle{scarcity.countdownLabel}
                     </>
                   )}
                 </span>

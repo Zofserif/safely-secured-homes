@@ -9,9 +9,14 @@ export default function PreventionBlueprint() {
   return (
     <>
       <BlueprintLead>
-        A father once waited for danger before checking the house. After one
-        tense night, he built a simple bedtime routine, and his family started
-        sleeping with real peace of mind.
+        An ounce of prevention is worth a pound of cure -- Benjamin Franklin
+        <br />
+        <br /> 
+        <div className="text-sm text-slate-500 not-italic">
+        A famous thousand years saying that we tend to use nowadays as &quot;Prevention is better than cure&quot; but still holds weight until to this day.
+        As Filipinos we believe heavily in superstitions, and while some of them are harmless, others can lead to a false sense of security.
+        Let&apos;s take our culture as a guiding help to take actionable ways to prevent problems before they happen.
+        </div>
       </BlueprintLead>
 
       <Section title="Make This Your Tonight Checklist">
@@ -24,7 +29,7 @@ export default function PreventionBlueprint() {
             description="Most blind spots show up at night."
             items={[
               "Add mini motion lights near your entrance.",
-              "Turn on key indoor lights before going to bed.",
+              "Turn on indoor lights before going to bed (i.e. Kitchen/Living Room).",
             ]}
           />
 

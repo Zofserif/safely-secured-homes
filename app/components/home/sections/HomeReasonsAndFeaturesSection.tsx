@@ -19,7 +19,7 @@ export default function HomeReasonsAndFeaturesSection({
   return (
     <div className="grid lg:grid-cols-2">
       <section className="py-24 px-6 lg:px-20 bg-[#2D3748] text-white">
-        <h2 className="text-3xl font-bold mb-12">10 Reasons Why Clients Choose Us</h2>
+        <h2 className="text-3xl font-bold mb-12">6 Reasons Families Choose Us</h2>
         <div className="space-y-4">
           {[
             {
@@ -31,32 +31,16 @@ export default function HomeReasonsAndFeaturesSection({
               desc: "From the initial 1-on-1 site visit and consultation to expert installation, ongoing maintenance, and all-day support, we handle everything. We protect homes, not just sell and forget.",
             },
             {
-              title: "Effortless, Bundled Packages",
-              desc: "Whether you live in an apartment or a mansion, we have designed security bundles that offer incredible value. Each bundle clearly lists the features and house size it's designed for.",
+              title: 'Transparent, "No-Surprise" Quotes',
+              desc: 'What we quote is what you pay. No hidden cable fees or "extra labor" charges on installation day.',
             },
             {
-              title: "Seamless Smart Home Integration",
-              desc: "Control your lights, locks, and more from your phone. We make it easy to integrate smart home devices that offer convenience and additional safety.",
+              title: "Privacy-First Recommendations",
+              desc: "We prioritize local control and practical camera placement so your home feels secure, not intrusive.",
             },
             {
               title: "Wife & Lola-Friendly Interface",
               desc: "If it’s too hard to use, it’s useless. We set up simple, one-tap dashboards that everyone from the kids to the grandparents can understand.",
-            },
-            {
-              title: "Work-From-Home Optimized",
-              desc: "We configure cameras to ensure 24/7 recording doesn’t choke your bandwidth during your Zoom or Teams meetings.",
-            },
-            {
-              title: 'Transparent, "No-Surprise" Quotes',
-              desc: 'What we quote is what you pay. No hidden cable fees or "extra labor" charges on the day of install.',
-            },
-            {
-              title: 'The "One Weekend Wonder" Promise',
-              desc: "We respect your time. We aim to finish installation in 48 hours or less. If we don't, you get an extra wifi security camera.",
-            },
-            {
-              title: "Proactive Health Checks",
-              desc: "We monitor the health of your system (not your video feeds). For our customers we provide quarterly health checks.",
             },
             {
               title: "Direct-to-Human Support",

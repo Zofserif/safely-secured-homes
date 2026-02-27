@@ -168,7 +168,7 @@ export default function HomeHeroSection({
   return (
     <section
       id="home-hero"
-      className="relative overflow-hidden px-4 pt-4 pb-8 sm:px-6 sm:pt-6 sm:pb-12 md:min-h-[calc(100svh-5rem)] lg:pt-20 lg:pb-24"
+      className="relative overflow-hidden px-4 pt-4 pb-8 sm:px-6 sm:pt-6 sm:pb-12 md:min-h-[calc(100svh-5rem)] lg:pt-[clamp(2.5rem,7vh,5rem)] lg:pb-[clamp(2.5rem,8vh,6rem)]"
     >
       <div className="absolute top-0 right-0 -mr-48 -mt-48 h-[640px] w-[640px] rounded-full bg-[#BEE9E8]/40 blur-3xl opacity-60 pointer-events-none sm:-mr-40 sm:-mt-40 sm:h-[800px] sm:w-[800px]"></div>
       <div className="absolute bottom-0 left-0 -ml-44 -mb-44 h-[460px] w-[460px] rounded-full bg-[#BEE9E8]/30 blur-3xl opacity-60 pointer-events-none sm:-ml-40 sm:-mb-40 sm:h-[600px] sm:w-[600px]"></div>
@@ -182,7 +182,7 @@ export default function HomeHeroSection({
         >
           <div className="relative">
             <div className="pointer-events-none absolute inset-0 z-0 scale-105 rotate-2 rounded-4xl bg-linear-to-tr from-[#2D3748]/10 to-transparent transform sm:rotate-3 lg:rotate-6"></div>
-            <div className="relative z-10 h-[clamp(220px,38vh,300px)] min-[390px]:h-[clamp(240px,40vh,340px)] overflow-hidden rounded-3xl border-2 border-white shadow-xl sm:h-[clamp(300px,44vh,430px)] sm:rounded-4xl sm:border-4 sm:shadow-2xl lg:h-[680px]">
+            <div className="relative z-10 h-[clamp(220px,38vh,300px)] min-[390px]:h-[clamp(240px,40vh,340px)] overflow-hidden rounded-3xl border-2 border-white shadow-xl sm:h-[clamp(300px,44vh,430px)] sm:rounded-4xl sm:border-4 sm:shadow-2xl lg:h-[clamp(430px,56vh,620px)] xl:h-[clamp(480px,62vh,680px)]">
               <Image
                 src="/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg"
                 alt="Happy Family in Secure Home"
@@ -216,7 +216,7 @@ export default function HomeHeroSection({
             </span>
           </div>
 
-          <h1 className="mb-3 text-[1.75rem] leading-[1.12] font-bold tracking-tight text-[#2D3748] min-[390px]:text-[1.9rem] sm:mb-5 sm:text-4xl lg:mb-8 lg:text-7xl">
+          <h1 className="mb-3 text-[1.75rem] leading-[1.12] font-bold tracking-tight text-[#2D3748] min-[390px]:text-[1.9rem] sm:mb-5 sm:text-4xl lg:mb-[clamp(1rem,2.6vh,2rem)] lg:text-[clamp(2.6rem,6vh,4.6rem)]">
             Your Personalized
             <br />
             <span className="text-transparent bg-clip-text bg-linear-to-r from-[#2D3748] via-[#0E79B2] to-[#2D3748] decoration-[#0E79B2] decoration-4 underline underline-offset-4">
@@ -224,17 +224,17 @@ export default function HomeHeroSection({
             </span>
           </h1>
 
-          <p className="mb-5 max-w-xl text-[15px] leading-relaxed text-slate-600 sm:mb-6 sm:text-base lg:text-xl">
+          <p className="mb-5 max-w-xl text-[15px] leading-relaxed text-slate-600 sm:mb-6 sm:text-base lg:text-[clamp(1rem,2.5vh,1.25rem)]">
             In 60 seconds, get a <strong>free home panatag plan</strong> tailored
             to your layout, priorities, and routine so your family stays protected,
             whether you&apos;re in traffic, at work, or out of town.
           </p>
 
-          <div className="rounded-2xl border border-[#BEE9E8]/80 bg-white/95 p-4 shadow-xl shadow-[#0E79B2]/8 sm:rounded-3xl sm:p-5 sm:shadow-2xl sm:shadow-[#0E79B2]/10 lg:p-6">
+          <div className="rounded-2xl border border-[#BEE9E8]/80 bg-white/95 p-4 shadow-xl shadow-[#0E79B2]/8 sm:rounded-3xl sm:p-5 sm:shadow-2xl sm:shadow-[#0E79B2]/10 lg:p-[clamp(1rem,2.4vh,1.5rem)]">
             <button
               onClick={() => onPrimaryCtaClick(cta.target, "hero_primary")}
               disabled={cta.disabled}
-              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#0E79B2] px-6 py-3.5 text-[1.04rem] font-extrabold text-white shadow-lg shadow-[#0E79B2]/20 transition-all hover:-translate-y-1 hover:bg-[#0b5e8b] hover:shadow-2xl disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none sm:gap-3 sm:rounded-2xl sm:px-10 sm:py-4 sm:text-xl sm:shadow-xl sm:shadow-[#0E79B2]/25 sm:hover:shadow-2xl lg:py-5"
+              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#0E79B2] px-6 py-3.5 text-[1.04rem] font-extrabold text-white shadow-lg shadow-[#0E79B2]/20 transition-all hover:-translate-y-1 hover:bg-[#0b5e8b] hover:shadow-2xl disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none sm:gap-3 sm:rounded-2xl sm:px-10 sm:py-4 sm:text-xl sm:shadow-xl sm:shadow-[#0E79B2]/25 sm:hover:shadow-2xl lg:py-[clamp(0.85rem,1.8vh,1.25rem)]"
             >
               {cta.label}
               <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1 sm:h-6 sm:w-6" />
@@ -279,7 +279,7 @@ export default function HomeHeroSection({
         </motion.div>
       </div>
 
-      <div className="container mx-auto mt-4 pt-3 sm:mt-8 sm:border-t sm:border-slate-200 sm:pt-6 lg:mt-12 lg:pt-8">
+      <div className="container mx-auto mt-4 pt-3 sm:mt-8 sm:border-t sm:border-slate-200 sm:pt-6 lg:mt-[clamp(1.5rem,4vh,3rem)] lg:pt-[clamp(1rem,2.5vh,2rem)]">
         <div className="sm:hidden">
           <div
             ref={trustCarouselRef}

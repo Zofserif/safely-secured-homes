@@ -33,11 +33,19 @@ export const useHomeDebugControls = ({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    const bonusOn = () => {
+      resetBonusTimerForDebug();
+      console.info(
+        "[sshDebug] Landing-page bonus reset. 1-hour bonus window is active."
+      );
+    };
+
     const expireBonus = () => {
       const storageKey = "ssh_bonus_started_at";
       const startAt = Date.now() - 25 * 60 * 60 * 1000;
       localStorage.setItem(storageKey, new Date(startAt).toISOString());
       refreshBonusTimerFromStorage();
+      console.info("[sshDebug] Landing-page bonus expired for debug.");
     };
 
     const setReportsSoldOut = () => {
@@ -62,6 +70,7 @@ export const useHomeDebugControls = ({
     };
 
     const unregister = registerSshDebugMethods({
+      bonusOn,
       expireBonus,
       reportsSoldOut: setReportsSoldOut,
       normal,

@@ -59,6 +59,34 @@ const HOME_CTA_TARGET_PATH: Record<HomeCtaTarget, string> = {
   results: "/results",
   newsletter: "/newsletter",
 };
+const HOME_CTA_ID_BY_LOCATION: Record<HomeCtaLocation, string> = {
+  hero_primary: "home_hero_primary_cta",
+  midpage_primary: "home_mid_primary_cta",
+  cta_banner_primary: "home_banner_primary_cta",
+  navbar_primary: "home_navbar_primary_cta",
+};
+const HOME_CTA_VARIANT = "trust_urgency_v1";
+
+const resolveHomeCtaScarcityState = ({
+  hasExistingPlan,
+  reportsLoading,
+  reportsError,
+  reportsRemaining,
+}: {
+  hasExistingPlan: boolean;
+  reportsLoading: boolean;
+  reportsError: boolean;
+  reportsRemaining: number | null;
+}) => {
+  if (hasExistingPlan) return "existing_plan";
+  if (reportsLoading) return "loading";
+  if (reportsError) return "error";
+  if (reportsRemaining === null) return "unknown";
+  if (reportsRemaining <= 0) return "sold_out";
+  if (reportsRemaining <= 3) return "critical";
+  if (reportsRemaining <= 6) return "low";
+  return "normal";
+};
 
 const readPersistedLeadSendsEnabled = (): boolean | null => {
   if (typeof window === "undefined") return null;
@@ -119,6 +147,10 @@ export default function AppShell({
   const [formData, setFormData] = useState<FormData | null>(null);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [reportsRemaining, setReportsRemaining] = useState<number | null>(null);
+  const [reportsLimit, setReportsLimit] = useState<number | null>(null);
+  const [reportsWindowEndsAt, setReportsWindowEndsAt] = useState<number | null>(
+    null
+  );
   const [reportsLoading, setReportsLoading] = useState(true);
   const [reportsError, setReportsError] = useState(false);
   const [debugReportsRemaining, setDebugReportsRemaining] = useState<
@@ -369,16 +401,30 @@ export default function AppShell({
         }
         const data = await response.json();
         const remaining = data?.remaining;
-        if (typeof remaining !== "number") {
+        const limit = data?.limit;
+        const windowEndsAtRaw = data?.windowEndsAt;
+        const parsedWindowEndsAt =
+          typeof windowEndsAtRaw === "string"
+            ? Date.parse(windowEndsAtRaw)
+            : Number.NaN;
+        if (
+          typeof remaining !== "number" ||
+          typeof limit !== "number" ||
+          Number.isNaN(parsedWindowEndsAt)
+        ) {
           throw new Error("Invalid reports remaining response");
         }
         if (isMounted) {
           setReportsRemaining(remaining);
+          setReportsLimit(limit);
+          setReportsWindowEndsAt(parsedWindowEndsAt);
           setReportsError(false);
         }
-    } catch {
+      } catch {
         if (isMounted) {
           setReportsRemaining(null);
+          setReportsLimit(null);
+          setReportsWindowEndsAt(null);
           setReportsError(true);
         }
       } finally {
@@ -442,8 +488,16 @@ export default function AppShell({
     debugReportsLoading !== undefined ? debugReportsLoading : reportsLoading;
   const effectiveReportsError =
     debugReportsError !== undefined ? debugReportsError : reportsError;
+  const effectiveReportsLimit = reportsLimit;
+  const effectiveReportsWindowEndsAt = reportsWindowEndsAt;
   const reportsSoldOut =
     effectiveReportsRemaining !== null && effectiveReportsRemaining <= 0;
+  const homeCtaScarcityState = resolveHomeCtaScarcityState({
+    hasExistingPlan: Boolean(storedLead),
+    reportsLoading: effectiveReportsLoading,
+    reportsError: effectiveReportsError,
+    reportsRemaining: effectiveReportsRemaining,
+  });
   const hasExistingPlan = Boolean(storedLead);
   const isResultsLoading = view === "results" && (!formData || !result);
 
@@ -629,9 +683,13 @@ export default function AppShell({
     trackFunnelCtaClicked(
       "home",
       {
-        cta_id: "home_primary_cta",
+        cta_id: HOME_CTA_ID_BY_LOCATION[location],
         cta_location: location,
         target_path: HOME_CTA_TARGET_PATH[target],
+        scarcity_state: homeCtaScarcityState,
+        reports_remaining: effectiveReportsRemaining ?? undefined,
+        reports_limit: effectiveReportsLimit ?? undefined,
+        cta_variant: HOME_CTA_VARIANT,
       },
       analyticsContext
     );
@@ -647,6 +705,8 @@ export default function AppShell({
           onPrimaryCtaClick={handleHomePrimaryCtaClick}
           hideCta={view === "results" || (reportsSoldOut && !hasExistingPlan)}
           hasExistingPlan={hasExistingPlan}
+          visibilityMode={view === "home" ? "home_hero_reveal" : "default"}
+          heroSectionId="home-hero"
         />
       )}
 
@@ -654,6 +714,8 @@ export default function AppShell({
         <HomePage
           onPrimaryCtaClick={handleHomePrimaryCtaClick}
           reportsRemaining={effectiveReportsRemaining}
+          reportsLimit={effectiveReportsLimit}
+          reportsWindowEndsAt={effectiveReportsWindowEndsAt}
           reportsLoading={effectiveReportsLoading}
           reportsError={effectiveReportsError}
           hasExistingPlan={hasExistingPlan}

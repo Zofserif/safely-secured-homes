@@ -1,17 +1,35 @@
 /* eslint-disable @next/next/no-img-element */
 
-import type { HomeCtaState } from "../types";
+import { ChevronRight } from "lucide-react";
+import {
+  buildHomeScarcityCopy,
+  getHomeScarcityStatusPillClasses,
+  getHomeScarcityTimerPillClasses,
+} from "../scarcityCopy";
+import type { HomeCtaState, HomeScarcityState } from "../types";
 
 export default function HomeSimpleStepsSection({
   cta,
+  scarcity,
   onPrimaryCtaClick,
 }: {
   cta: HomeCtaState;
+  scarcity: HomeScarcityState;
   onPrimaryCtaClick: (
     target: HomeCtaState["target"],
     location: "midpage_primary"
   ) => void;
 }) {
+  const scarcityCopy = buildHomeScarcityCopy(scarcity);
+  const reportsLimit = Math.max(1, scarcity.reportsLimit ?? 1);
+  const progressPercent = Math.max(
+    0,
+    Math.min(100, (scarcity.reportsClaimed / reportsLimit) * 100),
+  );
+  const ctaSupportText = scarcity.show
+    ? "In 60 seconds, get your personalized plan and practical next security steps."
+    : "Your plan is ready. Open it now and continue your next security steps.";
+
   return (
     <section className="py-32 bg-white">
       <div className="container mx-auto px-6 text-center">
@@ -56,21 +74,58 @@ export default function HomeSimpleStepsSection({
             </div>
           ))}
         </div>
-        <div className="mt-14 mx-auto max-w-xl rounded-3xl border border-[#BEE9E8] bg-[#F7FAFC] p-8 shadow-sm">
-          <p className="text-sm uppercase tracking-wide font-semibold text-[#0E79B2] mb-3">
+        <div className="mt-14 mx-auto max-w-3xl rounded-3xl border border-[#BEE9E8] bg-[#F7FAFC] p-8 shadow-md text-left">
+          <p className="text-sm uppercase tracking-wide font-semibold text-[#0E79B2] mb-2">
             Ready to see your plan?
           </p>
-          <p className="text-slate-600 mb-6">
-            Start now and get your free recommendation in about 60 seconds, made
-            for your home and family routine.
+          <p className="text-slate-700 text-lg font-semibold mb-2">
+            Get your personalized plan plus the free bonus checklist before this
+            cycle closes.
           </p>
+          <p className="text-slate-600 mb-4">{ctaSupportText}</p>
+
+          {scarcity.show && (
+            <div className="mb-5 flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold sm:text-sm ${getHomeScarcityStatusPillClasses(scarcityCopy.tone, "light")}`}
+              >
+                {scarcityCopy.statusPill}
+              </span>
+              <span
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold sm:text-sm ${getHomeScarcityTimerPillClasses("light")}`}
+              >
+                {scarcityCopy.timerPill}
+              </span>
+            </div>
+          )}
+
+          {scarcity.show && !scarcity.loading && !scarcity.error && (
+            <div className="mb-5">
+              <div className="h-2.5 rounded-full bg-slate-200 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${
+                    scarcity.soldOut ? "bg-[#E53E3E]" : "bg-[#0E79B2]"
+                  }`}
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs font-semibold text-slate-700 sm:text-sm">
+                {scarcity.reportsClaimed}/{reportsLimit} claimed this cycle
+              </p>
+            </div>
+          )}
+
           <button
             onClick={() => onPrimaryCtaClick(cta.target, "midpage_primary")}
             disabled={cta.disabled}
-            className="w-full bg-[#0E79B2] hover:bg-[#0b5e8b] text-white py-4 rounded-2xl font-bold shadow-lg shadow-[#0E79B2]/20 transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none"
+            className="w-full bg-[#0E79B2] hover:bg-[#0b5e8b] text-white py-4 rounded-2xl font-extrabold shadow-lg shadow-[#0E79B2]/20 transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
           >
             {cta.label}
+            <ChevronRight className="w-5 h-5" />
           </button>
+          <p className="mt-3 text-xs sm:text-sm text-slate-600 text-center">
+            Takes 60 seconds &#8226; No credit card &#8226; No obligation
+          </p>
         </div>
       </div>
     </section>

@@ -62,10 +62,13 @@ This project uses a hybrid media strategy:
 5. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
    This table also stores `first_name`, `last_name`, `email`, and `mobile` for each generated link.
 
-### Optional environment variable
+### Environment variables
 
 - `NEXT_PUBLIC_BRAND_FOOTER_LOGO_URL`: absolute or root-relative URL for the email footer logo.
   If omitted, the app uses `https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/brand-assets/sssh-banner-logo.png`.
+- `REPORT_CYCLE_ANCHOR_ISO`: ISO-8601 UTC timestamp that anchors 72-hour complimentary-plan cycles in `/api/reports-remaining`.
+  Initial anchor value: `2026-02-26T09:42:57Z`.
+  Changing this value re-anchors all future 72-hour cycles.
 
 ### Campaign Unsubscribe Link
 

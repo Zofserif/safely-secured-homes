@@ -250,6 +250,10 @@ export const trackFunnelCtaClicked = (
     cta_location: string;
     target_path?: string;
     target_url?: string;
+    scarcity_state?: string;
+    reports_remaining?: number;
+    reports_limit?: number;
+    cta_variant?: string;
   },
   context?: FunnelContext
 ) => {

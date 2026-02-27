@@ -21,6 +21,8 @@ export { resetBonusTimerForDebug } from "./hooks/useBonusTimer";
 export default function HomePage({
   onPrimaryCtaClick,
   reportsRemaining,
+  reportsLimit,
+  reportsWindowEndsAt,
   reportsLoading,
   reportsError,
   hasExistingPlan,
@@ -44,6 +46,8 @@ export default function HomePage({
 
   const { cta, scarcity } = useHomeCtaAndScarcity({
     reportsRemaining: effectiveReportsRemaining,
+    reportsLimit,
+    reportsWindowEndsAt,
     reportsLoading: effectiveReportsLoading,
     reportsError: effectiveReportsError,
     hasExistingPlan,
@@ -58,7 +62,11 @@ export default function HomePage({
       <HomeHeroSection onPrimaryCtaClick={onPrimaryCtaClick} cta={cta} scarcity={scarcity} />
       <HomePainPointsSection />
       <HomeWhyTrustSection />
-      <HomeSimpleStepsSection cta={cta} onPrimaryCtaClick={onPrimaryCtaClick} />
+      <HomeSimpleStepsSection
+        cta={cta}
+        scarcity={scarcity}
+        onPrimaryCtaClick={onPrimaryCtaClick}
+      />
       {showTestimonials && <HomeTestimonialsSection testimonials={testimonials} />}
       <HomeReasonsAndFeaturesSection
         expandedReason={expandedReason}

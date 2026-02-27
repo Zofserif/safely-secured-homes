@@ -4,11 +4,15 @@ import { Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { HomeCtaLocation, HomeCtaTarget } from "../home/types";
 
+type NavbarVisibilityMode = "default" | "home_hero_reveal";
+
 export default function Navbar({
   onNavigate,
   onPrimaryCtaClick,
   hideCta = false,
   hasExistingPlan = false,
+  visibilityMode = "default",
+  heroSectionId = "home-hero",
 }: {
   onNavigate: (page: string) => void;
   onPrimaryCtaClick?: (
@@ -17,18 +21,50 @@ export default function Navbar({
   ) => void;
   hideCta?: boolean;
   hasExistingPlan?: boolean;
+  visibilityMode?: NavbarVisibilityMode;
+  heroSectionId?: string;
 }){
   const ctaTarget: HomeCtaTarget = hasExistingPlan ? "results" : "form";
   const ctaLabel = hasExistingPlan ? "SEE MY PLAN" : "GET MY FREE PLAN";
   const ctaMobileLabel = hasExistingPlan ? "SEE MY PLAN" : "Get My Free Plan";
   const [isOpen, setIsOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(
+    () => visibilityMode !== "home_hero_reveal"
+  );
   const lastScrollY = useRef(0);
 
   useEffect(() => {
+    if (visibilityMode === "home_hero_reveal") {
+      const updateVisibilityFromHero = () => {
+        const heroElement = document.getElementById(heroSectionId);
+        if (!heroElement) {
+          // Fail open so navigation remains available if hero lookup fails.
+          setIsVisible(true);
+          return;
+        }
+
+        const heroBottom = heroElement.getBoundingClientRect().bottom;
+        setIsVisible(heroBottom <= 0);
+      };
+
+      updateVisibilityFromHero();
+      window.addEventListener("scroll", updateVisibilityFromHero, {
+        passive: true,
+      });
+      window.addEventListener("resize", updateVisibilityFromHero);
+      return () => {
+        window.removeEventListener("scroll", updateVisibilityFromHero);
+        window.removeEventListener("resize", updateVisibilityFromHero);
+      };
+    }
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY.current && currentScrollY > 100 && !isOpen) {
+      if (
+        currentScrollY > lastScrollY.current &&
+        currentScrollY > 100 &&
+        !isOpen
+      ) {
         setIsVisible(false);
       } else {
         setIsVisible(true);
@@ -36,9 +72,10 @@ export default function Navbar({
       lastScrollY.current = currentScrollY;
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isOpen]);
+    lastScrollY.current = window.scrollY;
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [heroSectionId, isOpen, visibilityMode]);
 
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-500 hidden md:block ${isVisible ? 'translate-y-0' : '-translate-y-full'} ${isOpen ? 'bg-white' : 'bg-white/90 backdrop-blur-xl border-b border-[#BEE9E8]/30 shadow-sm'}`}>

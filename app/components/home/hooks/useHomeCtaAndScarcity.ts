@@ -1,13 +1,17 @@
-import type { HomeCtaState, HomeScarcityState } from "../types";
+import type { HomeCtaState, HomeScarcityState, HomeUrgencyTier } from "../types";
 
 type UseHomeCtaAndScarcityArgs = {
   reportsRemaining: number | null;
+  reportsLimit: number | null;
+  reportsWindowEndsAt: number | null;
   reportsLoading: boolean;
   reportsError: boolean;
   hasExistingPlan: boolean;
   nowMs: number;
   bonusEndsAt: number | null;
 };
+
+const DEFAULT_REPORT_LIMIT = 15;
 
 const formatCountdown = (targetMs: number, currentMs: number) => {
   const diffMs = Math.max(0, targetMs - currentMs);
@@ -20,37 +24,47 @@ const formatCountdown = (targetMs: number, currentMs: number) => {
   return `${hours}h ${pad(minutes)}m ${pad(seconds)}s`;
 };
 
-const getNextFridayMidnightGmt8 = (currentMs: number) => {
-  const offsetMs = 8 * 60 * 60 * 1000;
-  const gmt8Date = new Date(currentMs + offsetMs);
-  const day = gmt8Date.getUTCDay();
-  let daysUntilFriday = (5 - day + 7) % 7;
+const formatPhtDeadline = (targetMs: number) => {
+  const formatter = new Intl.DateTimeFormat("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 
-  if (daysUntilFriday === 0) daysUntilFriday = 7;
+  return `${formatter.format(targetMs)} PHT`;
+};
 
-  return (
-    Date.UTC(
-      gmt8Date.getUTCFullYear(),
-      gmt8Date.getUTCMonth(),
-      gmt8Date.getUTCDate() + daysUntilFriday,
-      0,
-      0,
-      0,
-      0,
-    ) - offsetMs
-  );
+const resolveUrgencyTier = (reportsRemaining: number | null): HomeUrgencyTier => {
+  if (reportsRemaining !== null && reportsRemaining <= 0) return "sold_out";
+  if (reportsRemaining !== null && reportsRemaining <= 3) return "critical";
+  if (reportsRemaining !== null && reportsRemaining <= 6) return "low";
+  return "normal";
 };
 
 export const useHomeCtaAndScarcity = ({
   reportsRemaining,
+  reportsLimit,
+  reportsWindowEndsAt,
   reportsLoading,
   reportsError,
   hasExistingPlan,
   nowMs,
   bonusEndsAt,
 }: UseHomeCtaAndScarcityArgs): { cta: HomeCtaState; scarcity: HomeScarcityState } => {
-  const reportsSoldOut = reportsRemaining !== null && reportsRemaining <= 0;
   const hasClock = nowMs > 0;
+  const urgencyTier = resolveUrgencyTier(reportsRemaining);
+  const reportsSoldOut = urgencyTier === "sold_out";
+  const resolvedReportsLimit =
+    typeof reportsLimit === "number" && reportsLimit > 0
+      ? reportsLimit
+      : DEFAULT_REPORT_LIMIT;
+  const reportsClaimed =
+    reportsRemaining === null
+      ? 0
+      : Math.max(0, Math.min(resolvedReportsLimit, resolvedReportsLimit - reportsRemaining));
 
   const ctaTarget =
     reportsSoldOut && !hasExistingPlan
@@ -63,12 +77,17 @@ export const useHomeCtaAndScarcity = ({
       ? "JOIN THE PRIORITY WAITLIST"
       : hasExistingPlan
         ? "SEE MY PLAN"
-        : "GET MY FREE PLAN";
+        : urgencyTier === "critical"
+          ? "SECURE MY SLOT NOW"
+          : "CLAIM MY FREE PLAN NOW";
   const ctaDisabled = ctaTarget === "form" && reportsSoldOut && !hasExistingPlan;
 
-  const refreshEndsAt = hasClock ? getNextFridayMidnightGmt8(nowMs) : null;
-  const countdown = refreshEndsAt ? formatCountdown(refreshEndsAt, nowMs) : "";
-  const countdownLabel = countdown ? ` (${countdown} left)` : "";
+  const windowCountdown =
+    hasClock && reportsWindowEndsAt !== null
+      ? formatCountdown(reportsWindowEndsAt, nowMs)
+      : "";
+  const windowDeadlinePht =
+    reportsWindowEndsAt !== null ? formatPhtDeadline(reportsWindowEndsAt) : "";
   const bonusCountdown =
     hasClock && bonusEndsAt !== null ? formatCountdown(bonusEndsAt, nowMs) : "";
   const bonusExpired = hasClock && bonusEndsAt !== null && nowMs >= bonusEndsAt;
@@ -84,8 +103,13 @@ export const useHomeCtaAndScarcity = ({
       loading: reportsLoading,
       error: reportsError,
       reportsRemaining,
+      reportsLimit: resolvedReportsLimit,
+      reportsClaimed,
+      urgencyTier,
       soldOut: reportsSoldOut,
-      countdownLabel,
+      windowEndsAt: reportsWindowEndsAt,
+      windowCountdown,
+      windowDeadlinePht,
       bonusEndsAt,
       bonusCountdown,
       bonusExpired,

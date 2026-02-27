@@ -5,7 +5,11 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const REPORT_LIMIT = 15;
-const WINDOW_DAYS = 3;
+const CYCLE_MS = 3 * 24 * 60 * 60 * 1000;
+const DEFAULT_REPORT_CYCLE_ANCHOR_ISO = "2026-02-26T09:42:57Z";
+const DEFAULT_REPORT_CYCLE_ANCHOR_MS = Date.parse(
+  DEFAULT_REPORT_CYCLE_ANCHOR_ISO
+);
 
 const supabase =
   supabaseUrl && serviceRoleKey
@@ -23,17 +27,31 @@ export async function GET() {
     );
   }
 
-  const now = new Date();
-  const windowStartAt = new Date(now);
-  windowStartAt.setDate(windowStartAt.getDate() - WINDOW_DAYS);
-  const windowEndsAt = new Date(now);
-  windowEndsAt.setDate(windowEndsAt.getDate() + WINDOW_DAYS);
+  const anchorIso =
+    process.env.REPORT_CYCLE_ANCHOR_ISO?.trim() || DEFAULT_REPORT_CYCLE_ANCHOR_ISO;
+  const parsedAnchorMs = Date.parse(anchorIso);
+  const anchorMs = Number.isNaN(parsedAnchorMs)
+    ? DEFAULT_REPORT_CYCLE_ANCHOR_MS
+    : parsedAnchorMs;
+  if (Number.isNaN(parsedAnchorMs)) {
+    console.warn(
+      `Invalid REPORT_CYCLE_ANCHOR_ISO "${anchorIso}", falling back to default ${DEFAULT_REPORT_CYCLE_ANCHOR_ISO}.`
+    );
+  }
+
+  const effectiveNowMs = Date.now();
+  const elapsedMs = Math.max(0, effectiveNowMs - anchorMs);
+  const cycleIndex = Math.floor(elapsedMs / CYCLE_MS);
+  const windowStartMs = anchorMs + cycleIndex * CYCLE_MS;
+  const windowEndMs = windowStartMs + CYCLE_MS;
+  const windowStartAtIso = new Date(windowStartMs).toISOString();
+  const windowEndsAtIso = new Date(windowEndMs).toISOString();
 
   const { count, error } = await supabase
     .from("leads")
     .select("*", { count: "exact", head: true })
-    .gte("created_at", windowStartAt.toISOString())
-    .lte("created_at", windowEndsAt.toISOString());
+    .gte("created_at", windowStartAtIso)
+    .lt("created_at", windowEndsAtIso);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -47,8 +65,8 @@ export async function GET() {
       remaining,
       used,
       limit: REPORT_LIMIT,
-      windowStartAt: windowStartAt.toISOString(),
-      windowEndsAt: windowEndsAt.toISOString(),
+      windowStartAt: windowStartAtIso,
+      windowEndsAt: windowEndsAtIso,
     },
     {
       headers: {

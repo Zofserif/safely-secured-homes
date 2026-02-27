@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 let bonusEndsAtValue: number | null = null;
 let bonusInitialized = false;
 const bonusListeners = new Set<() => void>();
+const BONUS_DURATION_MS = 60 * 60 * 1000;
 
 const initBonusTimer = () => {
   if (bonusInitialized) return;
@@ -19,7 +20,7 @@ const initBonusTimer = () => {
     localStorage.setItem(storageKey, new Date(startAt).toISOString());
   }
 
-  bonusEndsAtValue = startAt + 24 * 60 * 60 * 1000;
+  bonusEndsAtValue = startAt + BONUS_DURATION_MS;
   bonusListeners.forEach((listener) => listener());
 };
 

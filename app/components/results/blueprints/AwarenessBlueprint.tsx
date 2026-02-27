@@ -23,8 +23,6 @@ export default function AwarenessBlueprint() {
         <p>
           When an incident happens, families are often unsure what they saw and
           do not have usable evidence.
-        </p>
-        <p>
           Huwag hintayin na may mangyari bago kumilos. Build your system before
           you need it.
         </p>

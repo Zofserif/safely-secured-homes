@@ -4,6 +4,8 @@ export type HomePageProps = {
     location: HomeCtaLocation
   ) => void;
   reportsRemaining: number | null;
+  reportsLimit: number | null;
+  reportsWindowEndsAt: number | null;
   reportsLoading: boolean;
   reportsError: boolean;
   hasExistingPlan: boolean;
@@ -22,13 +24,20 @@ export type HomeCtaState = {
   disabled: boolean;
 };
 
+export type HomeUrgencyTier = "normal" | "low" | "critical" | "sold_out";
+
 export type HomeScarcityState = {
   show: boolean;
   loading: boolean;
   error: boolean;
   reportsRemaining: number | null;
+  reportsLimit: number | null;
+  reportsClaimed: number;
+  urgencyTier: HomeUrgencyTier;
   soldOut: boolean;
-  countdownLabel: string;
+  windowEndsAt: number | null;
+  windowCountdown: string;
+  windowDeadlinePht: string;
   bonusEndsAt: number | null;
   bonusCountdown: string;
   bonusExpired: boolean;

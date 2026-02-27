@@ -8,6 +8,7 @@ export type LeadSendsStatus = {
 };
 
 export type SshDebugApi = {
+  bonusOn?: () => void;
   expireBonus?: () => void;
   reportsSoldOut?: () => void;
   normal?: () => void;

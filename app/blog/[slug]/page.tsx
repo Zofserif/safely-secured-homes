@@ -76,6 +76,8 @@ export async function generateMetadata({
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params;
   const post = await getBlogPostBySlug(slug);
+  const showInternalEmailAssets =
+    process.env.NEXT_PUBLIC_SHOW_INTERNAL_EMAIL_ASSETS === "true";
 
   if (!post) {
     notFound();
@@ -204,9 +206,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 </div>
               </div>
 
-              <div className="mt-12">
-                <EmailAssetsPanel emailAssets={post.emailAssets} />
-              </div>
+              {showInternalEmailAssets && (
+                <div className="mt-12">
+                  <EmailAssetsPanel emailAssets={post.emailAssets} />
+                </div>
+              )}
             </article>
           </div>
         </main>

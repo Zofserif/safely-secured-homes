@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ogImageUrl, siteDescription, siteName, siteUrl } from "./lib/site";
 import "./globals.css";
@@ -12,6 +13,7 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+const ga4MeasurementId = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -75,6 +77,22 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {ga4MeasurementId && (
+          <>
+            <Script
+              id="ga4-base"
+              strategy="afterInteractive"
+              src={`https://www.googletagmanager.com/gtag/js?id=${ga4MeasurementId}`}
+            />
+            <Script id="ga4-init" strategy="afterInteractive">
+              {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+window.gtag = window.gtag || gtag;
+gtag('js', new Date());
+gtag('config', '${ga4MeasurementId}', { send_page_view: false });`}
+            </Script>
+          </>
+        )}
         {children}
       </body>
     </html>

@@ -6,7 +6,7 @@ export default function HomeWhyTrustSection() {
       <div className="container mx-auto px-6">
         <div className="text-center mb-20">
           <h2 className="text-3xl md:text-5xl font-bold text-[#2D3748]">
-            Why trust us with your purchase?
+            Why families trust us with their home and privacy
           </h2>
         </div>
         <div className="grid md:grid-cols-4 gap-8">
@@ -14,16 +14,16 @@ export default function HomeWhyTrustSection() {
             {
               icon: ListChecks,
               title: "Only what you need",
-              desc: "Honest recommendations that respect your budget.",
+              desc: "No upsells. We recommend the minimum setup that solves your worry.",
             },
             {
               icon: Lock,
               title: "Privacy first",
-              desc: "Secure setups so you control who sees what, from anywhere.",
+              desc: "We avoid intrusive placement and keep control in your hands.",
             },
             {
               icon: ShieldUser,
-              title: "For Filipino Family",
+              title: "For Filipino Families",
               desc: "Personalized solutions tailored for Filipino families.",
             },
             {

@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, X } from "lucide-react";
+import { trackNewsletterLeadGenerated } from "../../lib/analytics";
+import { sendChecklistEmail } from "../../lib/email";
 import { writeNewsletterLead } from "../../lib/newsletterLead";
+import { panatagChecklistUrl } from "../../lib/site";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -13,6 +17,9 @@ export default function NewsletterChecklistModal() {
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [checklistEmailSent, setChecklistEmailSent] = useState<boolean | null>(
+    null
+  );
   const [values, setValues] = useState({
     firstName: "",
     lastName: "",
@@ -35,6 +42,7 @@ export default function NewsletterChecklistModal() {
     setStep(0);
     setStatus("idle");
     setError(null);
+    setChecklistEmailSent(null);
     setValues({ firstName: "", lastName: "", email: "", contactNumber: "" });
   };
 
@@ -143,12 +151,36 @@ export default function NewsletterChecklistModal() {
         return;
       }
 
+      let checklistSent = false;
+      try {
+        await sendChecklistEmail({
+          to_email: payload.email,
+          firstname: payload.first_name,
+          last_name: payload.last_name,
+          mobile: normalizedContact,
+          checklist_name: "Panatag Home Checklist",
+          checklist_url: panatagChecklistUrl,
+        });
+        checklistSent = true;
+      } catch (emailError) {
+        console.error("Checklist email send failed:", emailError);
+      }
+
       writeNewsletterLead({
         first_name: payload.first_name,
         last_name: payload.last_name,
         email: payload.email,
         mobile: normalizedContact,
       });
+      setChecklistEmailSent(checklistSent);
+      trackNewsletterLeadGenerated(
+        { flow_source: "newsletter", flow_mode: "newsletter" },
+        {
+          source: "newsletter_modal",
+          method: checklistSent ? "emailjs" : "fallback",
+          destination: "newsletter_thank_you",
+        }
+      );
       setStatus("success");
     } catch (submitError) {
       console.error(submitError);
@@ -218,7 +250,9 @@ export default function NewsletterChecklistModal() {
                   You’re on the list!
                 </h4>
                 <p className="text-slate-600 mt-2">
-                  Check your email for the checklist and next steps.
+                  {checklistEmailSent
+                    ? "Check your email for the checklist and next steps."
+                    : "We couldn’t confirm email delivery right now, but your signup is complete. Continue to download instantly on the next page."}
                 </p>
                 <button
                   type="button"
@@ -303,6 +337,24 @@ export default function NewsletterChecklistModal() {
                     {error}
                   </p>
                 )}
+
+                <p className="mt-4 text-center text-xs text-slate-500">
+                  By submitting, you agree to our{" "}
+                  <Link
+                    href="/privacy"
+                    className="font-semibold text-[#0E79B2] underline"
+                  >
+                    Privacy Policy
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    href="/terms"
+                    className="font-semibold text-[#0E79B2] underline"
+                  >
+                    Terms of Service
+                  </Link>
+                  .
+                </p>
 
                 <div className="mt-6 flex items-center justify-between">
                   <button

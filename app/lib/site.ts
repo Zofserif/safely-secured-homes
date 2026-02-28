@@ -14,6 +14,15 @@ export const siteAddressLocality = "Candelaria";
 export const siteAddressRegion = "Quezon";
 export const sitePostalCode = "4323";
 export const siteCountryCode = "PH";
+const defaultWhatsAppPrefillMessage =
+  "Hi Safely Secured Homes, I want help with a home security setup for my home. Can we talk?";
+const sitePhoneDigits = sitePhone.replace(/\D/g, "");
+const whatsappDigits = sitePhoneDigits.startsWith("0")
+  ? `63${sitePhoneDigits.slice(1)}`
+  : sitePhoneDigits;
+const whatsappPrefillMessage =
+  process.env.NEXT_PUBLIC_WHATSAPP_PREFILL_MESSAGE?.trim() ||
+  defaultWhatsAppPrefillMessage;
 export const siteUrl = envSiteUrl
   ? normalizeSiteUrl(envSiteUrl)
   : process.env.NODE_ENV === "development"
@@ -21,3 +30,9 @@ export const siteUrl = envSiteUrl
     : defaultSiteUrl;
 export const ogImagePath = "/assets/img/Logo/Black Header.png";
 export const ogImageUrl = new URL(ogImagePath, siteUrl).toString();
+export const panatagChecklistPath = "/assets/templates/ice/ice-card-template.pdf";
+export const panatagChecklistUrl = new URL(panatagChecklistPath, siteUrl).toString();
+export const siteCallHref = `tel:${sitePhoneDigits}`;
+export const siteWhatsAppUrl = `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(
+  whatsappPrefillMessage,
+)}`;

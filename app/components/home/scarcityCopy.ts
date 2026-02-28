@@ -6,7 +6,7 @@ export type HomeScarcityCopy = {
   timerPill: string;
 };
 
-const pluralizePlans = (value: number) => (value === 1 ? "plan" : "plans");
+const pluralizeRating = (value: number) => (value === 1 ? "rating" : "ratings");
 
 type HomeScarcityPillSurface = "light" | "dark";
 
@@ -68,8 +68,8 @@ export const buildHomeScarcityCopy = (
       tone: "sold_out",
       statusPill: "Current cycle is full",
       timerPill: scarcity.windowCountdown
-        ? `Priority access opens in ${scarcity.windowCountdown} (PHT)`
-        : "Priority access opening soon",
+        ? `Panatag Home Rating opens in ${scarcity.windowCountdown} (PHT)`
+        : "Panatag Home Rating is opening soon",
     };
   }
 
@@ -88,8 +88,8 @@ export const buildHomeScarcityCopy = (
   return {
     tone,
     statusPill: isCritical
-      ? `Only ${remainingValue} complimentary ${pluralizePlans(remainingValue)} left this cycle`
-      : `${remainingValue} of ${limitValue} complimentary plans left this cycle`,
+      ? `Only ${remainingValue} ${pluralizeRating(remainingValue)} left`
+      : `${remainingValue} of ${limitValue} Free Home Panatag Rating`,
     timerPill,
   };
 };

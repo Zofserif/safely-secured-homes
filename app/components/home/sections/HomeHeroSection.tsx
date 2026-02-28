@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { CheckCircle2, ChevronRight, Gift, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -7,6 +7,7 @@ import {
   getHomeScarcityStatusPillClasses,
   getHomeScarcityTimerPillClasses,
 } from "../scarcityCopy";
+import { HOME_HERO_COPY } from "../heroCopy";
 import type { HomeCtaState, HomeScarcityState } from "../types";
 
 const TRUST_CHECKS = [
@@ -18,6 +19,61 @@ const TRUST_CHECKS = [
 const TRUST_AUTOPLAY_INTERVAL_MS = 4000;
 const TRUST_AUTOPLAY_RESUME_DELAY_MS = 6000;
 const PROGRAMMATIC_SCROLL_WINDOW_MS = 900;
+
+type HeadlineSegment = {
+  text: string;
+  emphasized: boolean;
+};
+
+type AudiencePillProps = {
+  className?: string;
+};
+
+const AudiencePill = ({ className = "" }: AudiencePillProps) => (
+  <div
+    className={`inline-flex items-center gap-1.5 rounded-full border border-slate-200/90 bg-white/80 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.03em] text-slate-500 sm:px-3 sm:text-[11px] sm:tracking-[0.05em] ${className}`.trim()}
+  >
+    <span className="h-1.5 w-1.5 rounded-full bg-[#2E8B57]/80"></span>
+    <span>For Filipino Families Who Wants Security Without Stress</span>
+  </div>
+);
+
+const parseHeadlineSegments = (headline: string): HeadlineSegment[] => {
+  const markerOpen = "[[";
+  const markerClose = "]]";
+  const segments: HeadlineSegment[] = [];
+  let cursor = 0;
+  let foundMarker = false;
+
+  while (cursor < headline.length) {
+    const openIndex = headline.indexOf(markerOpen, cursor);
+    if (openIndex === -1) {
+      const trailing = headline.slice(cursor);
+      if (trailing) segments.push({ text: trailing, emphasized: false });
+      break;
+    }
+
+    const closeIndex = headline.indexOf(markerClose, openIndex + markerOpen.length);
+    if (closeIndex === -1) {
+      return [{ text: headline, emphasized: false }];
+    }
+
+    foundMarker = true;
+    const before = headline.slice(cursor, openIndex);
+    if (before) segments.push({ text: before, emphasized: false });
+
+    const marked = headline.slice(openIndex + markerOpen.length, closeIndex);
+    if (marked) segments.push({ text: marked, emphasized: true });
+
+    cursor = closeIndex + markerClose.length;
+  }
+
+  if (!foundMarker || segments.length === 0) {
+    return [{ text: headline, emphasized: false }];
+  }
+
+  return segments;
+};
 
 export default function HomeHeroSection({
   onPrimaryCtaClick,
@@ -43,6 +99,13 @@ export default function HomeHeroSection({
       ? "bg-[#DD6B20]"
       : "bg-[#0E79B2]";
   const showBonusCard = !scarcity.bonusExpired && scarcity.show && !scarcity.soldOut;
+  const prefersReducedMotion = useReducedMotion();
+  const headlineSegments = parseHeadlineSegments(HOME_HERO_COPY.headline);
+  const normalizedHeadline = headlineSegments.map((segment) => segment.text).join("");
+  const isLongHeadline = normalizedHeadline.length > 80;
+  const headlineSizeClasses = isLongHeadline
+    ? "text-[1.62rem] min-[390px]:text-[1.82rem] sm:text-[2.4rem] lg:text-[clamp(2.4rem,5.4vw,4.05rem)]"
+    : "text-[2rem] min-[390px]:text-[2.2rem] sm:text-[2.95rem] lg:text-[clamp(3.2rem,6.3vw,5.1rem)]";
   const bonusCard = (
     <div className="rounded-2xl border border-[#BEE9E8] bg-[#F0FAFF] p-3.5 shadow-sm sm:p-4">
       <div className="flex items-start gap-3">
@@ -173,64 +236,52 @@ export default function HomeHeroSection({
       <div className="absolute top-0 right-0 -mr-48 -mt-48 h-[640px] w-[640px] rounded-full bg-[#BEE9E8]/40 blur-3xl opacity-60 pointer-events-none sm:-mr-40 sm:-mt-40 sm:h-[800px] sm:w-[800px]"></div>
       <div className="absolute bottom-0 left-0 -ml-44 -mb-44 h-[460px] w-[460px] rounded-full bg-[#BEE9E8]/30 blur-3xl opacity-60 pointer-events-none sm:-ml-40 sm:-mb-40 sm:h-[600px] sm:w-[600px]"></div>
 
-      <div className="container relative z-10 mx-auto grid items-center gap-5 sm:gap-8 lg:grid-cols-2 lg:gap-16">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, delay: 0.2 }}
-          className="block relative lg:order-last"
-        >
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-0 z-0 scale-105 rotate-2 rounded-4xl bg-linear-to-tr from-[#2D3748]/10 to-transparent transform sm:rotate-3 lg:rotate-6"></div>
-            <div className="relative z-10 h-[clamp(220px,38vh,300px)] min-[390px]:h-[clamp(240px,40vh,340px)] overflow-hidden rounded-3xl border-2 border-white shadow-xl sm:h-[clamp(300px,44vh,430px)] sm:rounded-4xl sm:border-4 sm:shadow-2xl lg:h-[clamp(430px,56vh,620px)] xl:h-[clamp(480px,62vh,680px)]">
-              <Image
-                src="/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg"
-                alt="Happy Family in Secure Home"
-                fill
-                priority
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                className="object-cover transition-transform duration-700 hover:scale-105"
-              />
-              <div className="absolute right-0 bottom-0 left-0 bg-linear-to-t from-black/60 to-transparent p-3 sm:p-4 lg:p-8">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-white/90 sm:gap-2 sm:text-sm">
-                  <ShieldCheck className="h-4 w-4 text-[#2E8B57]" />{" "}
-                  100% Secure &
-                  Private
-                </div>
-              </div>
-            </div>
-          </div>
-          {showBonusCard && <div className="relative z-10 mt-5 hidden lg:block">{bonusCard}</div>}
-        </motion.div>
+      <div className="container relative z-10 mx-auto grid items-center gap-5 sm:gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-16">
+        <AudiencePill className="order-1 lg:hidden" />
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-2xl"
+          className="order-3 min-w-0 w-full max-w-2xl lg:order-1 lg:max-w-none"
         >
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#BEE9E8] bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-[#2D3748] shadow-sm sm:mb-5 sm:px-4 sm:text-xs sm:tracking-wide lg:mb-8">
-            <span className="h-2 w-2 rounded-full bg-[#2E8B57] animate-pulse"></span>
-            <span>
-              For Filipino Families Who Want Security Without Stress
-            </span>
-          </div>
+          <AudiencePill className="mb-2 hidden sm:mb-3 lg:mb-4 lg:inline-flex" />
 
-          <h1 className="mb-3 text-[1.75rem] leading-[1.12] font-bold tracking-tight text-[#2D3748] min-[390px]:text-[1.9rem] sm:mb-5 sm:text-4xl lg:mb-[clamp(1rem,2.6vh,2rem)] lg:text-[clamp(2.6rem,6vh,4.6rem)]">
-            Your Personalized
-            <br />
-            <span className="text-transparent bg-clip-text bg-linear-to-r from-[#2D3748] via-[#0E79B2] to-[#2D3748] decoration-[#0E79B2] decoration-4 underline underline-offset-4">
-              Safe & Smart Home Plan
-            </span>
+          <h1
+            className={`mb-4 text-balance leading-[1.02] font-bold tracking-tight text-[#2D3748] sm:mb-5 lg:mb-[clamp(0.85rem,2.1vh,1.5rem)] ${headlineSizeClasses}`}
+          >
+            {headlineSegments.map((segment, index) => {
+              if (!segment.emphasized) {
+                return <span key={`headline-${index}`}>{segment.text}</span>;
+              }
+
+              return (
+                <motion.span
+                  key={`headline-${index}`}
+                  className="bg-linear-to-r from-[#2D3748] via-[#0E79B2] to-[#2D3748] bg-clip-text text-transparent underline decoration-[#63B3ED]/90 decoration-[0.13em] underline-offset-[0.13em]"
+                  {...(prefersReducedMotion
+                    ? {}
+                    : {
+                        initial: { opacity: 0, y: 6 },
+                        animate: { opacity: 1, y: 0 },
+                        transition: {
+                          duration: 0.35,
+                          delay: 0.08 + index * 0.03,
+                          ease: "easeOut",
+                        },
+                      })}
+                >
+                  {segment.text}
+                </motion.span>
+              );
+            })}
           </h1>
 
-          <p className="mb-5 max-w-xl text-[15px] leading-relaxed text-slate-600 sm:mb-6 sm:text-base lg:text-[clamp(1rem,2.5vh,1.25rem)]">
-            In 60 seconds, get a <strong>free home panatag plan</strong> tailored
-            to your layout, priorities, and routine so your family stays protected,
-            whether you&apos;re in traffic, at work, or out of town.
+          <p className="mb-5 max-w-xl text-[15px] leading-relaxed text-slate-500 sm:mb-6 sm:text-base lg:text-[clamp(1rem,2.25vh,1.18rem)]">
+            {HOME_HERO_COPY.subcopy}
           </p>
 
-          <div className="rounded-2xl border border-[#BEE9E8]/80 bg-white/95 p-4 shadow-xl shadow-[#0E79B2]/8 sm:rounded-3xl sm:p-5 sm:shadow-2xl sm:shadow-[#0E79B2]/10 lg:p-[clamp(1rem,2.4vh,1.5rem)]">
+          <div className="rounded-2xl border border-[#BEE9E8]/80 bg-white/90 p-4 shadow-lg shadow-[#0E79B2]/6 sm:rounded-3xl sm:p-5 sm:shadow-xl sm:shadow-[#0E79B2]/8 lg:p-[clamp(1rem,2.4vh,1.5rem)]">
             <button
               onClick={() => onPrimaryCtaClick(cta.target, "hero_primary")}
               disabled={cta.disabled}
@@ -239,9 +290,6 @@ export default function HomeHeroSection({
               {cta.label}
               <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1 sm:h-6 sm:w-6" />
             </button>
-            <p className="mt-2.5 text-center text-xs text-slate-600 sm:mt-3 sm:text-sm">
-              Takes 60 seconds &#8226; No credit card &#8226; No obligation
-            </p>
 
             {scarcity.show && (
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
@@ -267,7 +315,7 @@ export default function HomeHeroSection({
                       />
                     </div>
                     <p className="mt-2 text-xs font-semibold text-slate-700 sm:text-sm">
-                      {scarcity.reportsClaimed}/{reportsLimit} claimed this cycle
+                      {scarcity.reportsClaimed}/{reportsLimit} Homes got the Panatag Rating
                     </p>
                   </>
                 )}
@@ -276,6 +324,35 @@ export default function HomeHeroSection({
           </div>
 
           {showBonusCard && <div className="mt-4 lg:hidden">{bonusCard}</div>}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.95, delay: 0.35 }}
+          className="relative order-2 block min-w-0 w-full lg:order-2"
+        >
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-0 z-0 scale-105 rotate-2 rounded-4xl bg-linear-to-tr from-[#2D3748]/10 to-transparent transform sm:rotate-3 lg:rotate-6"></div>
+            <div className="relative z-10 h-[clamp(220px,38vh,300px)] min-[390px]:h-[clamp(240px,40vh,340px)] overflow-hidden rounded-3xl border-2 border-white shadow-lg sm:h-[clamp(300px,44vh,430px)] sm:rounded-4xl sm:border-4 sm:shadow-xl lg:h-[clamp(430px,56vh,620px)] xl:h-[clamp(480px,62vh,680px)]">
+              <Image
+                src="/assets/img/Hero/pexels-vlada-karpovich-4609033.jpg"
+                alt="Happy Family in Secure Home"
+                fill
+                priority
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover transition-transform duration-700 hover:scale-[1.02]"
+              />
+              <div className="absolute right-0 bottom-0 left-0 bg-linear-to-t from-black/60 to-transparent p-3 sm:p-4 lg:p-8">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-white/90 sm:gap-2 sm:text-sm">
+                  <ShieldCheck className="h-4 w-4 text-[#2E8B57]" />{" "}
+                  100% Secure &
+                  Private
+                </div>
+              </div>
+            </div>
+          </div>
+          {showBonusCard && <div className="relative z-10 mt-5 hidden lg:block">{bonusCard}</div>}
         </motion.div>
       </div>
 

@@ -17,7 +17,7 @@ export default function Footer(){
             />
           </div>
           <p className="text-sm text-slate-400 leading-relaxed mb-6">
-            We prioritize your home security and automation so safe and seamless, your dream home possibilities are limitless.
+            We make home security and smart automation simple, privacy-first, and practical for daily life.
           </p>
           <div className="text-xs text-[#0E79B2] font-medium tracking-wide uppercase">
             EST. 2025 • CANDELARIA, QUEZON • PH
@@ -95,8 +95,16 @@ export default function Footer(){
                 Share Feedback
               </Link>
             </li>
-            <li className="hover:text-[#63B3ED] cursor-pointer transition-colors">Privacy Policy</li>
-            <li className="hover:text-[#63B3ED] cursor-pointer transition-colors">Terms of Service</li>
+            <li>
+              <Link href="/privacy" className="hover:text-[#63B3ED] transition-colors">
+                Privacy Policy
+              </Link>
+            </li>
+            <li>
+              <Link href="/terms" className="hover:text-[#63B3ED] transition-colors">
+                Terms of Service
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

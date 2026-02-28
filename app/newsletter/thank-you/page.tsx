@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { ogImageUrl, siteName, siteUrl } from "../../lib/site";
+import {
+  FunnelPageMountTracker,
+  FunnelTrackedAnchor,
+} from "../../components/analytics/FunnelTrackingClient";
+import {
+  ogImageUrl,
+  panatagChecklistPath,
+  siteName,
+  siteUrl,
+} from "../../lib/site";
 import SuccessStoriesSection from "../../components/success-stories/SuccessStoriesSection";
 
 export const metadata: Metadata = {
@@ -43,6 +52,10 @@ export const metadata: Metadata = {
 export default function NewsletterThankYouPage() {
   return (
     <div className="min-h-screen bg-[#F7FAFC] text-[#2D3748]">
+      <FunnelPageMountTracker
+        page="newsletter_thank_you"
+        context={{ flow_source: "newsletter", flow_mode: "newsletter" }}
+      />
       <header className="container mx-auto px-6 pt-8 pb-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
           <Image
@@ -68,8 +81,8 @@ export default function NewsletterThankYouPage() {
             You’re in! Thanks for subscribing to our newsletter.
           </h1>
           <p className="text-slate-600 mt-4 text-base sm:text-lg">
-            Your checklist is on the way. Please check your inbox in a few
-            minutes.
+            Your Panatag Home Checklist has been sent to your inbox. You can also
+            download it instantly below.
           </p>
           <div className="mt-5 inline-flex items-center gap-2 bg-[#BEE9E8]/70 text-[#0E79B2] px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide">
             Before you go, watch this...
@@ -101,6 +114,20 @@ export default function NewsletterThankYouPage() {
             </div>
           </div>
           <div className="mt-8 flex flex-col items-center text-center gap-4">
+            <FunnelTrackedAnchor
+              href={panatagChecklistPath}
+              download
+              page="newsletter_thank_you"
+              context={{ flow_source: "newsletter", flow_mode: "newsletter" }}
+              ctaId="checklist_download"
+              ctaLocation="hero_primary"
+              className="inline-flex items-center justify-center bg-[#0E79B2] hover:bg-[#0b5e8b] text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-[#0E79B2]/20 transition-all hover:-translate-y-0.5"
+            >
+              DOWNLOAD PANATAG HOME CHECKLIST
+            </FunnelTrackedAnchor>
+            <p className="text-sm text-slate-600">
+              We also emailed the checklist link so you can access it anytime.
+            </p>
             <p className="text-lg sm:text-xl lg:text-2xl text-[#2D3748] max-w-3xl">
               If you&apos;re ready to build a personalized security plan for
               your home, apply now and let&apos;s talk.

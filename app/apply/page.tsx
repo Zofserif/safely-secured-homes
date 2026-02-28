@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { ogImageUrl, siteName, siteUrl } from "../lib/site";
+import {
+  ogImageUrl,
+  siteCallHref,
+  siteName,
+  siteUrl,
+  siteWhatsAppUrl,
+} from "../lib/site";
 import ApplyTestimonialsSection from "../components/testimonials/ApplyTestimonialsSection";
+import CaseStudiesSection from "../components/case-studies/CaseStudiesSection";
 import {
   FunnelPageMountTracker,
+  FunnelTrackedAnchor,
   FunnelTrackedLink,
 } from "../components/analytics/FunnelTrackingClient";
 
@@ -48,8 +56,8 @@ export default function ApplyPage() {
   const benefits = [
     {
       image: 'https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/user-assets/pexels-fauxels-3184292.jpg',
-      title: "Safely Secured Panatag Report",
-      description: "Know your Home Safety Score when taking our assessments.",
+      title: "Panatag Home Checklist",
+      description: "Use a practical checklist to secure key entry points first.",
     },
     {
       image: 'https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/user-assets/pexels-mart-production-7088483.jpg',
@@ -95,12 +103,36 @@ export default function ApplyPage() {
             priority
           />
         </Link>
-        <Link
-          href="/"
-          className="text-xs font-semibold uppercase tracking-widest text-slate-500 hover:text-[#0E79B2] transition-colors"
-        >
-          Back to Home
-        </Link>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <FunnelTrackedAnchor
+            href={siteCallHref}
+            page="apply"
+            context={{ flow_source: "apply", flow_mode: "default" }}
+            ctaId="apply_top_call_now"
+            ctaLocation="header_top_contact"
+            className="inline-flex items-center justify-center rounded-full border border-slate-300 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-700 transition-colors hover:border-[#0E79B2] hover:text-[#0E79B2] sm:px-4 sm:py-2 sm:text-xs"
+          >
+            Call Now
+          </FunnelTrackedAnchor>
+          <FunnelTrackedAnchor
+            href={siteWhatsAppUrl}
+            page="apply"
+            context={{ flow_source: "apply", flow_mode: "default" }}
+            ctaId="apply_top_whatsapp"
+            ctaLocation="header_top_contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-full border border-[#2E8B57] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#2E8B57] transition-colors hover:bg-[#2E8B57] hover:text-white sm:px-4 sm:py-2 sm:text-xs"
+          >
+            WhatsApp
+          </FunnelTrackedAnchor>
+          <Link
+            href="/"
+            className="hidden sm:inline-flex text-xs font-semibold uppercase tracking-widest text-slate-500 hover:text-[#0E79B2] transition-colors"
+          >
+            Back to Home
+          </Link>
+        </div>
       </header>
 
       <main className="container mx-auto px-6 pb-16 lg:pb-24 pt-2 sm:pt-4">
@@ -114,7 +146,7 @@ export default function ApplyPage() {
             </h1>
             <p className="text-slate-600 mt-2 sm:mt-4 text-sm sm:text-lg">
               Answer a few quick questions and we&apos;ll craft the safest, most
-              practical setup for your family.
+              practical setup for your family, plus your Panatag Home Checklist.
             </p>
           </div>
 
@@ -134,7 +166,7 @@ export default function ApplyPage() {
               </div>
               <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 text-left">
                 <p className="text-white text-base sm:text-xl font-semibold">
-                  60-second tour: what you&apos;ll get after you apply
+                  60-second tour: what you&apos;ll get after you start
                 </p>
                 <p className="text-white/80 text-xs sm:text-sm mt-1">
                   Practical, calm, and actionable security tips for Filipino
@@ -159,6 +191,7 @@ export default function ApplyPage() {
         </section>
 
         <ApplyTestimonialsSection />
+        <CaseStudiesSection ctaHref="/form" ctaLabel="Get My Free Plan" />
 
         <section className="mt-16">
           <div className="text-center max-w-3xl mx-auto">
@@ -166,7 +199,7 @@ export default function ApplyPage() {
               What you&apos;ll receive
             </p>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mt-4 text-[#2D3748]">
-              What you get when you apply with Safely Secured Homes
+              What you get in your free plan and checklist
             </h2>
             <p className="text-slate-600 mt-3 text-sm sm:text-base">
               Practical, calm, and actionable guidance designed for Filipino

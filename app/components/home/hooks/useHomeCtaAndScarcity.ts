@@ -79,7 +79,7 @@ export const useHomeCtaAndScarcity = ({
         ? "SEE MY PLAN"
         : urgencyTier === "critical"
           ? "SECURE MY SLOT NOW"
-          : "CLAIM MY FREE PLAN NOW";
+          : "GET MY PANATAG RATING NOW";
   const ctaDisabled = ctaTarget === "form" && reportsSoldOut && !hasExistingPlan;
 
   const windowCountdown =

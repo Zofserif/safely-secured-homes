@@ -66,6 +66,10 @@ This project uses a hybrid media strategy:
 
 - `NEXT_PUBLIC_BRAND_FOOTER_LOGO_URL`: absolute or root-relative URL for the email footer logo.
   If omitted, the app uses `https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/brand-assets/sssh-banner-logo.png`.
+- `NEXT_PUBLIC_GA4_MEASUREMENT_ID`: GA4 measurement ID (for example `G-XXXXXXXXXX`). When set, GA4 is initialized and lead/checklist/consult events are dual-written alongside PostHog.
+- `NEXT_PUBLIC_EMAILJS_CHECKLIST_TEMPLATE_ID`: EmailJS template ID used to send the Panatag Home Checklist follow-up email after newsletter signup.
+- `NEXT_PUBLIC_SHOW_INTERNAL_EMAIL_ASSETS`: set to `true` to display the internal blog email-assets panel. Default behavior is hidden.
+- `NEXT_PUBLIC_WHATSAPP_PREFILL_MESSAGE`: optional message prefilled in WhatsApp CTA links. Defaults to a home-security consultation intent message.
 - `REPORT_CYCLE_ANCHOR_ISO`: ISO-8601 UTC timestamp that anchors 72-hour complimentary-plan cycles in `/api/reports-remaining`.
   Initial anchor value: `2026-02-26T09:42:57Z`.
   Changing this value re-anchors all future 72-hour cycles.

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Mail, ShieldCheck, Sparkles } from "lucide-react";
+import { FunnelPageMountTracker } from "../components/analytics/FunnelTrackingClient";
 import NewsletterChecklistModal from "../components/newsletter/NewsletterChecklistModal";
 import Footer from "../components/layout/Footer";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";
@@ -10,7 +11,7 @@ import { getApplyTestimonials } from "../lib/applyTestimonials";
 export const metadata: Metadata = {
   title: "Newsletter",
   description:
-    "Sign up for smart home security tips, product updates, and practical guides from Safely Secured Homes.",
+    "Get the Panatag Home Checklist and weekly privacy-first security tips for Filipino households.",
   alternates: {
     canonical: "/newsletter",
   },
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: `Newsletter | ${siteName}`,
     description:
-      "Sign up for smart home security tips, product updates, and practical guides from Safely Secured Homes.",
+      "Get the Panatag Home Checklist and weekly privacy-first security tips for Filipino households.",
     url: new URL("/newsletter", siteUrl),
     siteName,
     type: "website",
@@ -38,7 +39,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `Newsletter | ${siteName}`,
     description:
-      "Sign up for smart home security tips, product updates, and practical guides from Safely Secured Homes.",
+      "Get the Panatag Home Checklist and weekly privacy-first security tips for Filipino households.",
     images: [ogImageUrl],
   },
 };
@@ -48,6 +49,10 @@ export default async function NewsletterPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F6F2] text-[#1F2937]">
+      <FunnelPageMountTracker
+        page="newsletter"
+        context={{ flow_source: "newsletter", flow_mode: "newsletter" }}
+      />
       <div className="relative overflow-hidden">
         <div className="absolute -top-32 -right-24 w-[420px] h-[420px] bg-[#BEE9E8]/45 rounded-full blur-3xl opacity-80 pointer-events-none"></div>
         <div className="absolute -bottom-40 -left-24 w-[420px] h-[420px] bg-[#63B3ED]/15 rounded-full blur-3xl opacity-80 pointer-events-none"></div>
@@ -87,11 +92,11 @@ export default async function NewsletterPage() {
                 </span>
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#1F2937] leading-tight">
-                Build trust. Share your expertise. Stay protected.
+                Simple, privacy-first home security tips for Filipino households.
               </h1>
               <p className="text-slate-600 mt-4 text-base sm:text-lg leading-relaxed max-w-xl">
-                A newsletter for families who want real, practical home security
-                guidance without the noise.
+                Get the Panatag Home Checklist and a short weekly email with practical
+                upgrades you can apply at home.
               </p>
               <p className="mt-4 text-slate-700 text-base font-semibold">
                 More than 1,200 homeowners already rely on these weekly tips.
@@ -122,7 +127,7 @@ export default async function NewsletterPage() {
                 <div className="relative rounded-[2.2rem] overflow-hidden shadow-md shadow-[#0E79B2]/10 rotate-2 bg-transparent aspect-4/5">
                   <Image
                     src="/assets/img/book/panatag-home-guide-book.png"
-                    alt="Panatag Home Guide Book"
+                    alt="Panatag Home Checklist Cover"
                     fill
                     sizes="(min-width: 1024px) 40vw, 80vw"
                     className="object-cover transition-all duration-300 blur-[2px] group-hover:blur-0"
@@ -133,9 +138,10 @@ export default async function NewsletterPage() {
             </div>
           </section>
 
-          <section className="mt-12 lg:mt-16">
-            <div className="grid md:grid-cols-3 gap-6">
-              {testimonials.map((item) => {
+          {testimonials.length > 0 && (
+            <section className="mt-12 lg:mt-16">
+              <div className="grid md:grid-cols-3 gap-6">
+                {testimonials.map((item) => {
                 const fullName = [item.first_name, item.last_name]
                   .filter(Boolean)
                   .join(" ")
@@ -147,43 +153,44 @@ export default async function NewsletterPage() {
                   .slice(0, 2)
                   .join("")
                   .toUpperCase();
-                return (
-                <div
-                  key={item.id}
-                  className="bg-white/95 border border-[#BEE9E8]/70 rounded-3xl p-6 shadow-lg shadow-[#0E79B2]/10"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="h-14 w-14 rounded-full bg-[#BEE9E8]/60 flex items-center justify-center text-sm font-bold text-[#0E79B2] overflow-hidden">
-                      {item.profile_image_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={item.profile_image_url}
-                          alt={fullName || "Homeowner"}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span>{initials || "H"}</span>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-base font-semibold text-[#1F2937]">
-                        {fullName || "Homeowner"}
-                      </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-600 font-semibold">
-                          {item.location || "Philippines"}
-                        </span>
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-white/95 border border-[#BEE9E8]/70 rounded-3xl p-6 shadow-lg shadow-[#0E79B2]/10"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="h-14 w-14 rounded-full bg-[#BEE9E8]/60 flex items-center justify-center text-sm font-bold text-[#0E79B2] overflow-hidden">
+                          {item.profile_image_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={item.profile_image_url}
+                              alt={fullName || "Homeowner"}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span>{initials || "H"}</span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-base font-semibold text-[#1F2937]">
+                            {fullName || "Homeowner"}
+                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-600 font-semibold">
+                              {item.location || "Philippines"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
+                      <p className="text-sm text-slate-600 mt-5 leading-relaxed">
+                        “{item.review ?? ""}”
+                      </p>
                     </div>
-                  </div>
-                  <p className="text-sm text-slate-600 mt-5 leading-relaxed">
-                    “{item.review ?? ""}”
-                  </p>
-                </div>
-              );
-              })}
-            </div>
-          </section>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
         </main>
       </div>

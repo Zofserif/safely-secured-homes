@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
+import { trackNewsletterLeadGenerated } from "../../lib/analytics";
+import { sendChecklistEmail } from "../../lib/email";
+import { panatagChecklistUrl } from "../../lib/site";
 
 export default function NewsletterForm() {
   const [status, setStatus] = useState<
@@ -9,12 +13,16 @@ export default function NewsletterForm() {
   >("idle");
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [checklistEmailSent, setChecklistEmailSent] = useState<boolean | null>(
+    null
+  );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (status === "submitting") return;
     setPhoneError(null);
     setSubmitError(null);
+    setChecklistEmailSent(null);
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -73,6 +81,30 @@ export default function NewsletterForm() {
         return;
       }
 
+      let checklistSent = false;
+      try {
+        await sendChecklistEmail({
+          to_email: payload.email,
+          firstname: payload.first_name,
+          last_name: payload.last_name,
+          mobile: normalizedContact,
+          checklist_name: "Panatag Home Checklist",
+          checklist_url: panatagChecklistUrl,
+        });
+        checklistSent = true;
+      } catch (emailError) {
+        console.error("Checklist email send failed:", emailError);
+      }
+
+      setChecklistEmailSent(checklistSent);
+      trackNewsletterLeadGenerated(
+        { flow_source: "newsletter", flow_mode: "newsletter" },
+        {
+          source: "newsletter_form",
+          method: checklistSent ? "emailjs" : "fallback",
+          destination: "newsletter_thank_you",
+        }
+      );
       form.reset();
       setStatus("success");
     } catch (error) {
@@ -177,13 +209,26 @@ export default function NewsletterForm() {
         </button>
 
         <p className="text-xs text-slate-500 text-center">
-          We respect your privacy and will never share your contact details.
+          By submitting, you agree to our{" "}
+          <Link href="/privacy" className="font-semibold text-[#0E79B2] underline">
+            Privacy Policy
+          </Link>{" "}
+          and{" "}
+          <Link href="/terms" className="font-semibold text-[#0E79B2] underline">
+            Terms of Service
+          </Link>
+          .
         </p>
 
         {status === "success" && (
-          <div className="flex items-center justify-center gap-2 text-sm text-[#2E8B57] font-semibold">
+          <div className="flex flex-col items-center justify-center gap-2 text-sm text-[#2E8B57] font-semibold text-center">
             <CheckCircle2 className="w-4 h-4" />
-            Thanks! You are on the list.
+            <span>Thanks! You are on the list.</span>
+            <span className="text-xs font-medium text-slate-600">
+              {checklistEmailSent
+                ? "Your Panatag Home Checklist is on its way to your inbox."
+                : "If email delivery is delayed, use the direct download on the thank-you page."}
+            </span>
           </div>
         )}
         {status === "error" && submitError && (

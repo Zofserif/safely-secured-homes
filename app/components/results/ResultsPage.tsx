@@ -1,8 +1,13 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getResultsSummary } from "../../lib/calculations";
+import {
+  trackBookConsultClick,
+  trackChecklistDownloadClick,
+} from "../../lib/analytics";
 import { getPanatagDisplayFromSafetyCategories } from "../../lib/resultsScoring";
 import { getSafetyCategoryScoresPrecise } from "../../lib/safetyScores";
+import { panatagChecklistPath } from "../../lib/site";
 import type { CalculationResult, FormData } from "../../lib/types";
 import { RESULTS_BOOK_VISIT_URL, RESULTS_CALL_HREF } from "./constants";
 import { BLUEPRINT_CARDS } from "./blueprints";
@@ -346,11 +351,26 @@ export default function ResultsPage({
   }, [activeBlueprintId]);
 
   const handleCallUs = () => {
+    trackBookConsultClick("results", undefined, {
+      cta_location: "next_step_panel",
+      target_url: RESULTS_CALL_HREF,
+    });
     window.location.href = RESULTS_CALL_HREF;
   };
 
   const handleBookVisit = () => {
+    trackBookConsultClick("results", undefined, {
+      cta_location: "next_step_panel",
+      target_url: RESULTS_BOOK_VISIT_URL,
+    });
     window.open(RESULTS_BOOK_VISIT_URL, "_blank", "noopener,noreferrer");
+  };
+
+  const handleChecklistDownload = () => {
+    trackChecklistDownloadClick("results", undefined, {
+      cta_location: "next_step_panel",
+      target_path: panatagChecklistPath,
+    });
   };
 
   const handleToggleComplete = () => {
@@ -454,6 +474,14 @@ export default function ResultsPage({
             </div>
 
             <NextStepPanel cameraCount={result.cameraCount}>
+              <a
+                href={panatagChecklistPath}
+                download
+                onClick={handleChecklistDownload}
+                className="flex-1 rounded-xl border border-[#0E79B2]/25 bg-white px-4 py-3 font-bold text-[#0E79B2] shadow-sm transition-colors hover:bg-[#F3F9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/30 flex items-center justify-center gap-2"
+              >
+                Download Panatag Home Checklist
+              </a>
               <ResultActionButtons
                 leadTier={result.leadTier}
                 showDIYPlan={showDIYPlan}

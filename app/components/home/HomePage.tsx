@@ -1,5 +1,7 @@
 import { useState } from "react";
 import CertModal from "../layout/CertModal";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import CaseStudiesSectionClient from "../case-studies/CaseStudiesSectionClient";
 import { useBonusEndsAt } from "./hooks/useBonusTimer";
 import { useHomeCtaAndScarcity } from "./hooks/useHomeCtaAndScarcity";
 import { useHomeDebugControls } from "./hooks/useHomeDebugControls";
@@ -12,6 +14,7 @@ import HomeHeroSection from "./sections/HomeHeroSection";
 import HomePainPointsSection from "./sections/HomePainPointsSection";
 import HomeReasonsAndFeaturesSection from "./sections/HomeReasonsAndFeaturesSection";
 import HomeSimpleStepsSection from "./sections/HomeSimpleStepsSection";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import HomeTestimonialsSection from "./sections/HomeTestimonialsSection";
 import HomeWhyTrustSection from "./sections/HomeWhyTrustSection";
 import type { HomePageProps } from "./types";
@@ -32,7 +35,7 @@ export default function HomePage({
   const nowMs = useSharedClockNowMs();
   const bonusEndsAt = useBonusEndsAt();
   const testimonials = useHomeTestimonials();
-  const showTestimonials = true;
+  const showTestimonials = testimonials.length > 0;
 
   const {
     effectiveReportsRemaining,
@@ -67,7 +70,8 @@ export default function HomePage({
         scarcity={scarcity}
         onPrimaryCtaClick={onPrimaryCtaClick}
       />
-      {showTestimonials && <HomeTestimonialsSection testimonials={testimonials} />}
+      {/* <CaseStudiesSectionClient /> */}
+      {/* {showTestimonials && <HomeTestimonialsSection testimonials={testimonials} />} */}
       <HomeReasonsAndFeaturesSection
         expandedReason={expandedReason}
         onToggleReason={(index) => {

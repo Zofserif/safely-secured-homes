@@ -5,6 +5,8 @@ import type { CalculationResult, FormData } from "./types";
 
 const ENABLE_LEGACY_DUAL_WRITE = true;
 export const LEGACY_DUAL_WRITE_REMOVE_AFTER = "2026-03-19";
+const GA4_MEASUREMENT_ID =
+  process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim() ?? "";
 
 const APP_VIEW_PATH: Record<AppView, string> = {
   home: "/",
@@ -18,6 +20,8 @@ const FUNNEL_PAGE_PATH: Record<FunnelPage, string> = {
   form: "/form",
   results: "/results",
   apply_success: "/apply-success",
+  newsletter: "/newsletter",
+  newsletter_thank_you: "/newsletter/thank-you",
   schedule_call: "/schedule-call",
 };
 
@@ -31,6 +35,8 @@ export type FunnelPage =
   | "form"
   | "results"
   | "apply_success"
+  | "newsletter"
+  | "newsletter_thank_you"
   | "schedule_call";
 export type FunnelOutcome = "results" | "apply_success" | "schedule_call";
 export type FunnelContext = {
@@ -85,6 +91,21 @@ const capture = (event: string, props?: EventProps) => {
     return;
   }
   posthog.capture(event);
+};
+
+const captureGa4 = (event: string, props?: EventProps) => {
+  if (!isBrowser()) return;
+  if (!GA4_MEASUREMENT_ID) return;
+
+  const gtagFn = (
+    window as Window & {
+      gtag?: (...args: unknown[]) => void;
+    }
+  ).gtag;
+
+  if (typeof gtagFn !== "function") return;
+
+  gtagFn("event", event, props ? stripEmpty(props) : {});
 };
 
 const getEmailDomain = (email: string) => {
@@ -254,10 +275,54 @@ export const trackFunnelCtaClicked = (
     reports_remaining?: number;
     reports_limit?: number;
     cta_variant?: string;
+    contact_channel?: "call" | "whatsapp";
   },
   context?: FunnelContext
 ) => {
-  trackV2("funnel_cta_clicked", page, context, props);
+  const inferredContactChannel =
+    props.contact_channel ??
+    (props.cta_id.endsWith("_whatsapp")
+      ? "whatsapp"
+      : props.cta_id.endsWith("_call_now")
+        ? "call"
+        : undefined);
+  const enrichedProps = {
+    ...props,
+    contact_channel: inferredContactChannel,
+  };
+
+  trackV2("funnel_cta_clicked", page, context, enrichedProps);
+
+  const extendedProps = {
+    ...funnelBaseProps(page, context),
+    ...enrichedProps,
+  };
+  const isWhatsAppCta = inferredContactChannel === "whatsapp";
+  const isCallNowCta = inferredContactChannel === "call";
+
+  if (
+    props.cta_id === "checklist_download" ||
+    props.cta_id === "results_checklist_download"
+  ) {
+    capture("checklist_download_click", extendedProps);
+    captureGa4("checklist_download_click", extendedProps);
+  }
+
+  if (
+    isCallNowCta ||
+    isWhatsAppCta ||
+    props.cta_id === "schedule_my_call" ||
+    props.cta_id === "results_book_visit" ||
+    props.cta_id === "results_call_us"
+  ) {
+    capture("book_consult_click", extendedProps);
+    captureGa4("book_consult_click", extendedProps);
+  }
+
+  if (isWhatsAppCta) {
+    capture("whatsapp_click", extendedProps);
+    captureGa4("whatsapp_click", extendedProps);
+  }
 };
 
 export const trackPageView = (view: AppView, context?: FunnelContext) => {
@@ -290,6 +355,15 @@ export const trackFormStepCompleted = (
     step_label: step?.label || "Unknown",
   });
 
+  if (stepIndex === 0) {
+    captureGa4("start_assessment", {
+      ...funnelBaseProps("form", context),
+      step_id: step?.id || "unknown",
+      step_number: stepNumber,
+      step_total: FORM_STEPS.length,
+    });
+  }
+
   if (!ENABLE_LEGACY_DUAL_WRITE || options?.legacy === false) return;
 
   capture("form_step_completed", {
@@ -315,7 +389,7 @@ export const trackLeadGenerated = (
   result: CalculationResult,
   context?: FunnelContext
 ) => {
-  trackV2("funnel_submission_completed", "form", context, {
+  const leadProps = {
     ...normalizedFormProps(data),
     lead_tier: result.leadTier,
     lead_score: result.leadScore,
@@ -323,6 +397,16 @@ export const trackLeadGenerated = (
     nvr_channel: result.nvrChannel,
     storage_1tb: result.storage1TB,
     recommendations_count: result.recommendations.length,
+  };
+
+  trackV2("funnel_submission_completed", "form", context, {
+    ...leadProps,
+  });
+  captureGa4("generate_lead", {
+    ...funnelBaseProps("form", context),
+    ...leadProps,
+    lead_source: context?.flow_source ?? "direct",
+    lead_channel: "assessment_form",
   });
 
   if (!ENABLE_LEGACY_DUAL_WRITE) return;
@@ -335,5 +419,61 @@ export const trackLeadGenerated = (
     nvr_channel: result.nvrChannel,
     storage_1tb: result.storage1TB,
     recommendations_count: result.recommendations.length,
+  });
+};
+
+export const trackChecklistDownloadClick = (
+  page: FunnelPage,
+  context?: FunnelContext,
+  props?: {
+    cta_location?: string;
+    target_path?: string;
+  }
+) => {
+  trackV2("checklist_download_click", page, context, props);
+  captureGa4("checklist_download_click", {
+    ...funnelBaseProps(page, context),
+    ...(props ?? {}),
+  });
+};
+
+export const trackBookConsultClick = (
+  page: FunnelPage,
+  context?: FunnelContext,
+  props?: {
+    cta_location?: string;
+    target_path?: string;
+    target_url?: string;
+  }
+) => {
+  trackV2("book_consult_click", page, context, props);
+  captureGa4("book_consult_click", {
+    ...funnelBaseProps(page, context),
+    ...(props ?? {}),
+  });
+};
+
+export const trackNewsletterLeadGenerated = (
+  context?: FunnelContext,
+  props?: {
+    source?: string;
+    method?: string;
+    destination?: string;
+  }
+) => {
+  const resolvedContext: FunnelContext = context ?? {
+    flow_source: "newsletter",
+    flow_mode: "newsletter",
+  };
+  const eventProps = {
+    lead_source: resolvedContext.flow_source,
+    lead_channel: "newsletter",
+    ...(props ?? {}),
+  };
+
+  trackV2("funnel_submission_completed", "newsletter", resolvedContext, eventProps);
+  captureGa4("generate_lead", {
+    ...funnelBaseProps("newsletter", resolvedContext),
+    ...eventProps,
   });
 };

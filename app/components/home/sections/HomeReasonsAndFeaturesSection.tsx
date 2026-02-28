@@ -39,8 +39,8 @@ export default function HomeReasonsAndFeaturesSection({
               desc: "We prioritize local control and practical camera placement so your home feels secure, not intrusive.",
             },
             {
-              title: "Wife & Lola-Friendly Interface",
-              desc: "If it’s too hard to use, it’s useless. We set up simple, one-tap dashboards that everyone from the kids to the grandparents can understand.",
+              title: "Easy for the whole household",
+              desc: "If it’s too hard to use, it’s useless. We set up simple, one-tap dashboards everyone can understand.",
             },
             {
               title: "Direct-to-Human Support",

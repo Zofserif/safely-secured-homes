@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { filterHighSignalTestimonials } from "../../lib/testimonialQuality";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -110,7 +111,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ testimonials: [] }, { status: 500 });
   }
 
-  const items = data ?? [];
+  const items = filterHighSignalTestimonials(data ?? []);
+  if (!items.length) {
+    return NextResponse.json({ testimonials: [] });
+  }
   const buckets = new Map<number, typeof items>();
   for (const item of items) {
     const rating = typeof item.rating === "number" ? item.rating : 0;

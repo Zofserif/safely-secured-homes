@@ -133,7 +133,7 @@ export default function EmailAssetsPanel({
         <div>
           <h2 className="text-2xl font-bold text-[#1F2937]">Email Campaign Assets</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
-            Internal tools for copywriters and marketers. Blog readers can skip this section.
+            Internal publishing assets for campaign operations.
           </p>
         </div>
         <button

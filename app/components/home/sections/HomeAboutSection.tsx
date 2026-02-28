@@ -60,6 +60,17 @@ export default function HomeAboutSection({
                     View Certificate
                   </span>
                 </div>
+                <div className="mt-2 text-center">
+                  <a
+                    href="/assets/img/Certifications/Certified%20HCSA%20-%20Security%20CCTV%20Solution%20%26%20Integrator.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(event) => event.stopPropagation()}
+                    className="pointer-events-auto text-[11px] font-semibold text-slate-600 underline decoration-dotted underline-offset-2 hover:text-[#0E79B2]"
+                  >
+                    Open certificate proof (PDF)
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -81,7 +92,7 @@ export default function HomeAboutSection({
               </p>
               <div className="pl-6 border-l-4 border-[#0E79B2] my-8">
                 <p className="text-white text-xl italic font-serif">
-                  &quot;You’re trusting us with your home and your peace of mind and I
+                  &quot;You’re trusting us with your home, your privacy, and your peace of mind and I
                   take that personally.&quot;
                 </p>
               </div>

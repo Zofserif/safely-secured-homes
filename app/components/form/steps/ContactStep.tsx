@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import type { ContactStepProps } from "../types";
 
@@ -15,7 +16,7 @@ export default function ContactStep({
     <div className="space-y-4">
       <h3 className="text-xl font-bold text-center text-[#2D3748]">Almost done!</h3>
       <p className="text-center text-sm text-slate-500">
-        Where should we send your free Checklist?
+        Where should we send your free Panatag Home Checklist?
       </p>
 
       <div className="flex gap-4">
@@ -82,6 +83,18 @@ export default function ContactStep({
           (isNewsletterFlow ? "SEND MY ANSWER NOW" : "Generate My FREE PLAN")
         )}
       </button>
+
+      <p className="text-center text-xs text-slate-500">
+        By submitting, you agree to our{" "}
+        <Link href="/privacy" className="font-semibold text-[#0E79B2] underline">
+          Privacy Policy
+        </Link>{" "}
+        and{" "}
+        <Link href="/terms" className="font-semibold text-[#0E79B2] underline">
+          Terms of Service
+        </Link>
+        .
+      </p>
     </div>
   );
 }

@@ -25,8 +25,8 @@ export default function Navbar({
   heroSectionId?: string;
 }){
   const ctaTarget: HomeCtaTarget = hasExistingPlan ? "results" : "form";
-  const ctaLabel = hasExistingPlan ? "SEE MY PLAN" : "GET MY FREE PLAN";
-  const ctaMobileLabel = hasExistingPlan ? "SEE MY PLAN" : "Get My Free Plan";
+  const ctaLabel = hasExistingPlan ? "SEE MY PLAN" : "GET MY PANATAG RATING NOW";
+  const ctaMobileLabel = hasExistingPlan ? "SEE MY PLAN" : "GET MY PANATAG RATING NOW";
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(
     () => visibilityMode !== "home_hero_reveal"
@@ -78,7 +78,7 @@ export default function Navbar({
   }, [heroSectionId, isOpen, visibilityMode]);
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 hidden md:block ${isVisible ? 'translate-y-0' : '-translate-y-full'} ${isOpen ? 'bg-white' : 'bg-white/90 backdrop-blur-xl border-b border-[#BEE9E8]/30 shadow-sm'}`}>
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 block ${isVisible ? 'translate-y-0' : '-translate-y-full'} ${isOpen ? 'bg-white' : 'bg-white/90 backdrop-blur-xl border-b border-[#BEE9E8]/30 shadow-sm'}`}>
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2 cursor-pointer group" onClick={() => onNavigate('home')}>
           {/* Logo */}
@@ -101,7 +101,7 @@ export default function Navbar({
           </div> */}
         </div>
         
-        <div className="hidden md:flex gap-8 items-center">
+        <div className="hidden md:flex gap-3 items-center">
           {!hideCta && (
             <button 
               onClick={() => {

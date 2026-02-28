@@ -12,14 +12,14 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Blog",
   description:
-    "Practical home security insights, newsletter-style guides, and copy-ready email campaign assets from Safely Secured Homes.",
+    "Practical home security insights, privacy-first tips, and simple guidance for Filipino households.",
   alternates: {
     canonical: "/blog",
   },
   openGraph: {
     title: `Blog | ${siteName}`,
     description:
-      "Practical home security insights, newsletter-style guides, and copy-ready email campaign assets from Safely Secured Homes.",
+      "Practical home security insights, privacy-first tips, and simple guidance for Filipino households.",
     url: new URL("/blog", siteUrl),
     siteName,
     type: "website",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `Blog | ${siteName}`,
     description:
-      "Practical home security insights, newsletter-style guides, and copy-ready email campaign assets from Safely Secured Homes.",
+      "Practical home security insights, privacy-first tips, and simple guidance for Filipino households.",
     images: [ogImageUrl],
   },
 };
@@ -84,12 +84,11 @@ export default async function BlogPage() {
         <main className="container mx-auto px-6 pb-16 lg:pb-24">
           <section className="max-w-3xl">
             <h1 className="text-4xl font-bold leading-tight text-[#1F2937] sm:text-5xl lg:text-6xl">
-              Newsletter Blog
+              Home Security Blog
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              Security articles designed to be useful in two ways: practical
-              reading for families and ready-to-use content blocks for email
-              marketing campaigns.
+              Practical guides to help Filipino households improve safety, reduce
+              blind spots, and choose privacy-first upgrades with confidence.
             </p>
           </section>
 

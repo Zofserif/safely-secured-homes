@@ -10,7 +10,7 @@ import {
 
 import Navbar from "./layout/Navbar";
 import Footer from "./layout/Footer";
-import HomePage, { resetBonusTimerForDebug } from "./home/HomePage";
+import HomePage from "./home/HomePage";
 import WizardForm from "./form/WizardForm";
 import ResultsPage from "./results/ResultsPage";
 import type { HomeCtaLocation, HomeCtaTarget } from "./home/types";
@@ -530,9 +530,6 @@ export default function AppShell({
       }
 
       sessionStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem("ssh_bonus_started_at");
-      resetBonusTimerForDebug();
-
       setStoredLead(null);
       setFormData(null);
       setResult(null);

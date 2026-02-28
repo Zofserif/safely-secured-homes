@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { filterHighSignalTestimonials } from "./testimonialQuality";
 
 export type ApplyTestimonial = {
   id: string;
@@ -75,7 +76,10 @@ export async function getApplyTestimonials(limit = 3): Promise<ApplyTestimonial[
     return [];
   }
 
-  const items = data ?? [];
+  const items = filterHighSignalTestimonials(data ?? []);
+  if (!items.length) {
+    return [];
+  }
   const buckets = new Map<number, ApplyTestimonial[]>();
   for (const item of items) {
     const rating = typeof item.rating === "number" ? item.rating : 0;

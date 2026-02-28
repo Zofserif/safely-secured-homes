@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isHighSignalReview } from "../../../lib/testimonialQuality";
 import type { HomeTestimonial } from "../types";
 
 type ApiTestimonial = {
@@ -17,35 +18,7 @@ const isApiTestimonial = (value: unknown): value is ApiTestimonial => {
 };
 
 export const useHomeTestimonials = () => {
-  const [testimonials, setTestimonials] = useState<HomeTestimonial[]>([
-    {
-      id: "fallback-1",
-      review:
-        "The installation was super fast and clean. Troy explained everything clearly. Now I can check on my kids even when I'm at the office.",
-      name: "Reigne A.",
-      location: "Laguna",
-      rating: 5,
-      profileImageUrl: null,
-    },
-    {
-      id: "fallback-2",
-      review:
-        "We had a break-in scare in our village, so we called them. They set up the cameras the same week. The peace of mind is priceless.",
-      name: "James D.",
-      location: "Makati",
-      rating: 5,
-      profileImageUrl: null,
-    },
-    {
-      id: "fallback-3",
-      review:
-        "I'm not good with tech, but the app is so easy to use. The video quality is amazing even at night. Highly recommended!",
-      name: "Elena R.",
-      location: "Laguna",
-      rating: 5,
-      profileImageUrl: null,
-    },
-  ]);
+  const [testimonials, setTestimonials] = useState<HomeTestimonial[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -83,7 +56,7 @@ export const useHomeTestimonials = () => {
               profileImageUrl: item.profile_image_url ?? null,
             } as HomeTestimonial;
           })
-          .filter((item) => item.id && item.review);
+          .filter((item) => item.id && isHighSignalReview(item.review));
 
         if (isMounted && mapped.length) {
           setTestimonials(mapped);

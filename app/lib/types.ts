@@ -4,6 +4,14 @@ export type FormData = {
   floors: string;
   priority_areas: string[];
   current_setup: string;
+  has_spare_key: boolean | null;
+  changed_wifi_default_password: boolean | null;
+  sleeps_with_earphones: boolean | null;
+  locks_windows_gate_at_night: boolean | null;
+  has_security_cameras: boolean | null;
+  has_smoke_alarm_or_fire_extinguisher: boolean | null;
+  has_first_aid_or_medicine_ready: boolean | null;
+  knows_local_emergency_contacts: boolean | null;
   safety_gate_entry: number | null;
   safety_blindspots: number | null;
   safety_side_back_entry: number | null;

@@ -9,7 +9,7 @@ export default function HomeDetailsStep({
 }: HomeDetailsStepProps) {
   return (
     <div className="space-y-4 sm:space-y-6">
-      <h3 className="text-lg sm:text-xl font-bold text-center text-[#2D3748]">
+      <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
         Home Details
       </h3>
       <div>
@@ -25,10 +25,10 @@ export default function HomeDetailsStep({
                 key={option.value}
                 type="button"
                 onClick={() => onUpdateField("home_size", option.value)}
-                className={`group overflow-hidden rounded-xl sm:rounded-2xl border text-left transition-all ${isSelected ? "border-[#0E79B2] ring-2 ring-[#0E79B2]/20" : "border-slate-200 hover:border-[#0E79B2]/60"}`}
+                className={`group overflow-hidden rounded-xl sm:rounded-2xl border text-left transition-all ${isSelected ? "border-[#0E79B2] bg-[#F2FAFF] ring-2 ring-[#0E79B2]/20 shadow-sm" : "border-[#E4E7EC] bg-white hover:border-[#0E79B2]/60 hover:shadow-sm"}`}
                 aria-pressed={isSelected}
               >
-                <div className="relative h-20 sm:h-28 w-full bg-slate-100">
+                <div className="relative h-20 sm:h-28 w-full bg-[#F7F9FC]">
                   <Image
                     src={option.image}
                     alt={option.label}
@@ -53,7 +53,7 @@ export default function HomeDetailsStep({
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium mb-2 text-slate-700">
+        <label className="mb-2 block text-sm font-medium text-slate-700">
           Floors
         </label>
         <div className="flex gap-2">
@@ -62,7 +62,7 @@ export default function HomeDetailsStep({
               key={floor}
               type="button"
               onClick={() => onUpdateField("floors", floor)}
-              className={`flex-1 py-2.5 sm:py-3 text-sm font-semibold rounded-xl border ${formData.floors === floor ? "bg-[#0E79B2] text-white" : "bg-white text-slate-700 hover:bg-slate-50"}`}
+              className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition sm:py-3 ${formData.floors === floor ? "border-[#0E79B2] bg-[#0E79B2] text-white shadow-md shadow-[#0E79B2]/25" : "border-[#DCE2EA] bg-white text-slate-700 hover:border-[#0E79B2]/50 hover:bg-slate-50"}`}
             >
               {floor}
             </button>
@@ -72,7 +72,7 @@ export default function HomeDetailsStep({
       <button
         onClick={onNext}
         disabled={!formData.home_size || !formData.floors}
-        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-2 sm:mt-4"
+        className="mt-2 w-full rounded-2xl bg-[#0E79B2] py-3.5 font-bold text-white shadow-lg shadow-[#0E79B2]/30 transition hover:bg-[#0C6798] disabled:cursor-not-allowed disabled:opacity-50 sm:mt-4"
       >
         Next
       </button>

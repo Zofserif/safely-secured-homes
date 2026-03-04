@@ -14,15 +14,15 @@ export default function SafetyCheckStep({
 
   return (
     <div className="space-y-2.5 sm:space-y-3">
-      <h3 className="text-base sm:text-lg font-bold text-center text-[#2D3748]">
+      <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
         Home Safety Rating
       </h3>
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:p-3 space-y-1.5 sm:space-y-2">
+      <div className="space-y-1 rounded-xl border border-[#DDE7EF] bg-[#F4FAFF] p-2.5 sm:space-y-2 sm:p-3">
         <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
           <p className="font-medium text-slate-600 leading-snug">
             Move each slider based on your home condition: left is riskiest, right is safest.
           </p>
-          <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600 whitespace-nowrap">
+          <span className="shrink-0 whitespace-nowrap rounded-full border border-[#DCE4ED] bg-white px-2 py-0.5 font-semibold text-slate-600">
             {ratedSafetyCount}/{safetyCategories.length} rated
           </span>
         </div>
@@ -31,9 +31,9 @@ export default function SafetyCheckStep({
             <span>Progress</span>
             <span>{safetyCompletionPct}% complete</span>
           </div>
-          <div className="h-1.5 sm:h-2 rounded-full bg-slate-200 overflow-hidden">
+          <div className="h-1.5 overflow-hidden rounded-full bg-[#DCE6EF] sm:h-2">
             <div
-              className="h-full bg-[#0E79B2] transition-all duration-300"
+              className="h-full bg-gradient-to-r from-[#0E79B2] to-[#3EA9E4] transition-all duration-300"
               style={{ width: `${safetyCompletionPct}%` }}
             />
           </div>
@@ -105,14 +105,14 @@ export default function SafetyCheckStep({
           return (
             <div
               key={category.id}
-              className={`rounded-xl sm:rounded-2xl border p-3.5 sm:p-4 space-y-2.5 sm:space-y-3 transition-all ${hasCompletedCategory ? "border-[#0E79B2]/40 bg-[#F8FBFF] shadow-sm" : "border-slate-200 bg-white"}`}
+              className={`space-y-2.5 rounded-xl border p-3.5 transition-all sm:space-y-3 sm:rounded-2xl sm:p-4 ${hasCompletedCategory ? "border-[#0E79B2]/40 bg-[#F5FAFF] shadow-sm" : "border-[#E2E8F0] bg-white"}`}
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <h4 className="min-w-0 flex-1 font-semibold text-[#2D3748] text-sm sm:text-base leading-tight">
                   {category.title}
                 </h4>
                 <span
-                  className={`shrink-0 inline-flex min-w-29 justify-center rounded-full border px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap ${safetyState.className}`}
+                  className={`shrink-0 inline-flex min-w-[7.25rem] justify-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap sm:px-3 sm:text-[11px] ${safetyState.className}`}
                 >
                   {safetyState.label}
                 </span>
@@ -162,7 +162,7 @@ export default function SafetyCheckStep({
       <button
         onClick={onNext}
         disabled={!isSafetyComplete}
-        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-2"
+        className="mt-2 w-full rounded-2xl bg-[#0E79B2] py-3.5 font-bold text-white shadow-lg shadow-[#0E79B2]/30 transition hover:bg-[#0C6798] disabled:cursor-not-allowed disabled:opacity-50"
       >
         Next
       </button>

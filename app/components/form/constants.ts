@@ -19,7 +19,11 @@ import {
 import { deriveFirstNameFromEmail } from "../../lib/contactName";
 import { readNewsletterLead } from "../../lib/newsletterLead";
 import type { FormData } from "../../lib/types";
-import type { SafetyCategory, WizardMode } from "./types";
+import type {
+  SafetyCategory,
+  SafetyHabitQuestion,
+  WizardMode,
+} from "./types";
 
 export const createInitialFormData = (mode: WizardMode): FormData => {
   const baseFormData: FormData = {
@@ -28,6 +32,14 @@ export const createInitialFormData = (mode: WizardMode): FormData => {
     floors: "",
     priority_areas: [],
     current_setup: "",
+    has_spare_key: null,
+    changed_wifi_default_password: null,
+    sleeps_with_earphones: null,
+    locks_windows_gate_at_night: null,
+    has_security_cameras: null,
+    has_smoke_alarm_or_fire_extinguisher: null,
+    has_first_aid_or_medicine_ready: null,
+    knows_local_emergency_contacts: null,
     safety_gate_entry: null,
     safety_blindspots: null,
     safety_side_back_entry: null,
@@ -58,6 +70,65 @@ export const createInitialFormData = (mode: WizardMode): FormData => {
     mobile: lead.mobile || "",
   };
 };
+
+export const SAFETY_HABIT_QUESTIONS: readonly SafetyHabitQuestion[] = [
+  {
+    id: "safety_habit_spare_key",
+    field: "has_spare_key",
+    question: "Do you have a spare key for your home?",
+    subtitle: "Answer honestly so we can tailor your safety checklist.",
+    badgeLabel: "Safety Habit 1 of 8",
+  },
+  {
+    id: "safety_habit_wifi_password",
+    field: "changed_wifi_default_password",
+    question: "Have you changed your Wi-Fi default password?",
+    subtitle: "Default passwords are easy to guess and risky for smart devices.",
+    badgeLabel: "Safety Habit 2 of 8",
+  },
+  {
+    id: "safety_habit_earphones_sleep",
+    field: "sleeps_with_earphones",
+    question: "Do you sleep with earphones on?",
+    subtitle: "This affects how quickly you can respond to alarms.",
+    badgeLabel: "Safety Habit 3 of 8",
+  },
+  {
+    id: "safety_habit_lock_windows_gate",
+    field: "locks_windows_gate_at_night",
+    question: "Do you lock your windows and gate at night?",
+    subtitle: "A consistent night routine lowers avoidable risks.",
+    badgeLabel: "Safety Habit 4 of 8",
+  },
+  {
+    id: "safety_habit_security_cameras",
+    field: "has_security_cameras",
+    question: "Do you have security cameras at home?",
+    subtitle: "We use this to suggest upgrades and coverage priorities.",
+    badgeLabel: "Safety Habit 5 of 8",
+  },
+  {
+    id: "safety_habit_smoke_alarm_extinguisher",
+    field: "has_smoke_alarm_or_fire_extinguisher",
+    question: "Do you have a smoke alarm or fire extinguisher at home?",
+    subtitle: "Emergency readiness matters as much as intrusion prevention.",
+    badgeLabel: "Safety Habit 6 of 8",
+  },
+  {
+    id: "safety_habit_first_aid",
+    field: "has_first_aid_or_medicine_ready",
+    question: "Do you have first-aid supplies or medicine ready at home?",
+    subtitle: "Prepared households recover faster during urgent situations.",
+    badgeLabel: "Safety Habit 7 of 8",
+  },
+  {
+    id: "safety_habit_emergency_contacts",
+    field: "knows_local_emergency_contacts",
+    question: "Do you know the emergency contacts in your town or city?",
+    subtitle: "Quick access to help can prevent high-impact incidents.",
+    badgeLabel: "Safety Habit 8 of 8",
+  },
+];
 
 export const SAFETY_CATEGORIES: SafetyCategory[] = [
   {

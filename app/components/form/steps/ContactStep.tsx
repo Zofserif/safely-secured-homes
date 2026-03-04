@@ -13,9 +13,11 @@ export default function ContactStep({
   onUpdateField,
 }: ContactStepProps) {
   return (
-    <div className="space-y-4">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">Almost done!</h3>
-      <p className="text-center text-sm text-slate-500">
+    <div className="space-y-5">
+      <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
+        Almost done!
+      </h3>
+      <p className="text-center text-sm text-slate-600 sm:text-base">
         Where should we send your free Panatag Home Checklist?
       </p>
 
@@ -23,7 +25,7 @@ export default function ContactStep({
         <input
           type="email"
           placeholder="Email Address"
-          className={`w-full p-3 rounded-xl border ${errors.email ? "border-red-500" : "border-slate-300"}`}
+          className={`w-full rounded-2xl border px-4 py-3.5 shadow-sm outline-none transition focus-visible:ring-4 ${errors.email ? "border-red-500 focus-visible:ring-red-100" : "border-[#D8DDE3] focus-visible:border-[#0E79B2] focus-visible:ring-[#0E79B2]/15"}`}
           value={formData.email}
           onChange={(event) => onUpdateField("email", event.target.value)}
         />
@@ -34,7 +36,7 @@ export default function ContactStep({
         <input
           type="tel"
           placeholder="Mobile Number (09xxxxxxxxx)"
-          className={`w-full p-3 rounded-xl border ${errors.mobile ? "border-red-500" : "border-slate-300"}`}
+          className={`w-full rounded-2xl border px-4 py-3.5 shadow-sm outline-none transition focus-visible:ring-4 ${errors.mobile ? "border-red-500 focus-visible:ring-red-100" : "border-[#D8DDE3] focus-visible:border-[#0E79B2] focus-visible:ring-[#0E79B2]/15"}`}
           value={formData.mobile}
           onChange={(event) => onUpdateField("mobile", event.target.value)}
         />
@@ -46,7 +48,7 @@ export default function ContactStep({
       <button
         onClick={onSubmit}
         disabled={!formData.email || isSubmitting}
-        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 shadow-lg shadow-[#0E79B2]/30 flex justify-center items-center gap-2"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0E79B2] py-3.5 font-bold text-white shadow-lg shadow-[#0E79B2]/30 transition hover:bg-[#0C6798] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isSubmitting ? (
           <>
@@ -62,7 +64,7 @@ export default function ContactStep({
         )}
       </button>
 
-      <p className="text-center text-xs text-slate-500">
+      <p className="text-center text-xs text-slate-500 sm:text-sm">
         By submitting, you agree to our{" "}
         <Link href="/privacy" className="font-semibold text-[#0E79B2] underline">
           Privacy Policy

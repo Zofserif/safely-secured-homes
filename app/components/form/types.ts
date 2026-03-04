@@ -30,11 +30,29 @@ export type SafetyCategoryId =
   | "indoor_outdoor_blindspots"
   | "emergency_readiness_home";
 
+export type SafetyHabitField =
+  | "has_spare_key"
+  | "changed_wifi_default_password"
+  | "sleeps_with_earphones"
+  | "locks_windows_gate_at_night"
+  | "has_security_cameras"
+  | "has_smoke_alarm_or_fire_extinguisher"
+  | "has_first_aid_or_medicine_ready"
+  | "knows_local_emergency_contacts";
+
 export type SafetyCategory = {
   id: SafetyCategoryId;
   title: string;
   subtitle: string;
   legacyFields: SafetyField[];
+};
+
+export type SafetyHabitQuestion = {
+  id: FormStepId;
+  field: SafetyHabitField;
+  question: string;
+  subtitle?: string;
+  badgeLabel?: string;
 };
 
 export type UpdateField = (field: keyof FormData, value: unknown) => void;
@@ -62,6 +80,16 @@ export type PropertyTypeStepProps = {
 
 export type CurrentSetupStepProps = {
   formData: FormData;
+  onNext: () => void;
+  onUpdateField: UpdateField;
+};
+
+export type YesNoQuestionStepProps = {
+  formData: FormData;
+  field: SafetyHabitField;
+  question: string;
+  subtitle?: string;
+  badgeLabel?: string;
   onNext: () => void;
   onUpdateField: UpdateField;
 };

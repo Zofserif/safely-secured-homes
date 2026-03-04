@@ -46,6 +46,16 @@ type LeadPayloadBase = {
     diy_security_plan: boolean;
     smart_home_interest: boolean;
     smart_home_features: string[];
+    safety_habits: {
+      has_spare_key: boolean | null;
+      changed_wifi_default_password: boolean | null;
+      sleeps_with_earphones: boolean | null;
+      locks_windows_gate_at_night: boolean | null;
+      has_security_cameras: boolean | null;
+      has_smoke_alarm_or_fire_extinguisher: boolean | null;
+      has_first_aid_or_medicine_ready: boolean | null;
+      knows_local_emergency_contacts: boolean | null;
+    };
   };
   panatag_home_rating: number;
   recommendations: string[];
@@ -99,6 +109,9 @@ const toStringArray = (value: unknown): string[] => {
 
 const toBoolean = (value: unknown): boolean => typeof value === "boolean" && value;
 
+const toNullableBoolean = (value: unknown): boolean | null =>
+  typeof value === "boolean" ? value : null;
+
 const toFiniteNumber = (value: unknown): number =>
   typeof value === "number" && Number.isFinite(value) ? value : 0;
 
@@ -123,6 +136,9 @@ const sanitizeLeadPayloadBase = (payload: Record<string, unknown>): LeadPayloadB
   const property = isRecord(payload.property) ? payload.property : {};
   const safety = isRecord(payload.safety) ? payload.safety : {};
   const preferences = isRecord(payload.preferences) ? payload.preferences : {};
+  const safetyHabits = isRecord(preferences.safety_habits)
+    ? preferences.safety_habits
+    : {};
   const source = toSafeString(payload.source) || "website";
 
   return {
@@ -152,6 +168,26 @@ const sanitizeLeadPayloadBase = (payload: Record<string, unknown>): LeadPayloadB
       diy_security_plan: toBoolean(preferences.diy_security_plan),
       smart_home_interest: toBoolean(preferences.smart_home_interest),
       smart_home_features: toStringArray(preferences.smart_home_features),
+      safety_habits: {
+        has_spare_key: toNullableBoolean(safetyHabits.has_spare_key),
+        changed_wifi_default_password: toNullableBoolean(
+          safetyHabits.changed_wifi_default_password
+        ),
+        sleeps_with_earphones: toNullableBoolean(safetyHabits.sleeps_with_earphones),
+        locks_windows_gate_at_night: toNullableBoolean(
+          safetyHabits.locks_windows_gate_at_night
+        ),
+        has_security_cameras: toNullableBoolean(safetyHabits.has_security_cameras),
+        has_smoke_alarm_or_fire_extinguisher: toNullableBoolean(
+          safetyHabits.has_smoke_alarm_or_fire_extinguisher
+        ),
+        has_first_aid_or_medicine_ready: toNullableBoolean(
+          safetyHabits.has_first_aid_or_medicine_ready
+        ),
+        knows_local_emergency_contacts: toNullableBoolean(
+          safetyHabits.knows_local_emergency_contacts
+        ),
+      },
     },
     panatag_home_rating: toPanatagHomeRating(payload.panatag_home_rating),
     recommendations: toStringArray(payload.recommendations),

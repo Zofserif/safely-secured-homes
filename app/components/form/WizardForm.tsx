@@ -1,17 +1,13 @@
 import { FORM_STEPS } from "../../lib/formSteps";
+import { SAFETY_HABIT_QUESTIONS } from "./constants";
 import WizardFrame from "./components/WizardFrame";
 import { useWizardController } from "./hooks/useWizardController";
 import type { StepRenderMap, WizardFormProps } from "./types";
-import BudgetDiyStep from "./steps/BudgetDiyStep";
 import ContactStep from "./steps/ContactStep";
-import CurrentSetupStep from "./steps/CurrentSetupStep";
-import HomeDetailsStep from "./steps/HomeDetailsStep";
 import IntroStep from "./steps/IntroStep";
-import PriorityAreasStep from "./steps/PriorityAreasStep";
 import PropertyTypeStep from "./steps/PropertyTypeStep";
 import SafetyCheckStep from "./steps/SafetyCheckStep";
-import SmartHomeStep from "./steps/SmartHomeStep";
-import TimelineStep from "./steps/TimelineStep";
+import YesNoQuestionStep from "./steps/YesNoQuestionStep";
 
 export default function WizardForm({
   onComplete,
@@ -31,8 +27,6 @@ export default function WizardForm({
     ratedSafetyCount,
     safetyCompletionPct,
     isSafetyComplete,
-    getArrayFieldValues,
-    toggleArrayField,
     updateField,
     nextStep,
     prevStep,
@@ -43,6 +37,27 @@ export default function WizardForm({
     onComplete,
     analyticsContext,
   });
+
+  const safetyHabitQuestionsById = new Map(
+    SAFETY_HABIT_QUESTIONS.map((question) => [question.id, question] as const),
+  );
+
+  const renderSafetyHabitStep = (stepId: (typeof SAFETY_HABIT_QUESTIONS)[number]["id"]) => {
+    const question = safetyHabitQuestionsById.get(stepId);
+    if (!question) return null;
+
+    return (
+      <YesNoQuestionStep
+        formData={formData}
+        field={question.field}
+        question={question.question}
+        subtitle={question.subtitle}
+        badgeLabel={question.badgeLabel}
+        onNext={nextStep}
+        onUpdateField={updateField}
+      />
+    );
+  };
 
   const stepContentById: StepRenderMap = {
     first_name: (
@@ -59,19 +74,21 @@ export default function WizardForm({
         onUpdateField={updateField}
       />
     ),
-    current_setup: (
-      <CurrentSetupStep
-        formData={formData}
-        onNext={nextStep}
-        onUpdateField={updateField}
-      />
+    safety_habit_spare_key: renderSafetyHabitStep("safety_habit_spare_key"),
+    safety_habit_wifi_password: renderSafetyHabitStep("safety_habit_wifi_password"),
+    safety_habit_earphones_sleep: renderSafetyHabitStep("safety_habit_earphones_sleep"),
+    safety_habit_lock_windows_gate: renderSafetyHabitStep(
+      "safety_habit_lock_windows_gate",
     ),
-    home_details: (
-      <HomeDetailsStep
-        formData={formData}
-        onNext={nextStep}
-        onUpdateField={updateField}
-      />
+    safety_habit_security_cameras: renderSafetyHabitStep(
+      "safety_habit_security_cameras",
+    ),
+    safety_habit_smoke_alarm_extinguisher: renderSafetyHabitStep(
+      "safety_habit_smoke_alarm_extinguisher",
+    ),
+    safety_habit_first_aid: renderSafetyHabitStep("safety_habit_first_aid"),
+    safety_habit_emergency_contacts: renderSafetyHabitStep(
+      "safety_habit_emergency_contacts",
     ),
     safety_check: (
       <SafetyCheckStep
@@ -82,36 +99,6 @@ export default function WizardForm({
         ratedSafetyCount={ratedSafetyCount}
         safetyCompletionPct={safetyCompletionPct}
         onNext={nextStep}
-      />
-    ),
-    priority_areas: (
-      <PriorityAreasStep
-        getArrayFieldValues={getArrayFieldValues}
-        onNext={nextStep}
-        onToggleArrayField={toggleArrayField}
-      />
-    ),
-    smart_home_implementation: (
-      <SmartHomeStep
-        formData={formData}
-        getArrayFieldValues={getArrayFieldValues}
-        onNext={nextStep}
-        onToggleArrayField={toggleArrayField}
-        onUpdateField={updateField}
-      />
-    ),
-    budget_diy: (
-      <BudgetDiyStep
-        formData={formData}
-        onNext={nextStep}
-        onUpdateField={updateField}
-      />
-    ),
-    timeline: (
-      <TimelineStep
-        formData={formData}
-        onNext={nextStep}
-        onUpdateField={updateField}
       />
     ),
     contact_details: (

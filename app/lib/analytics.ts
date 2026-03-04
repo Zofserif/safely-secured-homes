@@ -61,6 +61,12 @@ const normalizeString = (value: string) => value.trim();
 
 const safeArray = (values: string[]) => values.map((value) => value.trim()).filter(Boolean);
 
+const toNullableBooleanState = (value: boolean | null): "yes" | "no" | "unknown" => {
+  if (value === true) return "yes";
+  if (value === false) return "no";
+  return "unknown";
+};
+
 const slugify = (value: string) =>
   normalizeString(value)
     .replace(/\+/g, " plus ")
@@ -172,6 +178,14 @@ const legacyFormProps = (data: FormData): EventProps => ({
   priority_areas: safeArray(data.priority_areas),
   priority_areas_count: data.priority_areas.length,
   current_setup: normalizeString(data.current_setup),
+  has_spare_key: data.has_spare_key,
+  changed_wifi_default_password: data.changed_wifi_default_password,
+  sleeps_with_earphones: data.sleeps_with_earphones,
+  locks_windows_gate_at_night: data.locks_windows_gate_at_night,
+  has_security_cameras: data.has_security_cameras,
+  has_smoke_alarm_or_fire_extinguisher: data.has_smoke_alarm_or_fire_extinguisher,
+  has_first_aid_or_medicine_ready: data.has_first_aid_or_medicine_ready,
+  knows_local_emergency_contacts: data.knows_local_emergency_contacts,
   safety_gate_entry: data.safety_gate_entry,
   safety_blindspots: data.safety_blindspots,
   safety_side_back_entry: data.safety_side_back_entry,
@@ -200,6 +214,24 @@ const normalizedFormProps = (data: FormData): EventProps => {
     home_size_key: slugify(data.home_size),
     floors_key: slugify(data.floors),
     current_setup_key: slugify(data.current_setup),
+    has_spare_key_state: toNullableBooleanState(data.has_spare_key),
+    changed_wifi_default_password_state: toNullableBooleanState(
+      data.changed_wifi_default_password
+    ),
+    sleeps_with_earphones_state: toNullableBooleanState(data.sleeps_with_earphones),
+    locks_windows_gate_at_night_state: toNullableBooleanState(
+      data.locks_windows_gate_at_night
+    ),
+    has_security_cameras_state: toNullableBooleanState(data.has_security_cameras),
+    has_smoke_alarm_or_fire_extinguisher_state: toNullableBooleanState(
+      data.has_smoke_alarm_or_fire_extinguisher
+    ),
+    has_first_aid_or_medicine_ready_state: toNullableBooleanState(
+      data.has_first_aid_or_medicine_ready
+    ),
+    knows_local_emergency_contacts_state: toNullableBooleanState(
+      data.knows_local_emergency_contacts
+    ),
     priority_area_keys: priorityAreas.map((value) => slugify(value)),
     priority_area_count: priorityAreas.length,
     feature_keys: featureList.map((value) => slugify(value)),

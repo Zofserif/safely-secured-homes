@@ -12,10 +12,10 @@ export default function SmartHomeStep({
 }: SmartHomeStepProps) {
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+      <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
         Smart Home Implementation
       </h3>
-      <div className="rounded-2xl border-2 border-[#0E79B2]/30 bg-[#0E79B2]/5 p-4 shadow-sm">
+      <div className="rounded-2xl border border-[#D7E8F4] bg-[#F2FAFF] p-4 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
             Smart Home
@@ -65,7 +65,7 @@ export default function SmartHomeStep({
                 return (
                   <label
                     key={feature}
-                    className={`group relative rounded-2xl border p-4 transition-all cursor-pointer ${isSelected ? "border-[#0E79B2] bg-[#0E79B2]/10 shadow-sm" : "border-slate-200 bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+                    className={`group relative cursor-pointer rounded-2xl border p-4 transition-all ${isSelected ? "border-[#0E79B2] bg-[#F2FAFF] shadow-sm ring-1 ring-[#0E79B2]/20" : "border-[#E2E8F0] bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
                   >
                     <input
                       type="checkbox"
@@ -107,7 +107,7 @@ export default function SmartHomeStep({
       </div>
       <button
         onClick={onNext}
-        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold mt-4"
+        className="mt-4 w-full rounded-2xl bg-[#0E79B2] py-3.5 font-bold text-white shadow-lg shadow-[#0E79B2]/30 transition hover:bg-[#0C6798]"
       >
         Next
       </button>

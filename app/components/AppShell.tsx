@@ -17,6 +17,7 @@ import type { HomeCtaLocation, HomeCtaTarget } from "./home/types";
 import { FormData, CalculationResult } from "../lib/types";
 import { estimateCameraPlan } from "../lib/calculations";
 import { normalizeDiySecurityPlan } from "../lib/diySecurityPlan";
+import { normalizeSafetyHabitAnswers } from "../lib/safetyHabits";
 import {
   submitLeadToSupabase,
   submitToEmail,
@@ -125,6 +126,9 @@ const writeStoredLead = (formData: FormData, result: CalculationResult) => {
     JSON.stringify({ formData, result })
   );
 };
+
+const normalizeFormDataForApp = (data: FormData): FormData =>
+  normalizeSafetyHabitAnswers(normalizeDiySecurityPlan(data));
 
 export default function AppShell({
   initialView = "home",
@@ -314,7 +318,7 @@ export default function AppShell({
 
     if (initialView !== "results") {
       if (storedLead) {
-        setFormData(normalizeDiySecurityPlan(storedLead.formData));
+        setFormData(normalizeFormDataForApp(storedLead.formData));
         setResult(storedLead.result);
       }
       return;
@@ -323,7 +327,7 @@ export default function AppShell({
     let isMounted = true;
     const showResults = (data: FormData, calculated?: CalculationResult) => {
       if (!isMounted) return;
-      const normalizedData = normalizeDiySecurityPlan(data);
+      const normalizedData = normalizeFormDataForApp(data);
       const resolvedResult = calculated ?? estimateCameraPlan(normalizedData);
       writeStoredLead(normalizedData, resolvedResult);
       setFormData(normalizedData);
@@ -586,7 +590,7 @@ export default function AppShell({
   };
 
   const handleFormComplete = async (data: FormData) => {
-    const normalizedData = normalizeDiySecurityPlan(data);
+    const normalizedData = normalizeFormDataForApp(data);
     const calcResult = estimateCameraPlan(normalizedData);
     setFormData(normalizedData);
     setResult(calcResult);

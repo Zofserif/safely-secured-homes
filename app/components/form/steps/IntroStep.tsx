@@ -26,17 +26,20 @@ export default function IntroStep({
   };
 
   return (
-    <div className="space-y-4 py-10">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+    <div className="space-y-5 py-6 sm:py-10">
+      <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
         What should we call you?
       </h3>
+      <p className="text-center text-sm text-slate-600 sm:text-base">
+        Let&apos;s personalize your home safety quiz.
+      </p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="mx-auto max-w-xl space-y-4">
         <input
           type="text"
           placeholder="First Name"
           maxLength={FIRST_NAME_MAX_LENGTH}
-          className="w-full p-3 rounded-xl border border-slate-300"
+          className="w-full rounded-2xl border border-[#D8DDE3] bg-white px-4 py-3.5 text-slate-800 shadow-sm outline-none transition focus-visible:border-[#0E79B2] focus-visible:ring-4 focus-visible:ring-[#0E79B2]/15"
           value={formData.first_name}
           onChange={(event) => onUpdateField("first_name", event.target.value)}
           onKeyDown={handleNameInputKeyDown}
@@ -45,7 +48,7 @@ export default function IntroStep({
         <button
           type="submit"
           disabled={!canContinue}
-          className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50"
+          className="w-full rounded-2xl bg-[#0E79B2] py-3.5 text-base font-bold text-white shadow-lg shadow-[#0E79B2]/30 transition hover:bg-[#0C6798] disabled:cursor-not-allowed disabled:opacity-50"
         >
           Continue
         </button>

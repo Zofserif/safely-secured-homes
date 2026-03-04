@@ -12,10 +12,10 @@ export default function PriorityAreasStep({
 
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-bold text-center text-[#2D3748]">
+      <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
         Which areas should we prioritize?
       </h3>
-      <p className="text-center text-sm text-slate-500 mb-4">
+      <p className="mb-4 text-center text-sm text-slate-600 sm:text-base">
         Select all that apply
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -32,7 +32,7 @@ export default function PriorityAreasStep({
           return (
             <label
               key={area}
-              className={`group relative cursor-pointer rounded-2xl border p-4 transition-all ${isSelected ? "border-[#0E79B2] bg-[#0E79B2]/10 shadow-sm" : "border-slate-200 bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+              className={`group relative cursor-pointer rounded-2xl border p-4 transition-all ${isSelected ? "border-[#0E79B2] bg-[#F2FAFF] shadow-sm ring-1 ring-[#0E79B2]/20" : "border-[#E2E8F0] bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
             >
               <input
                 type="checkbox"
@@ -67,7 +67,7 @@ export default function PriorityAreasStep({
       <button
         onClick={onNext}
         disabled={selectedAreas.length === 0}
-        className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 mt-4"
+        className="mt-4 w-full rounded-2xl bg-[#0E79B2] py-3.5 font-bold text-white shadow-lg shadow-[#0E79B2]/30 transition hover:bg-[#0C6798] disabled:cursor-not-allowed disabled:opacity-50"
       >
         Next
       </button>

@@ -46,6 +46,16 @@ type LeadPayloadBase = {
     diy_security_plan: boolean;
     smart_home_interest: boolean;
     smart_home_features: string[];
+    safety_habits: {
+      has_spare_key: boolean | null;
+      changed_wifi_default_password: boolean | null;
+      sleeps_with_earphones: boolean | null;
+      locks_windows_gate_at_night: boolean | null;
+      has_security_cameras: boolean | null;
+      has_smoke_alarm_or_fire_extinguisher: boolean | null;
+      has_first_aid_or_medicine_ready: boolean | null;
+      knows_local_emergency_contacts: boolean | null;
+    };
   };
   panatag_home_rating: number;
   recommendations: string[];
@@ -74,6 +84,9 @@ type LeadInsertBody = {
 
 const toSafeString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
+
+const toNullableBoolean = (value: unknown): boolean | null =>
+  typeof value === "boolean" ? value : null;
 
 const toStringArray = (value: unknown): string[] => {
   if (!Array.isArray(value)) return [];
@@ -110,6 +123,26 @@ const buildLeadPayloadBase = (
     diy_security_plan: Boolean(data.diy_security_plan),
     smart_home_interest: Boolean(data.smart_home_interest),
     smart_home_features: toStringArray(data.smart_home_features),
+    safety_habits: {
+      has_spare_key: toNullableBoolean(data.has_spare_key),
+      changed_wifi_default_password: toNullableBoolean(
+        data.changed_wifi_default_password
+      ),
+      sleeps_with_earphones: toNullableBoolean(data.sleeps_with_earphones),
+      locks_windows_gate_at_night: toNullableBoolean(
+        data.locks_windows_gate_at_night
+      ),
+      has_security_cameras: toNullableBoolean(data.has_security_cameras),
+      has_smoke_alarm_or_fire_extinguisher: toNullableBoolean(
+        data.has_smoke_alarm_or_fire_extinguisher
+      ),
+      has_first_aid_or_medicine_ready: toNullableBoolean(
+        data.has_first_aid_or_medicine_ready
+      ),
+      knows_local_emergency_contacts: toNullableBoolean(
+        data.knows_local_emergency_contacts
+      ),
+    },
   },
   panatag_home_rating: toPanatagHomeRating(panatagHomeRating),
   recommendations: [],

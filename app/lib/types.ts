@@ -25,6 +25,10 @@ export type FormData = {
   diy_security_plan: boolean;
   budget_band: string;
   timeline: string;
+  household_stage: string;
+  desired_outcome: string;
+  goal_obstacle: string;
+  goal_obstacle_other: string;
   first_name: string;
   email: string;
   mobile: string;

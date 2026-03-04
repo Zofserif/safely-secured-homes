@@ -46,6 +46,10 @@ type LeadPayloadBase = {
     diy_security_plan: boolean;
     smart_home_interest: boolean;
     smart_home_features: string[];
+    household_stage: string;
+    desired_outcome: string;
+    goal_obstacle: string;
+    goal_obstacle_other: string;
     safety_habits: {
       has_spare_key: boolean | null;
       changed_wifi_default_password: boolean | null;
@@ -123,6 +127,10 @@ const buildLeadPayloadBase = (
     diy_security_plan: Boolean(data.diy_security_plan),
     smart_home_interest: Boolean(data.smart_home_interest),
     smart_home_features: toStringArray(data.smart_home_features),
+    household_stage: toSafeString(data.household_stage),
+    desired_outcome: toSafeString(data.desired_outcome),
+    goal_obstacle: toSafeString(data.goal_obstacle),
+    goal_obstacle_other: toSafeString(data.goal_obstacle_other),
     safety_habits: {
       has_spare_key: toNullableBoolean(data.has_spare_key),
       changed_wifi_default_password: toNullableBoolean(

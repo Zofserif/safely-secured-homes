@@ -28,6 +28,9 @@ export const FORM_STEPS = [
     label: "Safety habit: emergency contacts",
   },
   { id: "safety_check", label: "Safety check" },
+  { id: "household_stage", label: "Household stage" },
+  { id: "desired_outcome", label: "Desired outcome" },
+  { id: "goal_obstacle", label: "Goal obstacle" },
   { id: "contact_details", label: "Contact details" },
 ] as const;
 

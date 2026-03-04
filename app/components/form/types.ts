@@ -113,6 +113,24 @@ export type SafetyCheckStepProps = {
   onNext: () => void;
 };
 
+export type CurrentSituationStepProps = {
+  formData: FormData;
+  onNext: () => void;
+  onUpdateField: UpdateField;
+};
+
+export type DesiredOutcomeStepProps = {
+  formData: FormData;
+  onNext: () => void;
+  onUpdateField: UpdateField;
+};
+
+export type ObstacleStepProps = {
+  formData: FormData;
+  onNext: () => void;
+  onUpdateField: UpdateField;
+};
+
 export type PriorityAreasStepProps = {
   getArrayFieldValues: GetArrayFieldValues;
   onNext: () => void;

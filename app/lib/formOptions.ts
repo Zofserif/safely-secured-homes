@@ -39,6 +39,30 @@ export const CURRENT_SETUP_VALUES = [
   CURRENT_SETUP_OPTIONS.UPGRADE,
 ] as const;
 
+export const HOUSEHOLD_STAGE_OPTIONS = [
+  "Just me",
+  "Couple (no kids yet)",
+  "Expecting a baby",
+  "Family with kids at home",
+  "Older adults/retirees",
+] as const;
+
+export const DESIRED_OUTCOME_OPTIONS = [
+  "Check on family/pets while I'm away",
+  "See who's at the gate/door before opening",
+  "Monitor outside areas around the home",
+  "Protect my home and valuables from break-ins/theft",
+  "Get emergency alerts for hazards",
+  "Make my home more convenient with smart control/automation",
+] as const;
+
+export const GOAL_OBSTACLE_OPTIONS = [
+  "I'm not sure what's right for my home",
+  "I'm worried it will be complicated or won't work properly",
+  "I tried something before and it's not applicable to me",
+  "I don't want solutions that feel uninviting",
+] as const;
+
 export const HOME_SIZE_OPTIONS = {
   SMALL: "Small (≤120 sqm) Approx. 1-2 bedrooms",
   MEDIUM: "Medium (121-200 sqm) Approx. 3-4 bedrooms",

@@ -4,7 +4,10 @@ import WizardFrame from "./components/WizardFrame";
 import { useWizardController } from "./hooks/useWizardController";
 import type { StepRenderMap, WizardFormProps } from "./types";
 import ContactStep from "./steps/ContactStep";
+import CurrentSituationStep from "./steps/CurrentSituationStep";
+import DesiredOutcomeStep from "./steps/DesiredOutcomeStep";
 import IntroStep from "./steps/IntroStep";
+import ObstacleStep from "./steps/ObstacleStep";
 import PropertyTypeStep from "./steps/PropertyTypeStep";
 import SafetyCheckStep from "./steps/SafetyCheckStep";
 import YesNoQuestionStep from "./steps/YesNoQuestionStep";
@@ -99,6 +102,27 @@ export default function WizardForm({
         ratedSafetyCount={ratedSafetyCount}
         safetyCompletionPct={safetyCompletionPct}
         onNext={nextStep}
+      />
+    ),
+    household_stage: (
+      <CurrentSituationStep
+        formData={formData}
+        onNext={nextStep}
+        onUpdateField={updateField}
+      />
+    ),
+    desired_outcome: (
+      <DesiredOutcomeStep
+        formData={formData}
+        onNext={nextStep}
+        onUpdateField={updateField}
+      />
+    ),
+    goal_obstacle: (
+      <ObstacleStep
+        formData={formData}
+        onNext={nextStep}
+        onUpdateField={updateField}
       />
     ),
     contact_details: (

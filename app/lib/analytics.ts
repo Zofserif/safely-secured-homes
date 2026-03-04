@@ -178,6 +178,10 @@ const legacyFormProps = (data: FormData): EventProps => ({
   priority_areas: safeArray(data.priority_areas),
   priority_areas_count: data.priority_areas.length,
   current_setup: normalizeString(data.current_setup),
+  household_stage: normalizeString(data.household_stage),
+  desired_outcome: normalizeString(data.desired_outcome),
+  goal_obstacle: normalizeString(data.goal_obstacle),
+  goal_obstacle_other: normalizeString(data.goal_obstacle_other),
   has_spare_key: data.has_spare_key,
   changed_wifi_default_password: data.changed_wifi_default_password,
   sleeps_with_earphones: data.sleeps_with_earphones,
@@ -214,6 +218,10 @@ const normalizedFormProps = (data: FormData): EventProps => {
     home_size_key: slugify(data.home_size),
     floors_key: slugify(data.floors),
     current_setup_key: slugify(data.current_setup),
+    household_stage_key: slugify(data.household_stage),
+    desired_outcome_key: slugify(data.desired_outcome),
+    goal_obstacle_key: slugify(data.goal_obstacle),
+    has_goal_obstacle_other: Boolean(normalizeString(data.goal_obstacle_other)),
     has_spare_key_state: toNullableBooleanState(data.has_spare_key),
     changed_wifi_default_password_state: toNullableBooleanState(
       data.changed_wifi_default_password

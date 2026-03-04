@@ -15,9 +15,17 @@ const supabase =
     ? createClient(supabaseUrl, serviceRoleKey)
     : null;
 
+type LeadLocation = {
+  source: "ip_header" | "unavailable";
+  country_code: string | null;
+  region: string | null;
+  city: string | null;
+};
+
 type LeadPayloadBase = {
   source: string;
   mobile: string;
+  location?: LeadLocation;
   property: {
     type: string;
     size: string;
@@ -73,6 +81,12 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const toSafeString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
+
+const toOptionalHeaderValue = (value: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
 
 const toStringArray = (value: unknown): string[] => {
   if (!Array.isArray(value)) return [];
@@ -250,6 +264,22 @@ const sanitizeLeadInsertBody = (value: unknown): LeadInsertBody | null => {
   };
 };
 
+const resolveLeadLocation = (req: Request): LeadLocation => {
+  const countryCode =
+    toOptionalHeaderValue(req.headers.get("x-vercel-ip-country")) ??
+    toOptionalHeaderValue(req.headers.get("cf-ipcountry"));
+  const region = toOptionalHeaderValue(req.headers.get("x-vercel-ip-country-region"));
+  const city = toOptionalHeaderValue(req.headers.get("x-vercel-ip-city"));
+  const hasGeoData = Boolean(countryCode || region || city);
+
+  return {
+    source: hasGeoData ? "ip_header" : "unavailable",
+    country_code: countryCode,
+    region,
+    city,
+  };
+};
+
 export async function POST(req: Request) {
   if (!supabase) {
     console.warn("Supabase env vars missing; skipping lead insert.");
@@ -266,7 +296,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid lead payload" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("leads").insert(sanitizedBody);
+  const resolvedLocation = resolveLeadLocation(req);
+  const leadInsertBody: LeadInsertBody = {
+    ...sanitizedBody,
+    payload: {
+      ...sanitizedBody.payload,
+      location: resolvedLocation,
+    },
+  };
+
+  const { error } = await supabase.from("leads").insert(leadInsertBody);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }

@@ -313,7 +313,6 @@ export const parseResultsToken = (token: string): FormData | null => {
     budget_band: BUDGET_BAND_OPTIONS[b],
     timeline: TIMELINE_VALUES[t],
     first_name: "",
-    last_name: "",
     email: "",
     mobile: "",
   };

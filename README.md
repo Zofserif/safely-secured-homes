@@ -60,7 +60,7 @@ This project uses a hybrid media strategy:
 3. Run `supabase/testimonials.sql` to create/update testimonial moderation schema for `/rate` and public testimonial feeds.
 4. Optional: run `supabase/blog_posts_seed.sql` for sample content.
 5. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
-   This table also stores `first_name`, `last_name`, `email`, and `mobile` for each generated link.
+   This table also stores `first_name`, `email`, and `mobile` for each generated link.
 
 ### Environment variables
 

@@ -60,7 +60,7 @@ const PRIORITY_AREA_POINTS: Record<(typeof PRIORITY_AREAS)[number], number> = {
 
 const CURRENT_SETUP_POINTS: Record<(typeof CURRENT_SETUP_VALUES)[number], number> =
   {
-    "No, this is a new installation": 1,
+    "No, I don't have a security system": 1,
     "Yes, but it's broken/old (Needs replacement)": 0,
     "Yes, looking to expand/upgrade": 1,
   };

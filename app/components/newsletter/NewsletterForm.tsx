@@ -4,6 +4,10 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { trackNewsletterLeadGenerated } from "../../lib/analytics";
+import {
+  deriveFirstNameFromEmail,
+  normalizeEmail,
+} from "../../lib/contactName";
 import { sendChecklistEmail } from "../../lib/email";
 import { panatagChecklistUrl } from "../../lib/site";
 
@@ -27,6 +31,8 @@ export default function NewsletterForm() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     const rawContact = String(formData.get("contactNumber") || "").trim();
+    const email = normalizeEmail(String(formData.get("email") || ""));
+    const firstName = deriveFirstNameFromEmail(email);
     const digitsOnly = rawContact.replace(/\D/g, "");
     let normalizedContact = digitsOnly;
     if (digitsOnly.startsWith("63") && digitsOnly.length === 12) {
@@ -35,9 +41,9 @@ export default function NewsletterForm() {
       normalizedContact = `0${digitsOnly}`;
     }
     const payload = {
-      first_name: String(formData.get("firstName") || "").trim(),
-      last_name: String(formData.get("lastName") || "").trim(),
-      email: String(formData.get("email") || "").trim(),
+      first_name: firstName,
+      last_name: "",
+      email,
       contact_number: normalizedContact,
       source: "newsletter",
     };
@@ -123,43 +129,6 @@ export default function NewsletterForm() {
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="newsletter-first-name"
-              className="block text-sm font-semibold text-[#2D3748] mb-2"
-            >
-              First name
-            </label>
-            <input
-              id="newsletter-first-name"
-              name="firstName"
-              type="text"
-              autoComplete="given-name"
-              required
-              className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
-              placeholder="Juan"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="newsletter-last-name"
-              className="block text-sm font-semibold text-[#2D3748] mb-2"
-            >
-              Last name
-            </label>
-            <input
-              id="newsletter-last-name"
-              name="lastName"
-              type="text"
-              autoComplete="family-name"
-              required
-              className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
-              placeholder="Dela Cruz"
-            />
-          </div>
-        </div>
-
         <div>
           <label
             htmlFor="newsletter-email"

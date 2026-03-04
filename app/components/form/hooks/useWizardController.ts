@@ -3,6 +3,7 @@ import {
   trackFormStepCompleted,
   trackFormSubmissionStarted,
 } from "../../../lib/analytics";
+import { deriveFirstNameFromEmail } from "../../../lib/contactName";
 import {
   createInitialFormData,
   SAFETY_CATEGORIES,
@@ -80,10 +81,19 @@ export const useWizardController = ({
   const submitFinal = () => {
     if (!validateContactInfo()) return;
 
+    const normalizedEmail = formData.email.trim();
+    const normalizedFirstName = formData.first_name.trim().slice(0, 50);
+    const derivedFirstName = deriveFirstNameFromEmail(normalizedEmail).slice(0, 50);
+    const normalizedData = {
+      ...formData,
+      email: normalizedEmail,
+      first_name: normalizedFirstName || derivedFirstName,
+    };
+
     setIsSubmitting(true);
     trackFormStepCompleted(step, analyticsContext, { legacy: false });
-    trackFormSubmissionStarted(formData, analyticsContext);
-    onComplete(formData);
+    trackFormSubmissionStarted(normalizedData, analyticsContext);
+    onComplete(normalizedData);
   };
 
   const commitSafetyCategorySliderValue = (

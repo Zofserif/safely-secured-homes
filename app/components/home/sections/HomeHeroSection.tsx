@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { CheckCircle2, ChevronRight, Gift, ShieldCheck } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   buildHomeScarcityCopy,
   getHomeScarcityStatusPillClasses,
@@ -19,8 +19,19 @@ const TRUST_CHECKS = [
 const TRUST_AUTOPLAY_INTERVAL_MS = 4000;
 const TRUST_AUTOPLAY_RESUME_DELAY_MS = 6000;
 const PROGRAMMATIC_SCROLL_WINDOW_MS = 900;
+const HERO_TEXT_COL_FR = 1;
+const HERO_IMAGE_COL_FR = 1.25;
+const HERO_DESKTOP_GRID_COLS = `minmax(0, ${HERO_TEXT_COL_FR}fr) minmax(0, ${HERO_IMAGE_COL_FR}fr)`;
+const HERO_GRID_STYLE = {
+  "--hero-grid-cols-lg": HERO_DESKTOP_GRID_COLS,
+} as CSSProperties;
 
 type HeadlineSegment = {
+  text: string;
+  emphasized: boolean;
+};
+
+type SubcopySegment = {
   text: string;
   emphasized: boolean;
 };
@@ -75,6 +86,42 @@ const parseHeadlineSegments = (headline: string): HeadlineSegment[] => {
   return segments;
 };
 
+const parseSubcopyBoldSegments = (subcopy: string): SubcopySegment[] => {
+  const marker = "**";
+  const segments: SubcopySegment[] = [];
+  let cursor = 0;
+  let foundMarker = false;
+
+  while (cursor < subcopy.length) {
+    const openIndex = subcopy.indexOf(marker, cursor);
+    if (openIndex === -1) {
+      const trailing = subcopy.slice(cursor);
+      if (trailing) segments.push({ text: trailing, emphasized: false });
+      break;
+    }
+
+    const closeIndex = subcopy.indexOf(marker, openIndex + marker.length);
+    if (closeIndex === -1) {
+      return [{ text: subcopy, emphasized: false }];
+    }
+
+    foundMarker = true;
+    const before = subcopy.slice(cursor, openIndex);
+    if (before) segments.push({ text: before, emphasized: false });
+
+    const marked = subcopy.slice(openIndex + marker.length, closeIndex);
+    if (marked) segments.push({ text: marked, emphasized: true });
+
+    cursor = closeIndex + marker.length;
+  }
+
+  if (!foundMarker || segments.length === 0) {
+    return [{ text: subcopy, emphasized: false }];
+  }
+
+  return segments;
+};
+
 export default function HomeHeroSection({
   onPrimaryCtaClick,
   cta,
@@ -101,6 +148,7 @@ export default function HomeHeroSection({
   const showBonusCard = !scarcity.bonusExpired && scarcity.show && !scarcity.soldOut;
   const prefersReducedMotion = useReducedMotion();
   const headlineSegments = parseHeadlineSegments(HOME_HERO_COPY.headline);
+  const subcopySegments = parseSubcopyBoldSegments(HOME_HERO_COPY.subcopy);
   const normalizedHeadline = headlineSegments.map((segment) => segment.text).join("");
   const isLongHeadline = normalizedHeadline.length > 80;
   const headlineSizeClasses = isLongHeadline
@@ -236,7 +284,10 @@ export default function HomeHeroSection({
       <div className="absolute top-0 right-0 -mr-48 -mt-48 h-[640px] w-[640px] rounded-full bg-[#BEE9E8]/40 blur-3xl opacity-60 pointer-events-none sm:-mr-40 sm:-mt-40 sm:h-[800px] sm:w-[800px]"></div>
       <div className="absolute bottom-0 left-0 -ml-44 -mb-44 h-[460px] w-[460px] rounded-full bg-[#BEE9E8]/30 blur-3xl opacity-60 pointer-events-none sm:-ml-40 sm:-mb-40 sm:h-[600px] sm:w-[600px]"></div>
 
-      <div className="container relative z-10 mx-auto grid items-center gap-5 sm:gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-16">
+      <div
+        className="container relative z-10 mx-auto grid items-center gap-5 sm:gap-8 lg:grid-cols-(--hero-grid-cols-lg) lg:gap-16"
+        style={HERO_GRID_STYLE}
+      >
         <AudiencePill className="order-1 lg:hidden" />
 
         <motion.div
@@ -258,7 +309,11 @@ export default function HomeHeroSection({
               return (
                 <motion.span
                   key={`headline-${index}`}
-                  className="bg-linear-to-r from-[#2D3748] via-[#0E79B2] to-[#2D3748] bg-clip-text text-transparent underline decoration-[#63B3ED]/90 decoration-[0.13em] underline-offset-[0.13em]"
+                  className="box-decoration-clone rounded-[0.12em] px-[0.1em]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(to top, rgba(190, 233, 232, 0.85) 44%, transparent 44%)",
+                  }}
                   {...(prefersReducedMotion
                     ? {}
                     : {
@@ -271,14 +326,22 @@ export default function HomeHeroSection({
                         },
                       })}
                 >
-                  {segment.text}
+                  <span className="bg-linear-to-r from-[#2D3748] via-[#0E79B2] to-[#2D3748] bg-clip-text text-transparent">
+                    {segment.text}
+                  </span>
                 </motion.span>
               );
             })}
           </h1>
 
           <p className="mb-5 max-w-xl text-[15px] leading-relaxed text-slate-500 sm:mb-6 sm:text-base lg:text-[clamp(1rem,2.25vh,1.18rem)]">
-            {HOME_HERO_COPY.subcopy}
+            {subcopySegments.map((segment, index) => {
+              if (!segment.emphasized) {
+                return <span key={`subcopy-${index}`}>{segment.text}</span>;
+              }
+
+              return <strong key={`subcopy-${index}`}>{segment.text}</strong>;
+            })}
           </p>
 
           <div className="rounded-2xl border border-[#BEE9E8]/80 bg-white/90 p-4 shadow-lg shadow-[#0E79B2]/6 sm:rounded-3xl sm:p-5 sm:shadow-xl sm:shadow-[#0E79B2]/8 lg:p-[clamp(1rem,2.4vh,1.5rem)]">

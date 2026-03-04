@@ -28,7 +28,7 @@ export const PROPERTY_TYPES: PropertyTypeOption[] = [
 ];
 
 export const CURRENT_SETUP_OPTIONS = {
-  NEW_INSTALL: "No, this is a new installation",
+  NEW_INSTALL: "No, I don't have a security system",
   BROKEN_OLD: "Yes, but it's broken/old (Needs replacement)",
   UPGRADE: "Yes, looking to expand/upgrade",
 } as const;

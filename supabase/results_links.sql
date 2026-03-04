@@ -7,7 +7,6 @@ create table if not exists public.results_links (
   id uuid primary key default gen_random_uuid(),
   link_key text not null unique,
   first_name text,
-  last_name text,
   email text,
   mobile text,
   payload jsonb not null,
@@ -20,13 +19,13 @@ alter table public.results_links
   add column if not exists first_name text;
 
 alter table public.results_links
-  add column if not exists last_name text;
-
-alter table public.results_links
   add column if not exists email text;
 
 alter table public.results_links
   add column if not exists mobile text;
+
+alter table public.results_links
+  drop column if exists last_name;
 
 alter table public.results_links
   drop constraint if exists results_links_key_format_check;

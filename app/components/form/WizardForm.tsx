@@ -45,7 +45,13 @@ export default function WizardForm({
   });
 
   const stepContentById: StepRenderMap = {
-    intro: <IntroStep onNext={nextStep} />,
+    first_name: (
+      <IntroStep
+        formData={formData}
+        onNext={nextStep}
+        onUpdateField={updateField}
+      />
+    ),
     property_type: (
       <PropertyTypeStep
         formData={formData}

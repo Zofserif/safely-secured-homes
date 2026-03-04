@@ -16,6 +16,7 @@ import {
   SMART_HOME_FEATURE_OPTIONS,
   SMART_HOME_FEATURES,
 } from "../../lib/formOptions";
+import { deriveFirstNameFromEmail } from "../../lib/contactName";
 import { readNewsletterLead } from "../../lib/newsletterLead";
 import type { FormData } from "../../lib/types";
 import type { SafetyCategory, WizardMode } from "./types";
@@ -41,7 +42,6 @@ export const createInitialFormData = (mode: WizardMode): FormData => {
     budget_band: "",
     timeline: "",
     first_name: "",
-    last_name: "",
     email: "",
     mobile: "",
   };
@@ -53,8 +53,7 @@ export const createInitialFormData = (mode: WizardMode): FormData => {
 
   return {
     ...baseFormData,
-    first_name: lead.first_name || "",
-    last_name: lead.last_name || "",
+    first_name: lead.first_name || deriveFirstNameFromEmail(lead.email || ""),
     email: lead.email || "",
     mobile: lead.mobile || "",
   };

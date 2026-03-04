@@ -2,6 +2,7 @@
 import { ChevronDown, Download, Hammer, HardDrive, Phone, Server, Video, Wrench, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { deriveFirstNameFromEmail } from "../../lib/contactName";
 import type { CalculationResult, FormData } from "../../lib/types";
 
 export default function DIYView({
@@ -18,7 +19,8 @@ export default function DIYView({
   const [openStep, setOpenStep] = useState<number | null>(0);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const storageLabel = result.storage1TB ? "1TB+" : "500GB";
-  const firstName = data.first_name?.trim() || "there";
+  const firstName =
+    data.first_name?.trim() || deriveFirstNameFromEmail(data.email) || "there";
   const priorityAreas = data.priority_areas?.filter(Boolean) ?? [];
   const storageRows = [
     { cams: 4, bitrate: "1 Mbps", days14: "~0.61 TB", days30: "~1.30 TB" },

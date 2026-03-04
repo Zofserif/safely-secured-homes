@@ -49,7 +49,9 @@ export type WizardFrameProps = {
 };
 
 export type IntroStepProps = {
+  formData: FormData;
   onNext: () => void;
+  onUpdateField: UpdateField;
 };
 
 export type PropertyTypeStepProps = {

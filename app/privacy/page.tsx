@@ -38,7 +38,9 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-bold text-[#1F2937]">What we collect</h2>
             <p className="mt-2">
               We collect the contact and home-assessment details you submit through our forms, such as
-              your name, email, mobile number, location details, and assessment answers.
+              your name, email, mobile number, location details, and assessment answers. When you submit
+              a form, we may also infer your approximate location (country, region, and city) from your
+              IP or network headers.
             </p>
           </section>
           <section>

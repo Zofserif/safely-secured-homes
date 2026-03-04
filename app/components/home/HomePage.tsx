@@ -35,6 +35,7 @@ export default function HomePage({
   const nowMs = useSharedClockNowMs();
   const bonusEndsAt = useBonusEndsAt();
   const testimonials = useHomeTestimonials();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const showTestimonials = testimonials.length > 0;
 
   const {

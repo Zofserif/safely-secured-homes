@@ -59,7 +59,6 @@ export async function POST(req: Request) {
   const contactRaw =
     typeof body?.contact === "object" && body.contact !== null ? body.contact : {};
   const firstName = normalizeText((contactRaw as { first_name?: unknown }).first_name);
-  const lastName = normalizeText((contactRaw as { last_name?: unknown }).last_name);
   const emailRaw = normalizeText((contactRaw as { email?: unknown }).email);
   const mobile =
     normalizeText((contactRaw as { mobile?: unknown }).mobile) ??
@@ -77,7 +76,6 @@ export async function POST(req: Request) {
     const { error } = await supabase.from("results_links").insert({
       link_key: linkKey,
       first_name: firstName,
-      last_name: lastName,
       email,
       mobile,
       payload,
@@ -122,7 +120,7 @@ export async function GET(req: Request) {
 
   const { data, error } = await supabase
     .from("results_links")
-    .select("payload, expires_at, revoked_at, first_name, last_name, email, mobile")
+    .select("payload, expires_at, revoked_at, first_name, email, mobile")
     .eq("link_key", key)
     .maybeSingle();
 
@@ -146,7 +144,6 @@ export async function GET(req: Request) {
   const hydratedFormData = {
     ...formData,
     first_name: normalizeText(data.first_name) ?? "",
-    last_name: normalizeText(data.last_name) ?? "",
     email: normalizeText(data.email) ?? "",
     mobile: normalizeText(data.mobile) ?? "",
   };

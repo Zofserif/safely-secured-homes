@@ -5,11 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, X } from "lucide-react";
 import { trackNewsletterLeadGenerated } from "../../lib/analytics";
+import {
+  deriveFirstNameFromEmail,
+  normalizeEmail,
+} from "../../lib/contactName";
 import { sendChecklistEmail } from "../../lib/email";
 import { writeNewsletterLead } from "../../lib/newsletterLead";
 import { panatagChecklistUrl } from "../../lib/site";
 
 type Status = "idle" | "submitting" | "success" | "error";
+const TOTAL_STEPS = 2;
 
 export default function NewsletterChecklistModal() {
   const router = useRouter();
@@ -21,8 +26,6 @@ export default function NewsletterChecklistModal() {
     null
   );
   const [values, setValues] = useState({
-    firstName: "",
-    lastName: "",
     email: "",
     contactNumber: "",
   });
@@ -43,7 +46,7 @@ export default function NewsletterChecklistModal() {
     setStatus("idle");
     setError(null);
     setChecklistEmailSent(null);
-    setValues({ firstName: "", lastName: "", email: "", contactNumber: "" });
+    setValues({ email: "", contactNumber: "" });
   };
 
   const openModal = () => {
@@ -65,12 +68,6 @@ export default function NewsletterChecklistModal() {
   const validateStep = () => {
     setError(null);
     if (step === 0) {
-      if (!values.firstName.trim() || !values.lastName.trim()) {
-        setError("Please enter your first and last name.");
-        return false;
-      }
-    }
-    if (step === 1) {
       const email = values.email.trim();
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
@@ -78,7 +75,7 @@ export default function NewsletterChecklistModal() {
         return false;
       }
     }
-    if (step === 2) {
+    if (step === 1) {
       const rawContact = values.contactNumber.trim();
       const digitsOnly = rawContact.replace(/\D/g, "");
       let normalizedContact = digitsOnly;
@@ -98,7 +95,7 @@ export default function NewsletterChecklistModal() {
 
   const handleNext = () => {
     if (!validateStep()) return;
-    setStep((prev) => Math.min(prev + 1, 2));
+    setStep((prev) => Math.min(prev + 1, TOTAL_STEPS - 1));
   };
 
   const handleBack = () => {
@@ -111,6 +108,8 @@ export default function NewsletterChecklistModal() {
     setStatus("submitting");
     setError(null);
 
+    const email = normalizeEmail(values.email);
+    const firstName = deriveFirstNameFromEmail(email);
     const digitsOnly = values.contactNumber.trim().replace(/\D/g, "");
     let normalizedContact = digitsOnly;
     if (digitsOnly.startsWith("63") && digitsOnly.length === 12) {
@@ -120,9 +119,9 @@ export default function NewsletterChecklistModal() {
     }
 
     const payload = {
-      first_name: values.firstName.trim(),
-      last_name: values.lastName.trim(),
-      email: values.email.trim(),
+      first_name: firstName,
+      last_name: "",
+      email,
       contact_number: normalizedContact,
       source: "newsletter",
     };
@@ -214,7 +213,7 @@ export default function NewsletterChecklistModal() {
               if (event.key !== "Enter" || event.shiftKey) return;
               if (status === "success" || status === "submitting") return;
               event.preventDefault();
-              if (step < 2) {
+              if (step < TOTAL_STEPS - 1) {
                 handleNext();
               } else {
                 handleSubmit();
@@ -231,13 +230,13 @@ export default function NewsletterChecklistModal() {
             </button>
             <div className="flex items-center justify-between">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold">
-                Step {step + 1} of 3
+                Step {step + 1} of {TOTAL_STEPS}
               </p>
             </div>
             <div className="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-[#0E79B2] transition-all"
-                style={{ width: `${((step + 1) / 3) * 100}%` }}
+                style={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
               ></div>
             </div>
 
@@ -266,37 +265,6 @@ export default function NewsletterChecklistModal() {
               <>
                 <div className="mt-6 space-y-4">
                   {step === 0 && (
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-[#2D3748] mb-2">
-                          First name
-                        </label>
-                        <input
-                          value={values.firstName}
-                          onChange={(event) =>
-                            updateValue("firstName", event.target.value)
-                          }
-                          className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
-                          placeholder="Juan"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-[#2D3748] mb-2">
-                          Last name
-                        </label>
-                        <input
-                          value={values.lastName}
-                          onChange={(event) =>
-                            updateValue("lastName", event.target.value)
-                          }
-                          className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
-                          placeholder="Dela Cruz"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {step === 1 && (
                     <div>
                       <label className="block text-sm font-semibold text-[#2D3748] mb-2">
                         Email address
@@ -313,7 +281,7 @@ export default function NewsletterChecklistModal() {
                     </div>
                   )}
 
-                  {step === 2 && (
+                  {step === 1 && (
                     <div>
                       <label className="block text-sm font-semibold text-[#2D3748] mb-2">
                         Contact number
@@ -365,7 +333,7 @@ export default function NewsletterChecklistModal() {
                   >
                     Back
                   </button>
-                  {step < 2 ? (
+                  {step < TOTAL_STEPS - 1 ? (
                     <button
                       type="button"
                       onClick={handleNext}

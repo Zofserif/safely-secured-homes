@@ -17,13 +17,12 @@ export type FormData = {
   diy_security_plan: boolean;
   budget_band: string;
   timeline: string;
-  first_name: string; 
-  last_name: string; 
+  first_name: string;
   email: string;
   mobile: string;
 };
 
-export type LeadTier = 'Hot' | 'Warm' | 'Nurture';
+export type LeadTier = "Hot" | "Warm" | "Nurture";
 
 export type SeverityLevel = "low" | "medium" | "high";
 

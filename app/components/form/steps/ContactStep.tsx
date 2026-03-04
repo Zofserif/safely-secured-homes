@@ -19,23 +19,6 @@ export default function ContactStep({
         Where should we send your free Panatag Home Checklist?
       </p>
 
-      <div className="flex gap-4">
-        <input
-          type="text"
-          placeholder="First Name"
-          className="w-1/2 p-3 rounded-xl border border-slate-300"
-          value={formData.first_name}
-          onChange={(event) => onUpdateField("first_name", event.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Last Name"
-          className="w-1/2 p-3 rounded-xl border border-slate-300"
-          value={formData.last_name}
-          onChange={(event) => onUpdateField("last_name", event.target.value)}
-        />
-      </div>
-
       <div>
         <input
           type="email"
@@ -62,12 +45,7 @@ export default function ContactStep({
 
       <button
         onClick={onSubmit}
-        disabled={
-          !formData.email ||
-          !formData.first_name ||
-          !formData.last_name ||
-          isSubmitting
-        }
+        disabled={!formData.email || isSubmitting}
         className="w-full bg-[#0E79B2] text-white py-3 rounded-xl font-bold disabled:opacity-50 shadow-lg shadow-[#0E79B2]/30 flex justify-center items-center gap-2"
       >
         {isSubmitting ? (

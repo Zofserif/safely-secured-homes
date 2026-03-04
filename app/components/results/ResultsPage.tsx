@@ -8,6 +8,7 @@ import {
 import { getPanatagDisplayFromSafetyCategories } from "../../lib/resultsScoring";
 import { getSafetyCategoryScoresPrecise } from "../../lib/safetyScores";
 import { panatagChecklistPath } from "../../lib/site";
+import { deriveFirstNameFromEmail } from "../../lib/contactName";
 import type { CalculationResult, FormData } from "../../lib/types";
 import { RESULTS_BOOK_VISIT_URL, RESULTS_CALL_HREF } from "./constants";
 import { BLUEPRINT_CARDS } from "./blueprints";
@@ -210,7 +211,8 @@ export default function ResultsPage({
         awareness: true,
       };
     });
-  const firstName = data.first_name.trim();
+  const firstName =
+    data.first_name.trim() || deriveFirstNameFromEmail(data.email);
   const heroGreeting = firstName ? `Hi ${firstName}!` : "Hi there!";
 
   const { safetyLevel, priority, emergency } = getResultsSummary(

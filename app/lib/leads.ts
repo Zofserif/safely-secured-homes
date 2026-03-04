@@ -15,9 +15,17 @@ import type {
 
 const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT;
 
+type LeadLocation = {
+  source: "ip_header" | "unavailable";
+  country_code: string | null;
+  region: string | null;
+  city: string | null;
+};
+
 type LeadPayloadBase = {
   source: string;
   mobile: string;
+  location?: LeadLocation;
   property: {
     type: string;
     size: string;
@@ -142,7 +150,6 @@ export async function submitToEmail(
   const templateParams = {
     to_email: data.email,
     firstname: data.first_name,
-    last_name: data.last_name,
     mobile: data.mobile,
     lead_tier: result.leadTier,
     camera_count: result.cameraCount,
@@ -168,7 +175,7 @@ export async function submitToFormspree(
 
   const payload = {
     ...data,
-    _subject: `New Lead: ${data.first_name} ${data.last_name} [${result.leadTier}]`,
+    _subject: `New Lead: ${data.first_name} [${result.leadTier}]`,
     summary_camera_count: result.cameraCount,
     summary_nvr_channel: result.nvrChannel,
     summary_lead_score: result.leadScore,
@@ -223,9 +230,7 @@ export async function submitLeadToSupabase(
   const safetyCategories = getSafetyCategoryScores(data);
   const { panatagRating } = getResultsSummary(data, result);
 
-  const fullName = [toSafeString(data.first_name), toSafeString(data.last_name)]
-    .filter((part) => part.length > 0)
-    .join(" ");
+  const fullName = toSafeString(data.first_name);
 
   const insertBody: LeadInsertBody = {
     email: toSafeString(data.email),

@@ -3,7 +3,10 @@ import {
   trackFormStepCompleted,
   trackFormSubmissionStarted,
 } from "../../../lib/analytics";
-import { deriveFirstNameFromEmail } from "../../../lib/contactName";
+import {
+  deriveFirstNameFromEmail,
+  normalizeFirstName,
+} from "../../../lib/contactName";
 import {
   createInitialFormData,
   SAFETY_CATEGORIES,
@@ -82,7 +85,7 @@ export const useWizardController = ({
     if (!validateContactInfo()) return;
 
     const normalizedEmail = formData.email.trim();
-    const normalizedFirstName = formData.first_name.trim().slice(0, 50);
+    const normalizedFirstName = normalizeFirstName(formData.first_name).slice(0, 50);
     const derivedFirstName = deriveFirstNameFromEmail(normalizedEmail).slice(0, 50);
     const normalizedData = {
       ...formData,

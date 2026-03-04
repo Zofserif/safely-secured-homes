@@ -1,4 +1,5 @@
 import type { FormEvent, KeyboardEvent } from "react";
+import { normalizeFirstName } from "../../../lib/contactName";
 import type { IntroStepProps } from "../types";
 
 const FIRST_NAME_MAX_LENGTH = 50;
@@ -14,7 +15,11 @@ export default function IntroStep({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canContinue) return;
-    onUpdateField("first_name", trimmedFirstName.slice(0, FIRST_NAME_MAX_LENGTH));
+    const normalizedFirstName = normalizeFirstName(trimmedFirstName).slice(
+      0,
+      FIRST_NAME_MAX_LENGTH
+    );
+    onUpdateField("first_name", normalizedFirstName);
     onNext();
   };
 

@@ -2,6 +2,20 @@ const hasLetter = (value: string): boolean => /[a-z]/i.test(value);
 
 export const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 
+export const normalizeFirstName = (value: string): string => {
+  const firstToken = value
+    .trim()
+    .split(/\s+/)
+    .find((token) => token.length > 0);
+  if (!firstToken) return "";
+
+  const lowerToken = firstToken.toLowerCase();
+  return `${lowerToken.charAt(0).toUpperCase()}${lowerToken.slice(1)}`;
+};
+
+export const resolveFirstName = (value: string): string =>
+  normalizeFirstName(value) || "there";
+
 export const deriveFirstNameFromEmail = (email: string): string => {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return "";
@@ -21,8 +35,5 @@ export const deriveFirstNameFromEmail = (email: string): string => {
     .map((token) => token.trim())
     .find((token) => token.length > 0 && hasLetter(token));
 
-  if (!firstToken) return "";
-
-  const lowerToken = firstToken.toLowerCase();
-  return `${lowerToken.charAt(0).toUpperCase()}${lowerToken.slice(1)}`;
+  return normalizeFirstName(firstToken ?? "");
 };

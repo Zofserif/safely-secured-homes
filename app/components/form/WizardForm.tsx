@@ -10,6 +10,7 @@ import IntroStep from "./steps/IntroStep";
 import ObstacleStep from "./steps/ObstacleStep";
 import PropertyTypeStep from "./steps/PropertyTypeStep";
 import SafetyCheckStep from "./steps/SafetyCheckStep";
+import SolutionStep from "./steps/SolutionStep";
 import YesNoQuestionStep from "./steps/YesNoQuestionStep";
 
 export default function WizardForm({
@@ -120,6 +121,13 @@ export default function WizardForm({
     ),
     goal_obstacle: (
       <ObstacleStep
+        formData={formData}
+        onNext={nextStep}
+        onUpdateField={updateField}
+      />
+    ),
+    solution: (
+      <SolutionStep
         formData={formData}
         onNext={nextStep}
         onUpdateField={updateField}

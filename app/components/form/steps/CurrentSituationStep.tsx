@@ -1,10 +1,6 @@
+import { resolveFirstName } from "../../../lib/contactName";
 import { HOUSEHOLD_STAGE_OPTIONS } from "../../../lib/formOptions";
 import type { CurrentSituationStepProps } from "../types";
-
-const resolveFirstName = (value: string): string => {
-  const trimmed = value.trim();
-  return trimmed || "there";
-};
 
 export default function CurrentSituationStep({
   formData,

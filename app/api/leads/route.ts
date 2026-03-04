@@ -50,6 +50,7 @@ type LeadPayloadBase = {
     desired_outcome: string;
     goal_obstacle: string;
     goal_obstacle_other: string;
+    solution: string;
     safety_habits: {
       has_spare_key: boolean | null;
       changed_wifi_default_password: boolean | null;
@@ -176,6 +177,7 @@ const sanitizeLeadPayloadBase = (payload: Record<string, unknown>): LeadPayloadB
       desired_outcome: toSafeString(preferences.desired_outcome),
       goal_obstacle: toSafeString(preferences.goal_obstacle),
       goal_obstacle_other: toSafeString(preferences.goal_obstacle_other),
+      solution: toSafeString(preferences.solution),
       safety_habits: {
         has_spare_key: toNullableBoolean(safetyHabits.has_spare_key),
         changed_wifi_default_password: toNullableBoolean(

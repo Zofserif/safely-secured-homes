@@ -29,6 +29,7 @@ export type FormData = {
   desired_outcome: string;
   goal_obstacle: string;
   goal_obstacle_other: string;
+  solution: string;
   first_name: string;
   email: string;
   mobile: string;

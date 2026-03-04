@@ -1,10 +1,6 @@
+import { resolveFirstName } from "../../../lib/contactName";
 import { DESIRED_OUTCOME_OPTIONS } from "../../../lib/formOptions";
 import type { DesiredOutcomeStepProps } from "../types";
-
-const resolveFirstName = (value: string): string => {
-  const trimmed = value.trim();
-  return trimmed || "there";
-};
 
 export default function DesiredOutcomeStep({
   formData,

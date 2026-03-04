@@ -63,6 +63,59 @@ export const GOAL_OBSTACLE_OPTIONS = [
   "I don't want solutions that feel uninviting",
 ] as const;
 
+export const SOLUTION_OPTIONS = {
+  DIY_HOME_SAFETY_PLAN: "Start with DIY Home Safety Plan",
+  DONE_FOR_YOU_SETUP: "Done for you Setup",
+  ONE_ON_ONE_HOME_SECURITY_CONSULTATION: "Get 1:1 Home Security Consultation",
+} as const;
+
+export type SolutionOptionValue =
+  (typeof SOLUTION_OPTIONS)[keyof typeof SOLUTION_OPTIONS];
+
+export type SolutionOptionCard = {
+  value: SolutionOptionValue;
+  title: string;
+  subtitle: string;
+  benefits: readonly [string, string, string];
+  isFeatured?: boolean;
+  badge?: string;
+};
+
+export const SOLUTION_OPTION_CARDS: readonly SolutionOptionCard[] = [
+  {
+    value: SOLUTION_OPTIONS.DIY_HOME_SAFETY_PLAN,
+    title: "Start with DIY Home Safety Plan",
+    subtitle: "For families who want clear guidance they can execute on their own.",
+    benefits: [
+      "Personalized checklist based on your current risks",
+      "Straightforward setup steps for quick action",
+      "Best if you prefer to move at your own pace",
+    ],
+  },
+  {
+    value: SOLUTION_OPTIONS.DONE_FOR_YOU_SETUP,
+    title: "Done for you Setup",
+    subtitle: "For homeowners who want planning, setup, and execution handled end-to-end.",
+    benefits: [
+      "Professional design and installation workflow",
+      "Balanced security and convenience for daily living",
+      "Best value for speed, confidence, and support",
+    ],
+    isFeatured: true,
+    badge: "Best value",
+  },
+  {
+    value: SOLUTION_OPTIONS.ONE_ON_ONE_HOME_SECURITY_CONSULTATION,
+    title: "Get 1:1 Home Security Consultation",
+    subtitle: "For households that want expert recommendations before deciding.",
+    benefits: [
+      "Live walkthrough of your home's priorities",
+      "Custom recommendations matched to your goals",
+      "Action plan you can review before committing",
+    ],
+  },
+] as const;
+
 export const HOME_SIZE_OPTIONS = {
   SMALL: "Small (≤120 sqm) Approx. 1-2 bedrooms",
   MEDIUM: "Medium (121-200 sqm) Approx. 3-4 bedrooms",

@@ -1,13 +1,9 @@
 import { useState } from "react";
+import { resolveFirstName } from "../../../lib/contactName";
 import { GOAL_OBSTACLE_OPTIONS } from "../../../lib/formOptions";
 import type { ObstacleStepProps } from "../types";
 
 const GOAL_OBSTACLE_OTHER_VALUE = "Other";
-
-const resolveFirstName = (value: string): string => {
-  const trimmed = value.trim();
-  return trimmed || "there";
-};
 
 export default function ObstacleStep({
   formData,

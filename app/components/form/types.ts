@@ -131,6 +131,12 @@ export type ObstacleStepProps = {
   onUpdateField: UpdateField;
 };
 
+export type SolutionStepProps = {
+  formData: FormData;
+  onNext: () => void;
+  onUpdateField: UpdateField;
+};
+
 export type PriorityAreasStepProps = {
   getArrayFieldValues: GetArrayFieldValues;
   onNext: () => void;

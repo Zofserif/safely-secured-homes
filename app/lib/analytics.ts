@@ -182,6 +182,7 @@ const legacyFormProps = (data: FormData): EventProps => ({
   desired_outcome: normalizeString(data.desired_outcome),
   goal_obstacle: normalizeString(data.goal_obstacle),
   goal_obstacle_other: normalizeString(data.goal_obstacle_other),
+  solution: normalizeString(data.solution),
   has_spare_key: data.has_spare_key,
   changed_wifi_default_password: data.changed_wifi_default_password,
   sleeps_with_earphones: data.sleeps_with_earphones,
@@ -222,6 +223,7 @@ const normalizedFormProps = (data: FormData): EventProps => {
     desired_outcome_key: slugify(data.desired_outcome),
     goal_obstacle_key: slugify(data.goal_obstacle),
     has_goal_obstacle_other: Boolean(normalizeString(data.goal_obstacle_other)),
+    solution_key: slugify(data.solution),
     has_spare_key_state: toNullableBooleanState(data.has_spare_key),
     changed_wifi_default_password_state: toNullableBooleanState(
       data.changed_wifi_default_password

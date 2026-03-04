@@ -16,7 +16,7 @@ import {
   SMART_HOME_FEATURE_OPTIONS,
   SMART_HOME_FEATURES,
 } from "../../lib/formOptions";
-import { deriveFirstNameFromEmail } from "../../lib/contactName";
+import { deriveFirstNameFromEmail, normalizeFirstName } from "../../lib/contactName";
 import { readNewsletterLead } from "../../lib/newsletterLead";
 import type { FormData } from "../../lib/types";
 import type {
@@ -57,6 +57,7 @@ export const createInitialFormData = (mode: WizardMode): FormData => {
     desired_outcome: "",
     goal_obstacle: "",
     goal_obstacle_other: "",
+    solution: "",
     first_name: "",
     email: "",
     mobile: "",
@@ -69,7 +70,9 @@ export const createInitialFormData = (mode: WizardMode): FormData => {
 
   return {
     ...baseFormData,
-    first_name: lead.first_name || deriveFirstNameFromEmail(lead.email || ""),
+    first_name: normalizeFirstName(
+      lead.first_name || deriveFirstNameFromEmail(lead.email || "")
+    ),
     email: lead.email || "",
     mobile: lead.mobile || "",
   };

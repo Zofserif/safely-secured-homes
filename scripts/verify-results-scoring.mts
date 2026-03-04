@@ -102,6 +102,7 @@ const createBaseFormData = (): FormData => ({
   desired_outcome: "",
   goal_obstacle: "",
   goal_obstacle_other: "",
+  solution: "",
   first_name: "",
   email: "",
   mobile: "",

@@ -91,7 +91,6 @@ const createBaseFormData = (): FormData => ({
   budget_band: "",
   timeline: "",
   first_name: "",
-  last_name: "",
   email: "",
   mobile: "",
 });

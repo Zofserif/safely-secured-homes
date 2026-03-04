@@ -9,9 +9,9 @@ import {
 } from "./formOptions";
 import type { LeadScoreBreakdownItem, LeadTier } from "./types";
 
-export const LEAD_SCORING_MODEL_VERSION = "answer-map-v3";
+export const LEAD_SCORING_MODEL_VERSION = "answer-map-v4";
 
-type SafetyAverageBucket = "safety_average_gte_3" | "safety_average_lt_3";
+type SafetyAverageBucket = "safety_average_lte_20" | "safety_average_gt_20";
 
 type LeadScoreQuestionKey =
   | "priority_areas"
@@ -91,8 +91,8 @@ const SMART_HOME_FEATURE_POINTS: Record<
 };
 
 const SAFETY_AVERAGE_POINTS: Record<SafetyAverageBucket, number> = {
-  safety_average_gte_3: 1,
-  safety_average_lt_3: 0,
+  safety_average_lte_20: 1,
+  safety_average_gt_20: 0,
 };
 
 export const LEAD_SCORE_ANSWER_POINTS = {
@@ -161,12 +161,12 @@ const LEAD_SCORE_QUESTION_DEFINITIONS: readonly LeadScoreQuestionDefinition[] = 
   },
   {
     id: "safety_risk_signal",
-    label: "Safety risk signal",
+    label: "Safety score risk signal",
     questionKey: "safety_average",
     answerPoints: LEAD_SCORE_ANSWER_POINTS.safety_average,
     maxPoints: 1,
     getSelectedAnswers: ({ safety_average }) => [
-      safety_average >= 3 ? "safety_average_gte_3" : "safety_average_lt_3",
+      safety_average <= 20 ? "safety_average_lte_20" : "safety_average_gt_20",
     ],
   },
 ];

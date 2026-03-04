@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { LEAD_SCORE_MAX } from "../../lib/leadScoring";
+import { clampSafetyScore } from "../../lib/safetyScale.js";
 import type {
   LeadScoreBreakdownAnswer,
   LeadScoreBreakdownItem,
@@ -124,7 +125,7 @@ const toNonNegativeInteger = (value: unknown): number =>
   Math.max(0, Math.round(toFiniteNumber(value)));
 
 const toSafetyScore = (value: unknown): number =>
-  Math.max(0, Math.min(5, Math.round(toFiniteNumber(value))));
+  clampSafetyScore(toFiniteNumber(value));
 
 const toPanatagHomeRating = (value: unknown): number => {
   const normalized = Math.round(toFiniteNumber(value));

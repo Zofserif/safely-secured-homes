@@ -108,8 +108,6 @@ export type SafetyCheckStepProps = {
     rawValue: number
   ) => void;
   isSafetyComplete: boolean;
-  ratedSafetyCount: number;
-  safetyCompletionPct: number;
   onNext: () => void;
 };
 
@@ -188,8 +186,6 @@ export type WizardControllerState = {
   formData: FormData;
   errors: FieldErrors;
   safetySliderDrafts: Partial<Record<SafetyCategoryId, number>>;
-  ratedSafetyCount: number;
-  safetyCompletionPct: number;
   isSafetyComplete: boolean;
 };
 

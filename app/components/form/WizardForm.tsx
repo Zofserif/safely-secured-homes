@@ -28,8 +28,6 @@ export default function WizardForm({
     formData,
     errors,
     safetySliderDrafts,
-    ratedSafetyCount,
-    safetyCompletionPct,
     isSafetyComplete,
     updateField,
     nextStep,
@@ -100,8 +98,6 @@ export default function WizardForm({
         safetySliderDrafts={safetySliderDrafts}
         onCommitSafetyCategorySliderValue={commitSafetyCategorySliderValue}
         isSafetyComplete={isSafetyComplete}
-        ratedSafetyCount={ratedSafetyCount}
-        safetyCompletionPct={safetyCompletionPct}
         onNext={nextStep}
       />
     ),

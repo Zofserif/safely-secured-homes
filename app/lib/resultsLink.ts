@@ -10,18 +10,21 @@ import {
 } from "./formOptions";
 import { deriveDiySecurityPlan } from "./diySecurityPlan";
 import { FormData } from "./types";
+import {
+  normalizeSafetyScore,
+  SAFETY_SCORE_MAX,
+  SAFETY_SCORE_MIN,
+} from "./safetyScale.js";
 
 const PROPERTY_TYPE_VALUES = PROPERTY_TYPES.map((option) => option.value);
 const TIMELINE_VALUES = TIMELINE_OPTIONS.map((option) => option.value);
 
-const SAFETY_MIN = 0;
-const SAFETY_MAX = 5;
 const SAFETY_FIELD_COUNT = 7;
 
 type SafetyTuple = [number, number, number, number, number, number, number];
 
-type ResultsTokenV3 = {
-  v: 3;
+type ResultsTokenV4 = {
+  v: 4;
   p: number;
   h: number;
   f: number;
@@ -122,17 +125,13 @@ const toIndexArray = (
   return indexes;
 };
 
-const normalizeSafetyScore = (value: number | null): number => {
-  if (
-    typeof value !== "number" ||
-    !Number.isInteger(value) ||
-    value < SAFETY_MIN ||
-    value > SAFETY_MAX
-  ) {
-    return SAFETY_MIN;
+const normalizeStoredSafetyScore = (value: number | null): number => {
+  const normalized = normalizeSafetyScore(value);
+  if (typeof normalized !== "number") {
+    return SAFETY_SCORE_MIN;
   }
 
-  return value;
+  return normalized;
 };
 
 const isValidOptionIndex = (
@@ -170,8 +169,8 @@ const isValidSafetyTuple = (value: unknown): value is SafetyTuple =>
     (item) =>
       typeof item === "number" &&
       Number.isInteger(item) &&
-      item >= SAFETY_MIN &&
-      item <= SAFETY_MAX
+      item >= SAFETY_SCORE_MIN &&
+      item <= SAFETY_SCORE_MAX
   );
 
 export const createResultsToken = (formData: FormData): string => {
@@ -238,21 +237,21 @@ export const createResultsToken = (formData: FormData): string => {
   const safePriorityAreas = priorityAreas ?? [];
   const safeMustFeatures = mustFeatures ?? [];
 
-  const payload: ResultsTokenV3 = {
-    v: 3,
+  const payload: ResultsTokenV4 = {
+    v: 4,
     p: propertyType,
     h: homeSize,
     f: floors,
     a: safePriorityAreas,
     c: currentSetup,
     s: [
-      normalizeSafetyScore(formData.safety_gate_entry),
-      normalizeSafetyScore(formData.safety_blindspots),
-      normalizeSafetyScore(formData.safety_side_back_entry),
-      normalizeSafetyScore(formData.safety_windows_terrace),
-      normalizeSafetyScore(formData.safety_driveway_garage),
-      normalizeSafetyScore(formData.safety_indoor_choke_points),
-      normalizeSafetyScore(formData.safety_emergency_readiness),
+      normalizeStoredSafetyScore(formData.safety_gate_entry),
+      normalizeStoredSafetyScore(formData.safety_blindspots),
+      normalizeStoredSafetyScore(formData.safety_side_back_entry),
+      normalizeStoredSafetyScore(formData.safety_windows_terrace),
+      normalizeStoredSafetyScore(formData.safety_driveway_garage),
+      normalizeStoredSafetyScore(formData.safety_indoor_choke_points),
+      normalizeStoredSafetyScore(formData.safety_emergency_readiness),
     ],
     m: safeMustFeatures,
     i: Boolean(formData.smart_home_interest),
@@ -275,7 +274,7 @@ export const parseResultsToken = (token: string): FormData | null => {
     return null;
   }
 
-  if (!isRecord(parsed) || parsed.v !== 3) {
+  if (!isRecord(parsed) || parsed.v !== 4) {
     return null;
   }
 

@@ -1,13 +1,16 @@
 import type { SafetyCategoryScores } from "./safetyScores";
 import type { LeadTier, ResultsSummary } from "./types";
+import {
+  SAFETY_SCORE_MAX,
+  SAFETY_SCORE_MIN,
+  SAFETY_TOTAL_MAX_SCORE,
+} from "./safetyScale.js";
 
 /**
  * Results scoring legend:
- * - Stored safety scale (database/form state): 0..5 where higher = more risk.
- * - Visible safety slider scale (Wizard UI): 0..5 where higher = safer.
- * - Conversion between scales: visible = 5 - storedRisk.
- * - Safety level + emergency readiness use stored risk to classify severity.
- * - Panatag rating converts to visible scale, applies readiness bonus, then normalizes to /10.
+ * - Stored safety scale (database/form state): 0..50 where higher = safer.
+ * - Safety level + emergency readiness classify severity from safety scores.
+ * - Panatag rating uses category safety scores plus emergency bonus, then normalizes to /10.
  */
 
 type SafetyLevelSummary = ResultsSummary["safetyLevel"];
@@ -15,27 +18,27 @@ type PriorityActionSummary = ResultsSummary["priority"];
 type EmergencyReadinessSummary = ResultsSummary["emergency"];
 
 type SafetyLevelThreshold = {
-  maxRiskScore: number;
+  minSafetyScore: number;
   output: SafetyLevelSummary;
   legend: string;
 };
 
-// Total risk score -> Safety Score card label/severity.
+// Total safety score -> Safety Score card label/severity.
 const SAFETY_LEVEL_THRESHOLDS: readonly SafetyLevelThreshold[] = [
   {
-    maxRiskScore: 6,
-    output: { label: "Protected", range: "0-6 Low", severity: "low" },
-    legend: "totalRiskScore 0..6 => Protected",
+    minSafetyScore: 140,
+    output: { label: "Protected", range: "140-200", severity: "low" },
+    legend: "totalSafetyScore 140..200 => Protected",
   },
   {
-    maxRiskScore: 11,
-    output: { label: "Alert", range: "7-11 Medium", severity: "medium" },
-    legend: "totalRiskScore 7..11 => Alert",
+    minSafetyScore: 90,
+    output: { label: "Alert", range: "90-139", severity: "medium" },
+    legend: "totalSafetyScore 90..139 => Alert",
   },
   {
-    maxRiskScore: Number.POSITIVE_INFINITY,
-    output: { label: "Urgent Action", range: "12-20 High", severity: "high" },
-    legend: "totalRiskScore 12..20 => Urgent Action",
+    minSafetyScore: 0,
+    output: { label: "Urgent Action", range: "0-89", severity: "high" },
+    legend: "totalSafetyScore 0..89 => Urgent Action",
   },
 ] as const;
 
@@ -46,43 +49,34 @@ const PRIORITY_ACTION_BY_LEAD_TIER: Record<LeadTier, PriorityActionSummary> = {
   Nurture: { label: "Plan & Assess", severity: "low" },
 };
 
-// Emergency risk score -> Emergency Readiness card label/severity.
+// Emergency safety score -> Emergency Readiness card label/severity.
 const EMERGENCY_READINESS_THRESHOLDS = {
-  GOOD_MAX_RISK: 0,
-  NOT_THERE_MAX_RISK: 3,
+  GOOD_MIN_SAFETY: SAFETY_SCORE_MAX,
+  NOT_THERE_MIN_SAFETY: 20,
 } as const;
 
 const PANATAG_SCALE = {
   MIN_RATING: 1,
   MAX_RATING: 10,
-  MAX_VISIBLE_SCORE: 5,
-  MAX_RAW_SCORE: 8,
+  MAX_RAW_SCORE: 80,
 } as const;
 
 type EmergencyBonusRule = {
-  minVisibleScore: number;
+  minSafetyScore: number;
   bonus: number;
   legend: string;
 };
 
-// Emergency readiness visible score -> Panatag additive bonus.
+// Emergency readiness safety score -> Panatag additive bonus.
 const EMERGENCY_BONUS_RULES: readonly EmergencyBonusRule[] = [
-  { minVisibleScore: 5, bonus: 3, legend: "emergency visible 5 => +3" },
-  { minVisibleScore: 3, bonus: 2, legend: "emergency visible 3..4 => +2" },
-  { minVisibleScore: 1, bonus: 1, legend: "emergency visible 1..2 => +1" },
-  { minVisibleScore: 0, bonus: 0, legend: "emergency visible 0 => +0" },
+  { minSafetyScore: 50, bonus: 30, legend: "emergency safety 50 => +30" },
+  { minSafetyScore: 30, bonus: 20, legend: "emergency safety 30..49 => +20" },
+  { minSafetyScore: 10, bonus: 10, legend: "emergency safety 10..29 => +10" },
+  { minSafetyScore: 0, bonus: 0, legend: "emergency safety 0..9 => +0" },
 ] as const;
 
-type PanatagVisibleScores = {
-  home_entrance: number;
-  neighborhood_safety_check: number;
-  indoor_outdoor_blindspots: number;
-  emergency_readiness_home: number;
-};
-
 type PanatagComputation = {
-  storedRiskScores: SafetyCategoryScores;
-  visibleScores: PanatagVisibleScores;
+  safetyScores: SafetyCategoryScores;
   baseAverage: number;
   emergencyBonus: number;
   emergencyBonusLegend: string;
@@ -124,45 +118,52 @@ export type PanatagDisplay = {
 const clampNumber = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
 
-const toVisibleSafetyScore = (storedRiskScore: number): number =>
-  clampNumber(PANATAG_SCALE.MAX_VISIBLE_SCORE - storedRiskScore, 0, PANATAG_SCALE.MAX_VISIBLE_SCORE);
-
-const getEmergencyBonusFromVisibleScore = (
-  visibleScore: number
+const getEmergencyBonusFromSafetyScore = (
+  safetyScore: number
 ): { bonus: number; legend: string } => {
   for (const rule of EMERGENCY_BONUS_RULES) {
-    if (visibleScore >= rule.minVisibleScore) {
+    if (safetyScore >= rule.minSafetyScore) {
       return { bonus: rule.bonus, legend: rule.legend };
     }
   }
 
-  return { bonus: 0, legend: "emergency visible fallback => +0" };
+  return { bonus: 0, legend: "emergency safety fallback => +0" };
 };
 
 const computePanatagComputation = (
   categoryRiskScores: SafetyCategoryScores
 ): PanatagComputation => {
-  const visibleScores: PanatagVisibleScores = {
-    home_entrance: toVisibleSafetyScore(categoryRiskScores.home_entrance),
-    neighborhood_safety_check: toVisibleSafetyScore(
-      categoryRiskScores.neighborhood_safety_check
+  const safetyScores: SafetyCategoryScores = {
+    home_entrance: clampNumber(
+      categoryRiskScores.home_entrance,
+      SAFETY_SCORE_MIN,
+      SAFETY_SCORE_MAX
     ),
-    indoor_outdoor_blindspots: toVisibleSafetyScore(
-      categoryRiskScores.indoor_outdoor_blindspots
+    neighborhood_safety_check: clampNumber(
+      categoryRiskScores.neighborhood_safety_check,
+      SAFETY_SCORE_MIN,
+      SAFETY_SCORE_MAX
     ),
-    emergency_readiness_home: toVisibleSafetyScore(
-      categoryRiskScores.emergency_readiness_home
+    indoor_outdoor_blindspots: clampNumber(
+      categoryRiskScores.indoor_outdoor_blindspots,
+      SAFETY_SCORE_MIN,
+      SAFETY_SCORE_MAX
+    ),
+    emergency_readiness_home: clampNumber(
+      categoryRiskScores.emergency_readiness_home,
+      SAFETY_SCORE_MIN,
+      SAFETY_SCORE_MAX
     ),
   };
 
   const baseAverage =
-    (visibleScores.home_entrance +
-      visibleScores.indoor_outdoor_blindspots +
-      visibleScores.neighborhood_safety_check) /
+    (safetyScores.home_entrance +
+      safetyScores.indoor_outdoor_blindspots +
+      safetyScores.neighborhood_safety_check) /
     3;
 
   const { bonus: emergencyBonus, legend: emergencyBonusLegend } =
-    getEmergencyBonusFromVisibleScore(visibleScores.emergency_readiness_home);
+    getEmergencyBonusFromSafetyScore(safetyScores.emergency_readiness_home);
 
   const rawScore = baseAverage + emergencyBonus;
   const normalizedScore =
@@ -174,8 +175,7 @@ const computePanatagComputation = (
   );
 
   return {
-    storedRiskScores: categoryRiskScores,
-    visibleScores,
+    safetyScores,
     baseAverage,
     emergencyBonus,
     emergencyBonusLegend,
@@ -185,25 +185,54 @@ const computePanatagComputation = (
   };
 };
 
-const getSafetyLevelThresholdLegend = (totalRiskScore: number): string =>
-  totalRiskScore <= SAFETY_LEVEL_THRESHOLDS[0].maxRiskScore
-    ? SAFETY_LEVEL_THRESHOLDS[0].legend
-    : totalRiskScore <= SAFETY_LEVEL_THRESHOLDS[1].maxRiskScore
-      ? SAFETY_LEVEL_THRESHOLDS[1].legend
-      : SAFETY_LEVEL_THRESHOLDS[2].legend;
+const getSafetyLevelThresholdLegend = (totalRiskScore: number): string => {
+  const totalSafetyScore = clampNumber(
+    totalRiskScore,
+    SAFETY_SCORE_MIN,
+    SAFETY_TOTAL_MAX_SCORE
+  );
 
-const getEmergencyReadinessLegend = (emergencyRiskScore: number): string =>
-  emergencyRiskScore <= EMERGENCY_READINESS_THRESHOLDS.GOOD_MAX_RISK
-    ? `emergencyRiskScore 0 => Good`
-    : emergencyRiskScore <= EMERGENCY_READINESS_THRESHOLDS.NOT_THERE_MAX_RISK
-      ? `emergencyRiskScore 1..3 => Not There`
-      : `emergencyRiskScore 4..5 => Worse`;
+  for (const threshold of SAFETY_LEVEL_THRESHOLDS) {
+    if (totalSafetyScore >= threshold.minSafetyScore) {
+      return threshold.legend;
+    }
+  }
+
+  return SAFETY_LEVEL_THRESHOLDS[SAFETY_LEVEL_THRESHOLDS.length - 1].legend;
+};
+
+const getEmergencyReadinessLegend = (emergencyRiskScore: number): string => {
+  const emergencySafetyScore = clampNumber(
+    emergencyRiskScore,
+    SAFETY_SCORE_MIN,
+    SAFETY_SCORE_MAX
+  );
+
+  if (emergencySafetyScore >= EMERGENCY_READINESS_THRESHOLDS.GOOD_MIN_SAFETY) {
+    return "emergencySafetyScore 50 => Good";
+  }
+
+  if (
+    emergencySafetyScore >=
+    EMERGENCY_READINESS_THRESHOLDS.NOT_THERE_MIN_SAFETY
+  ) {
+    return "emergencySafetyScore 20..49 => Not There";
+  }
+
+  return "emergencySafetyScore 0..19 => Worse";
+};
 
 export const getSafetyLevelFromTotalRiskScore = (
   totalRiskScore: number
 ): SafetyLevelSummary => {
+  const totalSafetyScore = clampNumber(
+    totalRiskScore,
+    SAFETY_SCORE_MIN,
+    SAFETY_TOTAL_MAX_SCORE
+  );
+
   for (const threshold of SAFETY_LEVEL_THRESHOLDS) {
-    if (totalRiskScore <= threshold.maxRiskScore) {
+    if (totalSafetyScore >= threshold.minSafetyScore) {
       return threshold.output;
     }
   }
@@ -218,11 +247,20 @@ export const getPriorityActionFromLeadTier = (
 export const getEmergencyReadinessFromRiskScore = (
   emergencyRiskScore: number
 ): EmergencyReadinessSummary => {
-  if (emergencyRiskScore <= EMERGENCY_READINESS_THRESHOLDS.GOOD_MAX_RISK) {
+  const emergencySafetyScore = clampNumber(
+    emergencyRiskScore,
+    SAFETY_SCORE_MIN,
+    SAFETY_SCORE_MAX
+  );
+
+  if (emergencySafetyScore >= EMERGENCY_READINESS_THRESHOLDS.GOOD_MIN_SAFETY) {
     return { label: "Good", severity: "low" };
   }
 
-  if (emergencyRiskScore <= EMERGENCY_READINESS_THRESHOLDS.NOT_THERE_MAX_RISK) {
+  if (
+    emergencySafetyScore >=
+    EMERGENCY_READINESS_THRESHOLDS.NOT_THERE_MIN_SAFETY
+  ) {
     return { label: "Not There", severity: "medium" };
   }
 

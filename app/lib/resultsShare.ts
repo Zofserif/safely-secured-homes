@@ -11,19 +11,14 @@ import {
 } from "./formOptions";
 import { deriveDiySecurityPlan } from "./diySecurityPlan";
 import { FormData } from "./types";
+import {
+  normalizeSafetyScore,
+  SAFETY_SCORE_MAX,
+  SAFETY_SCORE_MIN,
+} from "./safetyScale.js";
 
 const PROPERTY_TYPE_VALUES = PROPERTY_TYPES.map((option) => option.value);
 const TIMELINE_VALUES = TIMELINE_OPTIONS.map((option) => option.value);
-const LEGACY_MAIN_GOAL_VALUES = [
-  "Family",
-  "Security",
-  "Smart Home First",
-  "Home Access Control",
-  "Emergency Recording",
-] as const;
-
-const SAFETY_MIN = 0;
-const SAFETY_MAX = 5;
 
 type ResultsSharePayloadBase = {
   property_type: string;
@@ -46,13 +41,8 @@ type ResultsSharePayloadBase = {
   timeline: string;
 };
 
-export type ResultsSharePayloadV1 = ResultsSharePayloadBase & {
-  v: 1;
-  main_goal: string;
-};
-
-export type ResultsSharePayloadV2 = ResultsSharePayloadBase & {
-  v: 2;
+export type ResultsSharePayloadV3 = ResultsSharePayloadBase & {
+  v: 3;
 };
 
 type InvalidField = {
@@ -104,16 +94,11 @@ const normalizeOptionArray = (
   return normalized;
 };
 
-const normalizeSafetyScore = (value: unknown): number | undefined => {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return undefined;
-  }
+const normalizeStoredSafetyScore = (value: unknown): number | undefined => {
+  const normalized = normalizeSafetyScore(value);
+  if (typeof normalized !== "number") return undefined;
 
-  const normalized = Number(value.toFixed(1));
-  if (
-    normalized < SAFETY_MIN ||
-    normalized > SAFETY_MAX
-  ) {
+  if (normalized < SAFETY_SCORE_MIN || normalized > SAFETY_SCORE_MAX) {
     return undefined;
   }
 
@@ -124,7 +109,7 @@ const normalizeBoolean = (value: unknown): boolean =>
   typeof value === "boolean" ? value : Boolean(value);
 
 const collectInvalidFields = (
-  payload: Partial<ResultsSharePayloadV2>
+  payload: Partial<ResultsSharePayloadV3>
 ): InvalidField[] => {
   const invalid: InvalidField[] = [];
 
@@ -157,12 +142,12 @@ const collectInvalidFields = (
 };
 
 const toPayload = (formData: FormData): {
-  payload: ResultsSharePayloadV2 | null;
+  payload: ResultsSharePayloadV3 | null;
   invalidFields: InvalidField[];
 } => {
   const normalizedTimeline = normalizeOption(TIMELINE_VALUES, formData.timeline);
-  const payload: Partial<ResultsSharePayloadV2> = {
-    v: 2,
+  const payload: Partial<ResultsSharePayloadV3> = {
+    v: 3,
     property_type: normalizeOption(PROPERTY_TYPE_VALUES, formData.property_type),
     home_size: normalizeOption(HOME_SIZE_VALUES, formData.home_size),
     floors: normalizeOption(FLOOR_OPTIONS, formData.floors),
@@ -172,15 +157,15 @@ const toPayload = (formData: FormData): {
       true
     ),
     current_setup: normalizeOption(CURRENT_SETUP_VALUES, formData.current_setup),
-    safety_gate_entry: normalizeSafetyScore(formData.safety_gate_entry),
-    safety_blindspots: normalizeSafetyScore(formData.safety_blindspots),
-    safety_side_back_entry: normalizeSafetyScore(formData.safety_side_back_entry),
-    safety_windows_terrace: normalizeSafetyScore(formData.safety_windows_terrace),
-    safety_driveway_garage: normalizeSafetyScore(formData.safety_driveway_garage),
-    safety_indoor_choke_points: normalizeSafetyScore(
+    safety_gate_entry: normalizeStoredSafetyScore(formData.safety_gate_entry),
+    safety_blindspots: normalizeStoredSafetyScore(formData.safety_blindspots),
+    safety_side_back_entry: normalizeStoredSafetyScore(formData.safety_side_back_entry),
+    safety_windows_terrace: normalizeStoredSafetyScore(formData.safety_windows_terrace),
+    safety_driveway_garage: normalizeStoredSafetyScore(formData.safety_driveway_garage),
+    safety_indoor_choke_points: normalizeStoredSafetyScore(
       formData.safety_indoor_choke_points
     ),
-    safety_emergency_readiness: normalizeSafetyScore(
+    safety_emergency_readiness: normalizeStoredSafetyScore(
       formData.safety_emergency_readiness
     ),
     features_must: normalizeOptionArray(FEATURE_OPTIONS, formData.features_must, false),
@@ -199,7 +184,7 @@ const toPayload = (formData: FormData): {
 
   const invalidFields = collectInvalidFields(payload);
 
-  const safetyFields: Array<keyof ResultsSharePayloadV2> = [
+  const safetyFields: Array<keyof ResultsSharePayloadV3> = [
     "safety_gate_entry",
     "safety_blindspots",
     "safety_side_back_entry",
@@ -219,12 +204,12 @@ const toPayload = (formData: FormData): {
     return { payload: null, invalidFields };
   }
 
-  return { payload: payload as ResultsSharePayloadV2, invalidFields: [] };
+  return { payload: payload as ResultsSharePayloadV3, invalidFields: [] };
 };
 
 export const createShareableResultsPayload = (
   formData: FormData
-): ResultsSharePayloadV2 | null => {
+): ResultsSharePayloadV3 | null => {
   const { payload, invalidFields } = toPayload(formData);
 
   if (!payload) {
@@ -244,12 +229,7 @@ export const parseShareableResultsPayload = (
   value: unknown
 ): FormData | null => {
   if (!isRecord(value)) return null;
-  if (value.v !== 1 && value.v !== 2) return null;
-
-  if (value.v === 1) {
-    const legacyMainGoal = normalizeOption(LEGACY_MAIN_GOAL_VALUES, value.main_goal);
-    if (!legacyMainGoal) return null;
-  }
+  if (value.v !== 3) return null;
 
   const propertyType = normalizeOption(PROPERTY_TYPE_VALUES, value.property_type);
   const homeSize = normalizeOption(HOME_SIZE_VALUES, value.home_size);
@@ -260,15 +240,15 @@ export const parseShareableResultsPayload = (
     true
   );
   const currentSetup = normalizeOption(CURRENT_SETUP_VALUES, value.current_setup);
-  const safetyGateEntry = normalizeSafetyScore(value.safety_gate_entry);
-  const safetyBlindspots = normalizeSafetyScore(value.safety_blindspots);
-  const safetySideBackEntry = normalizeSafetyScore(value.safety_side_back_entry);
-  const safetyWindowsTerrace = normalizeSafetyScore(value.safety_windows_terrace);
-  const safetyDrivewayGarage = normalizeSafetyScore(value.safety_driveway_garage);
-  const safetyIndoorChokePoints = normalizeSafetyScore(
+  const safetyGateEntry = normalizeStoredSafetyScore(value.safety_gate_entry);
+  const safetyBlindspots = normalizeStoredSafetyScore(value.safety_blindspots);
+  const safetySideBackEntry = normalizeStoredSafetyScore(value.safety_side_back_entry);
+  const safetyWindowsTerrace = normalizeStoredSafetyScore(value.safety_windows_terrace);
+  const safetyDrivewayGarage = normalizeStoredSafetyScore(value.safety_driveway_garage);
+  const safetyIndoorChokePoints = normalizeStoredSafetyScore(
     value.safety_indoor_choke_points
   );
-  const safetyEmergencyReadiness = normalizeSafetyScore(
+  const safetyEmergencyReadiness = normalizeStoredSafetyScore(
     value.safety_emergency_readiness
   );
   const featuresMust = normalizeOptionArray(

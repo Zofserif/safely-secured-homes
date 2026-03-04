@@ -11,6 +11,7 @@ import {
   createInitialFormData,
   SAFETY_CATEGORIES,
 } from "../constants";
+import { clampSafetyScore } from "../../../lib/safetyScale.js";
 import type {
   FieldErrors,
   SafetyCategoryId,
@@ -108,19 +109,17 @@ export const useWizardController = ({
     const category = SAFETY_CATEGORIES.find((item) => item.id === categoryId);
     if (!category) return;
 
-    const clamped = Math.min(5, Math.max(0, rawValue));
-    const clampedOneDecimal = Number(clamped.toFixed(1));
-    const mappedValue = Number((5 - clampedOneDecimal).toFixed(1));
+    const clamped = clampSafetyScore(rawValue);
 
     setSafetySliderDrafts((prev) => ({
       ...prev,
-      [categoryId]: clampedOneDecimal,
+      [categoryId]: clamped,
     }));
 
     setFormData((prev) => {
       const updated = { ...prev };
       for (const field of category.legacyFields) {
-        updated[field] = mappedValue;
+        updated[field] = clamped;
       }
       return updated;
     });
@@ -129,9 +128,6 @@ export const useWizardController = ({
   const ratedSafetyCount = SAFETY_CATEGORIES.filter((category) =>
     category.legacyFields.every((field) => typeof formData[field] === "number")
   ).length;
-  const safetyCompletionPct = Math.round(
-    (ratedSafetyCount / SAFETY_CATEGORIES.length) * 100,
-  );
   const isSafetyComplete = ratedSafetyCount === SAFETY_CATEGORIES.length;
 
   return {
@@ -140,8 +136,6 @@ export const useWizardController = ({
     formData,
     errors,
     safetySliderDrafts,
-    ratedSafetyCount,
-    safetyCompletionPct,
     isSafetyComplete,
     updateField,
     getArrayFieldValues,

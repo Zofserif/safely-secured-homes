@@ -44,11 +44,11 @@ const getResultsSummaryForVerification = (
   };
 };
 
-type RiskFixture = {
-  homeRisk: number;
-  neighborhoodRisk: number;
-  blindspotsRisk: number;
-  emergencyRisk: number;
+type SafetyFixture = {
+  homeSafety: number;
+  neighborhoodSafety: number;
+  blindspotsSafety: number;
+  emergencySafety: number;
 };
 
 const failures: string[] = [];
@@ -68,8 +68,6 @@ const assertEqual = (
     `${label}\nExpected:\n${toSerialized(expected)}\nActual:\n${toSerialized(actual)}`
   );
 };
-
-const toStoredRisk = (visibleScore: number): number => 5 - visibleScore;
 
 const createBaseFormData = (): FormData => ({
   property_type: "",
@@ -119,72 +117,64 @@ const createResult = (leadTier: LeadTier): CalculationResult => ({
   leadScoreBreakdown: [],
 });
 
-const createRiskFormData = (fixture: RiskFixture): FormData => {
+const createSafetyFormData = (fixture: SafetyFixture): FormData => {
   const data = createBaseFormData();
 
   return {
     ...data,
-    safety_gate_entry: fixture.homeRisk,
-    safety_side_back_entry: fixture.homeRisk,
-    safety_windows_terrace: fixture.homeRisk,
-    safety_driveway_garage: fixture.neighborhoodRisk,
-    safety_blindspots: fixture.blindspotsRisk,
-    safety_indoor_choke_points: fixture.blindspotsRisk,
-    safety_emergency_readiness: fixture.emergencyRisk,
+    safety_gate_entry: fixture.homeSafety,
+    safety_side_back_entry: fixture.homeSafety,
+    safety_windows_terrace: fixture.homeSafety,
+    safety_driveway_garage: fixture.neighborhoodSafety,
+    safety_blindspots: fixture.blindspotsSafety,
+    safety_indoor_choke_points: fixture.blindspotsSafety,
+    safety_emergency_readiness: fixture.emergencySafety,
   };
 };
 
-const createCategoryRiskScoresFromVisible = (
-  homeVisible: number,
-  blindspotsVisible: number,
-  neighborhoodVisible: number,
-  emergencyVisible: number
+const createCategorySafetyScores = (
+  homeSafety: number,
+  blindspotsSafety: number,
+  neighborhoodSafety: number,
+  emergencySafety: number
 ): SafetyCategoryScores => ({
-  home_entrance: toStoredRisk(homeVisible),
-  indoor_outdoor_blindspots: toStoredRisk(blindspotsVisible),
-  neighborhood_safety_check: toStoredRisk(neighborhoodVisible),
-  emergency_readiness_home: toStoredRisk(emergencyVisible),
+  home_entrance: homeSafety,
+  indoor_outdoor_blindspots: blindspotsSafety,
+  neighborhood_safety_check: neighborhoodSafety,
+  emergency_readiness_home: emergencySafety,
 });
 
 // Safety level boundaries.
-assertEqual("Safety level 0 => Protected", getSafetyLevelFromTotalRiskScore(0), {
+assertEqual("Safety level 140 => Protected", getSafetyLevelFromTotalRiskScore(140), {
   label: "Protected",
-  range: "0-6 Low",
+  range: "140-200",
   severity: "low",
 });
-assertEqual("Safety level 6 => Protected", getSafetyLevelFromTotalRiskScore(6), {
+assertEqual("Safety level 200 => Protected", getSafetyLevelFromTotalRiskScore(200), {
   label: "Protected",
-  range: "0-6 Low",
+  range: "140-200",
   severity: "low",
 });
-assertEqual("Safety level 7 => Alert", getSafetyLevelFromTotalRiskScore(7), {
+assertEqual("Safety level 90 => Alert", getSafetyLevelFromTotalRiskScore(90), {
   label: "Alert",
-  range: "7-11 Medium",
+  range: "90-139",
   severity: "medium",
 });
-assertEqual("Safety level 11 => Alert", getSafetyLevelFromTotalRiskScore(11), {
+assertEqual("Safety level 139 => Alert", getSafetyLevelFromTotalRiskScore(139), {
   label: "Alert",
-  range: "7-11 Medium",
+  range: "90-139",
   severity: "medium",
 });
-assertEqual(
-  "Safety level 12 => Urgent Action",
-  getSafetyLevelFromTotalRiskScore(12),
-  {
-    label: "Urgent Action",
-    range: "12-20 High",
-    severity: "high",
-  }
-);
-assertEqual(
-  "Safety level 20 => Urgent Action",
-  getSafetyLevelFromTotalRiskScore(20),
-  {
-    label: "Urgent Action",
-    range: "12-20 High",
-    severity: "high",
-  }
-);
+assertEqual("Safety level 0 => Urgent Action", getSafetyLevelFromTotalRiskScore(0), {
+  label: "Urgent Action",
+  range: "0-89",
+  severity: "high",
+});
+assertEqual("Safety level 89 => Urgent Action", getSafetyLevelFromTotalRiskScore(89), {
+  label: "Urgent Action",
+  range: "0-89",
+  severity: "high",
+});
 
 // Priority action mapping.
 assertEqual(
@@ -205,85 +195,85 @@ assertEqual(
 
 // Emergency readiness boundaries.
 assertEqual(
-  "Emergency risk 0 => Good",
-  getEmergencyReadinessFromRiskScore(0),
+  "Emergency safety 50 => Good",
+  getEmergencyReadinessFromRiskScore(50),
   { label: "Good", severity: "low" }
 );
 assertEqual(
-  "Emergency risk 1 => Not There",
-  getEmergencyReadinessFromRiskScore(1),
+  "Emergency safety 49 => Not There",
+  getEmergencyReadinessFromRiskScore(49),
   { label: "Not There", severity: "medium" }
 );
 assertEqual(
-  "Emergency risk 3 => Not There",
-  getEmergencyReadinessFromRiskScore(3),
+  "Emergency safety 20 => Not There",
+  getEmergencyReadinessFromRiskScore(20),
   { label: "Not There", severity: "medium" }
 );
 assertEqual(
-  "Emergency risk 4 => Worse",
-  getEmergencyReadinessFromRiskScore(4),
+  "Emergency safety 19 => Worse",
+  getEmergencyReadinessFromRiskScore(19),
   { label: "Worse", severity: "high" }
 );
 assertEqual(
-  "Emergency risk 5 => Worse",
-  getEmergencyReadinessFromRiskScore(5),
+  "Emergency safety 0 => Worse",
+  getEmergencyReadinessFromRiskScore(0),
   { label: "Worse", severity: "high" }
 );
 
-// Floor-based safety normalization from decimal slider-derived risk values.
-const decimalFloorFixtureData = createRiskFormData({
-  homeRisk: 2.9,
-  neighborhoodRisk: 2.9,
-  blindspotsRisk: 3.9,
-  emergencyRisk: 3.9,
+// Floor-based safety normalization from decimal safety values.
+const decimalFloorFixtureData = createSafetyFormData({
+  homeSafety: 29.9,
+  neighborhoodSafety: 29.9,
+  blindspotsSafety: 39.9,
+  emergencySafety: 39.9,
 });
 assertEqual(
-  "Decimal risk values are floored in category scores",
+  "Decimal safety values are floored in category scores",
   getSafetyCategoryScores(decimalFloorFixtureData),
   {
-    home_entrance: 2,
-    neighborhood_safety_check: 2,
-    indoor_outdoor_blindspots: 3,
-    emergency_readiness_home: 3,
+    home_entrance: 29,
+    neighborhood_safety_check: 29,
+    indoor_outdoor_blindspots: 39,
+    emergency_readiness_home: 39,
   }
 );
 assertEqual(
   "Decimal floor fixture safety summary reflects floored totals",
   getSafetySummary(decimalFloorFixtureData),
   {
-    total: 10,
-    average: 2.5,
-    max: 20,
-    emergencyReadinessScore: 3,
+    total: 136,
+    average: 34,
+    max: 200,
+    emergencyReadinessScore: 39,
   }
 );
 
-// Panatag deterministic scenarios using visible score fixtures.
+// Panatag deterministic scenarios using safety score fixtures.
 assertEqual(
-  "Panatag 5,5,5 + emergency 5 => 10",
+  "Panatag 50,50,50 + emergency 50 => 10",
   getPanatagRatingFromSafetyCategories(
-    createCategoryRiskScoresFromVisible(5, 5, 5, 5)
+    createCategorySafetyScores(50, 50, 50, 50)
   ),
   10
 );
 assertEqual(
   "Panatag 0,0,0 + emergency 0 => 1",
   getPanatagRatingFromSafetyCategories(
-    createCategoryRiskScoresFromVisible(0, 0, 0, 0)
+    createCategorySafetyScores(0, 0, 0, 0)
   ),
   1
 );
 assertEqual(
-  "Panatag 3,3,3 + emergency 2 => 6",
+  "Panatag 30,30,30 + emergency 29 => 6",
   getPanatagRatingFromSafetyCategories(
-    createCategoryRiskScoresFromVisible(3, 3, 3, 2)
+    createCategorySafetyScores(30, 30, 30, 29)
   ),
   6
 );
 assertEqual(
-  "Panatag 2,4,3 + emergency 4 => 7",
+  "Panatag 20,40,30 + emergency 45 => 7",
   getPanatagRatingFromSafetyCategories(
-    createCategoryRiskScoresFromVisible(2, 4, 3, 4)
+    createCategorySafetyScores(20, 40, 30, 45)
   ),
   7
 );
@@ -296,74 +286,74 @@ const summaryFixtures: Array<{
   expected: ResultsSummary;
 }> = [
   {
-    name: "low-risk + nurture",
-    data: createRiskFormData({
-      homeRisk: 0,
-      neighborhoodRisk: 0,
-      blindspotsRisk: 0,
-      emergencyRisk: 0,
+    name: "high-safety + nurture",
+    data: createSafetyFormData({
+      homeSafety: 50,
+      neighborhoodSafety: 50,
+      blindspotsSafety: 50,
+      emergencySafety: 50,
     }),
     result: createResult("Nurture"),
     expected: {
-      safetyTotal: 0,
-      safetyMax: 20,
-      safetyLevel: { label: "Protected", range: "0-6 Low", severity: "low" },
+      safetyTotal: 200,
+      safetyMax: 200,
+      safetyLevel: { label: "Protected", range: "140-200", severity: "low" },
       priority: { label: "Plan & Assess", severity: "low" },
       emergency: { label: "Good", severity: "low" },
-      emergencyReadinessScore: 0,
+      emergencyReadinessScore: 50,
       panatagRating: 10,
     },
   },
   {
-    name: "medium-risk + warm",
-    data: createRiskFormData({
-      homeRisk: 3,
-      neighborhoodRisk: 2,
-      blindspotsRisk: 3,
-      emergencyRisk: 3,
+    name: "mid-safety + warm",
+    data: createSafetyFormData({
+      homeSafety: 30,
+      neighborhoodSafety: 20,
+      blindspotsSafety: 30,
+      emergencySafety: 30,
     }),
     result: createResult("Warm"),
     expected: {
-      safetyTotal: 11,
-      safetyMax: 20,
-      safetyLevel: { label: "Alert", range: "7-11 Medium", severity: "medium" },
+      safetyTotal: 110,
+      safetyMax: 200,
+      safetyLevel: { label: "Alert", range: "90-139", severity: "medium" },
       priority: { label: "Book & Secure", severity: "medium" },
       emergency: { label: "Not There", severity: "medium" },
-      emergencyReadinessScore: 3,
-      panatagRating: 5,
+      emergencyReadinessScore: 30,
+      panatagRating: 6,
     },
   },
   {
-    name: "high-risk + hot",
-    data: createRiskFormData({
-      homeRisk: 5,
-      neighborhoodRisk: 5,
-      blindspotsRisk: 5,
-      emergencyRisk: 5,
+    name: "low-safety + hot",
+    data: createSafetyFormData({
+      homeSafety: 5,
+      neighborhoodSafety: 10,
+      blindspotsSafety: 5,
+      emergencySafety: 10,
     }),
     result: createResult("Hot"),
     expected: {
-      safetyTotal: 20,
-      safetyMax: 20,
-      safetyLevel: { label: "Urgent Action", range: "12-20 High", severity: "high" },
+      safetyTotal: 30,
+      safetyMax: 200,
+      safetyLevel: { label: "Urgent Action", range: "0-89", severity: "high" },
       priority: { label: "Emergency Secure", severity: "high" },
       emergency: { label: "Worse", severity: "high" },
-      emergencyReadinessScore: 5,
-      panatagRating: 1,
+      emergencyReadinessScore: 10,
+      panatagRating: 3,
     },
   },
   {
-    name: "decimal-risk floor behavior near threshold",
+    name: "decimal-safety floor behavior near threshold",
     data: decimalFloorFixtureData,
     result: createResult("Warm"),
     expected: {
-      safetyTotal: 10,
-      safetyMax: 20,
-      safetyLevel: { label: "Alert", range: "7-11 Medium", severity: "medium" },
+      safetyTotal: 136,
+      safetyMax: 200,
+      safetyLevel: { label: "Alert", range: "90-139", severity: "medium" },
       priority: { label: "Book & Secure", severity: "medium" },
       emergency: { label: "Not There", severity: "medium" },
-      emergencyReadinessScore: 3,
-      panatagRating: 5,
+      emergencyReadinessScore: 39,
+      panatagRating: 7,
     },
   },
 ];
@@ -379,15 +369,15 @@ for (const fixture of summaryFixtures) {
 
 // Troubleshooting helper shape sanity check.
 const breakdown = buildResultsScoringBreakdown({
-  totalRiskScore: 11,
+  totalRiskScore: 110,
   leadTier: "Warm",
-  emergencyRiskScore: 3,
-  categoryRiskScores: createCategoryRiskScoresFromVisible(3, 3, 3, 2),
+  emergencyRiskScore: 30,
+  categoryRiskScores: createCategorySafetyScores(30, 30, 20, 30),
 });
 
 assertEqual("Breakdown includes expected safety output", breakdown.outputs.safetyLevel, {
   label: "Alert",
-  range: "7-11 Medium",
+  range: "90-139",
   severity: "medium",
 });
 assertEqual("Breakdown includes expected priority output", breakdown.outputs.priority, {
@@ -401,7 +391,7 @@ assertEqual("Breakdown includes expected emergency output", breakdown.outputs.em
 assertEqual(
   "Breakdown panatag output matches helper",
   breakdown.outputs.panatagRating,
-  getPanatagRatingFromSafetyCategories(createCategoryRiskScoresFromVisible(3, 3, 3, 2))
+  getPanatagRatingFromSafetyCategories(createCategorySafetyScores(30, 30, 20, 30))
 );
 
 if (failures.length > 0) {

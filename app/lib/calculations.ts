@@ -76,6 +76,7 @@ const getPriorityAreaCameraContribution = (
 };
 
 export const getResultsSummary = (data: FormData, result: CalculationResult): ResultsSummary => {
+  // Safety totals are now safety-oriented (higher score = safer).
   const safety = getSafetySummary(data);
   const safetyCategoryScores = getSafetyCategoryScores(data);
   const safetyTotal = safety.total;

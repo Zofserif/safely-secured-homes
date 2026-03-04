@@ -12,6 +12,7 @@ export type FormData = {
   has_smoke_alarm_or_fire_extinguisher: boolean | null;
   has_first_aid_or_medicine_ready: boolean | null;
   knows_local_emergency_contacts: boolean | null;
+  // Stored on a safety-oriented 0..50 scale: 0 = riskiest, 50 = safest.
   safety_gate_entry: number | null;
   safety_blindspots: number | null;
   safety_side_back_entry: number | null;
@@ -57,6 +58,7 @@ export type LeadScoreBreakdownItem = {
 };
 
 export type ResultsSummary = {
+  // Aggregate safety score: 0..200 (4 categories x max 50 each).
   safetyTotal: number;
   safetyMax: number;
   safetyLevel: {

@@ -1,7 +1,12 @@
 import type { FormData } from "./types";
+import {
+  SAFETY_SCORE_MAX,
+  SAFETY_SCORE_MIN,
+  SAFETY_TOTAL_MAX_SCORE,
+} from "./safetyScale.js";
 
-// Category scores are stored as risk-oriented values:
-// 0 = safer, 5 = higher risk. Results summary mappings consume this scale.
+// Category scores are stored as safety-oriented values:
+// 0 = riskiest, 50 = safest. Results summary mappings consume this scale.
 export type SafetyCategoryScores = {
   home_entrance: number;
   neighborhood_safety_check: number;
@@ -12,20 +17,24 @@ export type SafetyCategoryScores = {
 export type SafetySummary = {
   total: number;
   average: number;
-  max: 20;
+  max: typeof SAFETY_TOTAL_MAX_SCORE;
   emergencyReadinessScore: number;
 };
 
-// Normalizes any unknown input into a floored integer risk score on the stored 0..5 scale.
+// Normalizes any unknown input into a floored integer safety score on the stored 0..50 scale.
 export const toSafetyScore = (value: unknown): number => {
-  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
-  return Math.max(0, Math.min(5, Math.floor(value)));
+  if (typeof value !== "number" || !Number.isFinite(value)) return SAFETY_SCORE_MIN;
+
+  const clamped = Math.min(SAFETY_SCORE_MAX, Math.max(SAFETY_SCORE_MIN, value));
+  return Math.floor(clamped);
 };
 
-// Preserves one-decimal precision on the same stored 0..5 risk scale.
+// Preserves one-decimal precision on the same stored 0..50 safety scale.
 export const toSafetyScorePrecise = (value: unknown): number => {
-  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
-  return Number(Math.max(0, Math.min(5, value)).toFixed(1));
+  if (typeof value !== "number" || !Number.isFinite(value)) return SAFETY_SCORE_MIN;
+
+  const clamped = Math.min(SAFETY_SCORE_MAX, Math.max(SAFETY_SCORE_MIN, value));
+  return Number(clamped.toFixed(1));
 };
 
 const averageSafetyScore = (values: unknown[]): number => {
@@ -45,7 +54,7 @@ const averageSafetyScorePrecise = (values: unknown[]): number => {
   return toSafetyScorePrecise(total / values.length);
 };
 
-// These are normalized category risk scores used by resultsScoring/getResultsSummary.
+// These are normalized category safety scores used by resultsScoring/getResultsSummary.
 export const getSafetyCategoryScores = (data: FormData): SafetyCategoryScores => ({
   home_entrance: averageSafetyScore([
     data.safety_gate_entry,
@@ -60,7 +69,7 @@ export const getSafetyCategoryScores = (data: FormData): SafetyCategoryScores =>
   emergency_readiness_home: toSafetyScore(data.safety_emergency_readiness),
 });
 
-// These retain one-decimal category risk precision for display-oriented scoring.
+// These retain one-decimal category safety precision for display-oriented scoring.
 export const getSafetyCategoryScoresPrecise = (
   data: FormData
 ): SafetyCategoryScores => ({
@@ -77,7 +86,7 @@ export const getSafetyCategoryScoresPrecise = (
   emergency_readiness_home: toSafetyScorePrecise(data.safety_emergency_readiness),
 });
 
-// Aggregate risk summary that drives Safety Score and Emergency Readiness classifications.
+// Aggregate safety summary that drives Safety Score and Emergency Readiness classifications.
 export const getSafetySummary = (data: FormData): SafetySummary => {
   const categoryScores = getSafetyCategoryScores(data);
   const total = Object.values(categoryScores).reduce<number>(
@@ -88,7 +97,7 @@ export const getSafetySummary = (data: FormData): SafetySummary => {
   return {
     total,
     average: total / 4,
-    max: 20,
+    max: SAFETY_TOTAL_MAX_SCORE,
     emergencyReadinessScore: categoryScores.emergency_readiness_home,
   };
 };

@@ -12,7 +12,7 @@ export default function DesiredOutcomeStep({
   return (
     <div className="space-y-5">
       <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
-        If you could achieve this in the next week, {firstName}, what would be your
+        If you could achieve this in next week, {firstName}, what would be your
         main goal?
       </h3>
 

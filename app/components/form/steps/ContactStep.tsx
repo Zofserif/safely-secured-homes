@@ -63,11 +63,21 @@ export default function ContactStep({
 
       <p className="mx-auto text-center text-xs text-slate-500 sm:text-sm md:max-w-xl">
         By submitting, you agree to our{" "}
-        <Link href="/privacy" className="font-semibold text-[#0E79B2] underline">
+        <Link
+          href="/privacy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-[#0E79B2] underline"
+        >
           Privacy Policy
         </Link>{" "}
         and{" "}
-        <Link href="/terms" className="font-semibold text-[#0E79B2] underline">
+        <Link
+          href="/terms"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-[#0E79B2] underline"
+        >
           Terms of Service
         </Link>
         .

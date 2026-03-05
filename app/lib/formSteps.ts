@@ -46,8 +46,8 @@ export const FORM_STEPS = [
   { id: "household_stage", label: "Household stage" },
   { id: "desired_outcome", label: "Desired outcome" },
   { id: "goal_obstacle", label: "Goal obstacle" },
-  { id: "goal_obstacle_other", label: "Anything else (optional)" },
   { id: "solution", label: "Solution" },
+  { id: "goal_obstacle_other", label: "Anything else (optional)" },
   { id: "contact_details", label: "Contact details" },
 ] as const;
 

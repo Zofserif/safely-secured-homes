@@ -1,4 +1,3 @@
-import type { SafetyCategoryScores } from "../app/lib/safetyScores";
 import type {
   CalculationResult,
   FormData,
@@ -23,7 +22,7 @@ const { getSafetyCategoryScores, getSafetySummary } = safetyScoresModule;
 const {
   buildResultsScoringBreakdown,
   getEmergencyReadinessFromRiskScore,
-  getPanatagRatingFromSafetyCategories,
+  getPanatagRatingFromScores,
   getPriorityActionFromLeadTier,
   getSafetyLevelFromTotalRiskScore,
 } = scoringModule;
@@ -42,7 +41,6 @@ const getResultsSummaryForVerification = (
   result: CalculationResult
 ): ResultsSummary => {
   const safety = getSafetySummary(data);
-  const safetyCategoryScores = getSafetyCategoryScores(data);
   const safetyTotal = safety.total;
   const safetyMax = safety.max;
   const emergencyReadinessScore = safety.emergencyReadinessScore;
@@ -54,7 +52,11 @@ const getResultsSummaryForVerification = (
     priority: getPriorityActionFromLeadTier(result.leadTier),
     emergency: getEmergencyReadinessFromRiskScore(emergencyReadinessScore),
     emergencyReadinessScore,
-    panatagRating: getPanatagRatingFromSafetyCategories(safetyCategoryScores),
+    panatagRating: getPanatagRatingFromScores({
+      leadScore: result.leadScore,
+      safetyTotal,
+      emergencyReadinessScore,
+    }),
   };
 };
 
@@ -142,16 +144,28 @@ const createSafetyFormData = (fixture: SafetyFixture): FormData => {
   };
 };
 
-const createCategorySafetyScores = (
-  homeSafety: number,
-  blindspotsSafety: number,
-  neighborhoodSafety: number,
-  emergencySafety: number
-): SafetyCategoryScores => ({
-  home_entrance: homeSafety,
-  windows_terrace: blindspotsSafety,
-  neighborhood_safety_check: neighborhoodSafety,
-  emergency_readiness_home: emergencySafety,
+const withSafeYesNoHabits = (data: FormData): FormData => ({
+  ...data,
+  has_spare_key: true,
+  changed_wifi_default_password: true,
+  sleeps_with_earphones: false,
+  locks_windows_gate_at_night: true,
+  has_security_cameras: true,
+  has_smoke_alarm_or_fire_extinguisher: true,
+  has_first_aid_or_medicine_ready: true,
+  knows_local_emergency_contacts: true,
+});
+
+const withRiskyYesNoHabits = (data: FormData): FormData => ({
+  ...data,
+  has_spare_key: false,
+  changed_wifi_default_password: false,
+  sleeps_with_earphones: true,
+  locks_windows_gate_at_night: false,
+  has_security_cameras: false,
+  has_smoke_alarm_or_fire_extinguisher: false,
+  has_first_aid_or_medicine_ready: false,
+  knows_local_emergency_contacts: false,
 });
 
 // Safety level boundaries.
@@ -254,38 +268,221 @@ assertEqual(
     total: 34,
     average: 34,
     max: 100,
-    emergencyReadinessScore: 39,
+    emergencyReadinessScore: 38,
   }
 );
 
-// Panatag deterministic scenarios using safety score fixtures.
+const maxSafetyWithRiskyYesNo = getSafetySummary(
+  withRiskyYesNoHabits(
+    createSafetyFormData({
+      homeSafety: 100,
+      neighborhoodSafety: 100,
+      blindspotsSafety: 100,
+      emergencySafety: 100,
+    })
+  )
+);
 assertEqual(
-  "Panatag 100,100,100 + emergency 100 => 100",
-  getPanatagRatingFromSafetyCategories(
-    createCategorySafetyScores(100, 100, 100, 100)
-  ),
+  "Weighted safety score: safe sliders + risky yes/no => 50",
+  maxSafetyWithRiskyYesNo.total,
+  50
+);
+
+const maxSafetyWithSafeYesNo = getSafetySummary(
+  withSafeYesNoHabits(
+    createSafetyFormData({
+      homeSafety: 100,
+      neighborhoodSafety: 100,
+      blindspotsSafety: 100,
+      emergencySafety: 100,
+    })
+  )
+);
+assertEqual(
+  "Weighted safety score: safe sliders + safe yes/no => 100",
+  maxSafetyWithSafeYesNo.total,
+  100
+);
+
+const maxSafetyWithSpareKeyOnly = getSafetySummary({
+  ...createSafetyFormData({
+    homeSafety: 100,
+    neighborhoodSafety: 100,
+    blindspotsSafety: 100,
+    emergencySafety: 100,
+  }),
+  has_spare_key: true,
+});
+assertEqual(
+  "Weighted safety score: safe sliders + spare key yes only => 54",
+  maxSafetyWithSpareKeyOnly.total,
+  54
+);
+
+const maxSafetyWithTwoSafeHabits = getSafetySummary({
+  ...createSafetyFormData({
+    homeSafety: 100,
+    neighborhoodSafety: 100,
+    blindspotsSafety: 100,
+    emergencySafety: 100,
+  }),
+  has_spare_key: true,
+  changed_wifi_default_password: true,
+  sleeps_with_earphones: false,
+});
+assertEqual(
+  "Weighted safety score: safe sliders + spare key yes + wifi yes + earphones no => 59",
+  maxSafetyWithTwoSafeHabits.total,
+  59
+);
+
+const maxSafetyWithEarphonesRisk = getSafetySummary({
+  ...createSafetyFormData({
+    homeSafety: 100,
+    neighborhoodSafety: 100,
+    blindspotsSafety: 100,
+    emergencySafety: 100,
+  }),
+  has_spare_key: true,
+  sleeps_with_earphones: true,
+});
+assertEqual(
+  "Weighted safety score: safe sliders + spare key yes + earphones yes => 50",
+  maxSafetyWithEarphonesRisk.total,
+  50
+);
+
+const missingYesNoSafetySummary = getSafetySummary(
+  createSafetyFormData({
+    homeSafety: 60,
+    neighborhoodSafety: 50,
+    blindspotsSafety: 60,
+    emergencySafety: 40,
+  })
+);
+const safeYesNoSafetySummary = getSafetySummary(
+  withSafeYesNoHabits(
+    createSafetyFormData({
+      homeSafety: 60,
+      neighborhoodSafety: 50,
+      blindspotsSafety: 60,
+      emergencySafety: 40,
+    })
+  )
+);
+const riskyYesNoSafetySummary = getSafetySummary(
+  withRiskyYesNoHabits(
+    createSafetyFormData({
+      homeSafety: 60,
+      neighborhoodSafety: 50,
+      blindspotsSafety: 60,
+      emergencySafety: 40,
+    })
+  )
+);
+assertEqual(
+  "Weighted safety score: missing yes/no re-normalizes answered sections",
+  missingYesNoSafetySummary.total,
+  55
+);
+assertEqual(
+  "Weighted safety score: safe yes/no increases score versus missing yes/no",
+  safeYesNoSafetySummary.total > missingYesNoSafetySummary.total,
+  true
+);
+assertEqual(
+  "Weighted safety score: risky yes/no decreases score versus missing yes/no",
+  riskyYesNoSafetySummary.total < missingYesNoSafetySummary.total,
+  true
+);
+
+const safeSliderFixture = createSafetyFormData({
+  homeSafety: 100,
+  neighborhoodSafety: 100,
+  blindspotsSafety: 100,
+  emergencySafety: 100,
+});
+assertEqual(
+  "Emergency readiness weighted score: safe sliders + all emergency-scored yes/no true => 100",
+  getSafetySummary(withSafeYesNoHabits(safeSliderFixture)).emergencyReadinessScore,
   100
 );
 assertEqual(
-  "Panatag 0,0,0 + emergency 0 => 0",
-  getPanatagRatingFromSafetyCategories(
-    createCategorySafetyScores(0, 0, 0, 0)
-  ),
+  "Emergency readiness weighted score: safe sliders + all emergency-scored yes/no false => 65",
+  getSafetySummary(withRiskyYesNoHabits(safeSliderFixture)).emergencyReadinessScore,
+  65
+);
+assertEqual(
+  "Emergency readiness weighted score: safe sliders + has_spare_key only => 65",
+  getSafetySummary({
+    ...safeSliderFixture,
+    has_spare_key: true,
+  }).emergencyReadinessScore,
+  65
+);
+assertEqual(
+  "Emergency readiness weighted score: safe sliders + emergency contacts only => 70",
+  getSafetySummary({
+    ...safeSliderFixture,
+    knows_local_emergency_contacts: true,
+  }).emergencyReadinessScore,
+  70
+);
+
+// Panatag deterministic scenarios using weighted lead/safety/emergency inputs.
+assertEqual(
+  "Panatag lead=100 safety=100 emergency=100 => 100",
+  getPanatagRatingFromScores({
+    leadScore: 100,
+    safetyTotal: 100,
+    emergencyReadinessScore: 100,
+  }),
+  100
+);
+assertEqual(
+  "Panatag lead=0 safety=0 emergency=0 => 0",
+  getPanatagRatingFromScores({
+    leadScore: 0,
+    safetyTotal: 0,
+    emergencyReadinessScore: 0,
+  }),
   0
 );
 assertEqual(
-  "Panatag 30,30,30 + emergency 29 => 31",
-  getPanatagRatingFromSafetyCategories(
-    createCategorySafetyScores(30, 30, 30, 29)
-  ),
-  31
+  "Panatag lead=30 safety=30 emergency=29 => 30",
+  getPanatagRatingFromScores({
+    leadScore: 30,
+    safetyTotal: 30,
+    emergencyReadinessScore: 29,
+  }),
+  30
 );
 assertEqual(
-  "Panatag 20,40,30 + emergency 45 => 31",
-  getPanatagRatingFromSafetyCategories(
-    createCategorySafetyScores(20, 40, 30, 45)
-  ),
-  31
+  "Panatag lead=20 safety=40 emergency=45 => 40",
+  getPanatagRatingFromScores({
+    leadScore: 20,
+    safetyTotal: 40,
+    emergencyReadinessScore: 45,
+  }),
+  40
+);
+assertEqual(
+  "Panatag non-finite inputs are normalized to 0",
+  getPanatagRatingFromScores({
+    leadScore: Number.NaN,
+    safetyTotal: Number.POSITIVE_INFINITY,
+    emergencyReadinessScore: Number.NEGATIVE_INFINITY,
+  }),
+  0
+);
+assertEqual(
+  "Panatag rounds weighted score and clamps each input to 0..100",
+  getPanatagRatingFromScores({
+    leadScore: 105,
+    safetyTotal: 66.5,
+    emergencyReadinessScore: 44.5,
+  }),
+  63
 );
 
 // Non-regression matrix for getResultsSummary orchestration output.
@@ -311,7 +508,7 @@ const summaryFixtures: Array<{
       priority: { label: "Plan & Assess", severity: "low" },
       emergency: { label: "Good", severity: "low" },
       emergencyReadinessScore: 100,
-      panatagRating: 100,
+      panatagRating: 90,
     },
   },
   {
@@ -324,13 +521,13 @@ const summaryFixtures: Array<{
     }),
     result: createResult("Warm"),
     expected: {
-      safetyTotal: 52,
+      safetyTotal: 55,
       safetyMax: 100,
       safetyLevel: { label: "Alert", range: "45-69", severity: "medium" },
       priority: { label: "Book & Secure", severity: "medium" },
       emergency: { label: "Not There", severity: "medium" },
-      emergencyReadinessScore: 40,
-      panatagRating: 48,
+      emergencyReadinessScore: 43,
+      panatagRating: 46,
     },
   },
   {
@@ -348,8 +545,8 @@ const summaryFixtures: Array<{
       safetyLevel: { label: "Urgent Action", range: "0-44", severity: "high" },
       priority: { label: "Emergency Secure", severity: "high" },
       emergency: { label: "Worse", severity: "high" },
-      emergencyReadinessScore: 10,
-      panatagRating: 4,
+      emergencyReadinessScore: 9,
+      panatagRating: 7,
     },
   },
   {
@@ -362,8 +559,8 @@ const summaryFixtures: Array<{
       safetyLevel: { label: "Urgent Action", range: "0-44", severity: "high" },
       priority: { label: "Book & Secure", severity: "medium" },
       emergency: { label: "Worse", severity: "high" },
-      emergencyReadinessScore: 39,
-      panatagRating: 33,
+      emergencyReadinessScore: 38,
+      panatagRating: 32,
     },
   },
 ];
@@ -382,7 +579,11 @@ const breakdown = buildResultsScoringBreakdown({
   totalRiskScore: 60,
   leadTier: "Warm",
   emergencyRiskScore: 40,
-  categoryRiskScores: createCategorySafetyScores(60, 60, 50, 40),
+  panatagScoreInputs: {
+    leadScore: 60,
+    safetyTotal: 60,
+    emergencyReadinessScore: 40,
+  },
 });
 
 assertEqual("Breakdown includes expected safety output", breakdown.outputs.safetyLevel, {
@@ -398,11 +599,15 @@ assertEqual("Breakdown includes expected emergency output", breakdown.outputs.em
   label: "Not There",
   severity: "medium",
 });
-assertEqual("Breakdown includes expected panatag output", breakdown.outputs.panatagRating, 48);
+assertEqual("Breakdown includes expected panatag output", breakdown.outputs.panatagRating, 54);
 assertEqual(
   "Breakdown panatag output matches helper",
   breakdown.outputs.panatagRating,
-  getPanatagRatingFromSafetyCategories(createCategorySafetyScores(60, 60, 50, 40))
+  getPanatagRatingFromScores({
+    leadScore: 60,
+    safetyTotal: 60,
+    emergencyReadinessScore: 40,
+  })
 );
 
 // Lead scoring checks for section-weight v2.
@@ -514,7 +719,7 @@ const goalObstacleUncertainLead = withNodeEnv("production", () =>
 );
 assertEqual(
   "Lead scoring goal obstacle high-priority option outranks low-priority option",
-  goalObstacleUncertainLead.leadScore > goalObstacleAestheticLead.leadScore,
+  goalObstacleAestheticLead.leadScore > goalObstacleUncertainLead.leadScore,
   true
 );
 

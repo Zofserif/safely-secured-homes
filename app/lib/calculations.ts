@@ -9,13 +9,10 @@ import {
   PRIORITY_AREA_KEYS,
 } from "./formOptions";
 import { calculateLeadScore, getLeadTierFromScore } from "./leadScoring";
-import {
-  getSafetyCategoryScores,
-  getSafetySummary,
-} from "./safetyScores";
+import { getSafetySummary } from "./safetyScores";
 import {
   getEmergencyReadinessFromRiskScore,
-  getPanatagRatingFromSafetyCategories,
+  getPanatagRatingFromScores,
   getPriorityActionFromLeadTier,
   getSafetyLevelFromTotalRiskScore,
 } from "./resultsScoring";
@@ -78,7 +75,6 @@ const getPriorityAreaCameraContribution = (
 export const getResultsSummary = (data: FormData, result: CalculationResult): ResultsSummary => {
   // Safety totals are now safety-oriented (higher score = safer).
   const safety = getSafetySummary(data);
-  const safetyCategoryScores = getSafetyCategoryScores(data);
   const safetyTotal = safety.total;
   const safetyMax = safety.max;
   const emergencyReadinessScore = safety.emergencyReadinessScore;
@@ -86,7 +82,11 @@ export const getResultsSummary = (data: FormData, result: CalculationResult): Re
   const safetyLevel = getSafetyLevelFromTotalRiskScore(safetyTotal);
   const priority = getPriorityActionFromLeadTier(result.leadTier);
   const emergency = getEmergencyReadinessFromRiskScore(emergencyReadinessScore);
-  const panatagRating = getPanatagRatingFromSafetyCategories(safetyCategoryScores);
+  const panatagRating = getPanatagRatingFromScores({
+    leadScore: result.leadScore,
+    safetyTotal,
+    emergencyReadinessScore,
+  });
 
   return {
     safetyTotal,

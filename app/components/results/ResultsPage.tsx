@@ -5,8 +5,6 @@ import {
   trackBookConsultClick,
   trackChecklistDownloadClick,
 } from "../../lib/analytics";
-import { getPanatagRatingFromSafetyCategories } from "../../lib/resultsScoring";
-import { getSafetyCategoryScores } from "../../lib/safetyScores";
 import { panatagChecklistPath } from "../../lib/site";
 import { deriveFirstNameFromEmail } from "../../lib/contactName";
 import type { CalculationResult, FormData } from "../../lib/types";
@@ -215,13 +213,11 @@ export default function ResultsPage({
     data.first_name.trim() || deriveFirstNameFromEmail(data.email);
   const heroGreeting = firstName ? `Hi ${firstName}!` : "Hi there!";
 
-  const { safetyLevel, priority, emergency } = getResultsSummary(
+  const { safetyLevel, priority, emergency, panatagRating } = getResultsSummary(
     data,
     result,
   );
-  const basePanatagRating100 = getPanatagRatingFromSafetyCategories(
-    getSafetyCategoryScores(data),
-  );
+  const basePanatagRating100 = panatagRating;
   const remainingPanatagGap = Math.max(0, 100 - basePanatagRating100);
   const gainPointsByBlueprint = computeBlueprintGainPoints(remainingPanatagGap);
   const appliedGain = BLUEPRINT_CARDS.reduce<number>(

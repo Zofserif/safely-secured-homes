@@ -33,6 +33,14 @@ type ResultsSharePayloadBase = {
   safety_driveway_garage: number;
   safety_indoor_choke_points: number;
   safety_emergency_readiness: number;
+  has_spare_key?: boolean | null;
+  changed_wifi_default_password?: boolean | null;
+  sleeps_with_earphones?: boolean | null;
+  locks_windows_gate_at_night?: boolean | null;
+  has_security_cameras?: boolean | null;
+  has_smoke_alarm_or_fire_extinguisher?: boolean | null;
+  has_first_aid_or_medicine_ready?: boolean | null;
+  knows_local_emergency_contacts?: boolean | null;
   features_must: string[];
   smart_home_features?: string[];
   smart_home_interest: boolean;
@@ -108,6 +116,9 @@ const normalizeStoredSafetyScore = (value: unknown): number | undefined => {
 const normalizeBoolean = (value: unknown): boolean =>
   typeof value === "boolean" ? value : Boolean(value);
 
+const normalizeNullableBoolean = (value: unknown): boolean | null =>
+  typeof value === "boolean" ? value : null;
+
 const collectInvalidFields = (
   payload: Partial<ResultsSharePayloadV4>
 ): InvalidField[] => {
@@ -167,6 +178,24 @@ const toPayload = (formData: FormData): {
     ),
     safety_emergency_readiness: normalizeStoredSafetyScore(
       formData.safety_emergency_readiness
+    ),
+    has_spare_key: normalizeNullableBoolean(formData.has_spare_key),
+    changed_wifi_default_password: normalizeNullableBoolean(
+      formData.changed_wifi_default_password
+    ),
+    sleeps_with_earphones: normalizeNullableBoolean(formData.sleeps_with_earphones),
+    locks_windows_gate_at_night: normalizeNullableBoolean(
+      formData.locks_windows_gate_at_night
+    ),
+    has_security_cameras: normalizeNullableBoolean(formData.has_security_cameras),
+    has_smoke_alarm_or_fire_extinguisher: normalizeNullableBoolean(
+      formData.has_smoke_alarm_or_fire_extinguisher
+    ),
+    has_first_aid_or_medicine_ready: normalizeNullableBoolean(
+      formData.has_first_aid_or_medicine_ready
+    ),
+    knows_local_emergency_contacts: normalizeNullableBoolean(
+      formData.knows_local_emergency_contacts
     ),
     features_must: normalizeOptionArray(FEATURE_OPTIONS, formData.features_must, false),
     smart_home_features: normalizeOptionArray(
@@ -294,14 +323,24 @@ export const parseShareableResultsPayload = (
     floors,
     priority_areas: priorityAreas,
     current_setup: currentSetup,
-    has_spare_key: null,
-    changed_wifi_default_password: null,
-    sleeps_with_earphones: null,
-    locks_windows_gate_at_night: null,
-    has_security_cameras: null,
-    has_smoke_alarm_or_fire_extinguisher: null,
-    has_first_aid_or_medicine_ready: null,
-    knows_local_emergency_contacts: null,
+    has_spare_key: normalizeNullableBoolean(value.has_spare_key),
+    changed_wifi_default_password: normalizeNullableBoolean(
+      value.changed_wifi_default_password
+    ),
+    sleeps_with_earphones: normalizeNullableBoolean(value.sleeps_with_earphones),
+    locks_windows_gate_at_night: normalizeNullableBoolean(
+      value.locks_windows_gate_at_night
+    ),
+    has_security_cameras: normalizeNullableBoolean(value.has_security_cameras),
+    has_smoke_alarm_or_fire_extinguisher: normalizeNullableBoolean(
+      value.has_smoke_alarm_or_fire_extinguisher
+    ),
+    has_first_aid_or_medicine_ready: normalizeNullableBoolean(
+      value.has_first_aid_or_medicine_ready
+    ),
+    knows_local_emergency_contacts: normalizeNullableBoolean(
+      value.knows_local_emergency_contacts
+    ),
     safety_gate_entry: safetyGateEntry,
     safety_blindspots: safetyBlindspots,
     safety_side_back_entry: safetySideBackEntry,

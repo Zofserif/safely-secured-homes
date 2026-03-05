@@ -1,4 +1,3 @@
-import type { SafetyCategoryScores } from "./safetyScores";
 import type { LeadTier, ResultsSummary } from "./types";
 import {
   SAFETY_SCORE_MAX,
@@ -10,7 +9,7 @@ import {
  * Results scoring legend:
  * - Stored safety scale (database/form state): 0..100 where higher = safer.
  * - Safety level + emergency readiness classify severity from safety scores.
- * - Panatag rating uses category safety scores plus emergency bonus, then normalizes to /100.
+ * - Panatag rating uses weighted lead/safety/emergency scores on a 0..100 scale.
  */
 
 type SafetyLevelSummary = ResultsSummary["safetyLevel"];
@@ -55,33 +54,24 @@ const EMERGENCY_READINESS_THRESHOLDS = {
   NOT_THERE_MIN_SAFETY: 40,
 } as const;
 
-const PANATAG_SCALE = {
-  MIN_RATING: 0,
-  MAX_RATING: 100,
-  MAX_RAW_SCORE: 160,
-} as const;
+const PANATAG_WEIGHT_LEAD = 0.1;
+const PANATAG_WEIGHT_SAFETY = 0.6;
+const PANATAG_WEIGHT_EMERGENCY = 0.3;
 
-type EmergencyBonusRule = {
-  minSafetyScore: number;
-  bonus: number;
-  legend: string;
+export type PanatagScoreInputs = {
+  leadScore: number;
+  safetyTotal: number;
+  emergencyReadinessScore: number;
 };
 
-// Emergency readiness safety score -> Panatag additive bonus.
-const EMERGENCY_BONUS_RULES: readonly EmergencyBonusRule[] = [
-  { minSafetyScore: 100, bonus: 60, legend: "emergency safety 100 => +60" },
-  { minSafetyScore: 60, bonus: 40, legend: "emergency safety 60..99 => +40" },
-  { minSafetyScore: 20, bonus: 20, legend: "emergency safety 20..59 => +20" },
-  { minSafetyScore: 0, bonus: 0, legend: "emergency safety 0..19 => +0" },
-] as const;
-
 type PanatagComputation = {
-  safetyScores: SafetyCategoryScores;
-  baseAverage: number;
-  emergencyBonus: number;
-  emergencyBonusLegend: string;
-  rawScore: number;
-  normalizedScore: number;
+  leadScore: number;
+  safetyTotal: number;
+  emergencyReadinessScore: number;
+  leadContribution: number;
+  safetyContribution: number;
+  emergencyContribution: number;
+  weightedScore: number;
   outputRating: number;
 };
 
@@ -89,7 +79,7 @@ export type BuildResultsScoringBreakdownArgs = {
   totalRiskScore: number;
   leadTier: LeadTier;
   emergencyRiskScore: number;
-  categoryRiskScores: SafetyCategoryScores;
+  panatagScoreInputs: PanatagScoreInputs;
 };
 
 export type ResultsScoringBreakdown = {
@@ -99,7 +89,7 @@ export type ResultsScoringBreakdown = {
     priorityAction: string;
     emergencyReadiness: string;
     panatagFormula: string;
-    panatagEmergencyBonus: string;
+    panatagWeights: string;
   };
   outputs: {
     safetyLevel: SafetyLevelSummary;
@@ -113,66 +103,37 @@ export type ResultsScoringBreakdown = {
 const clampNumber = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
 
-const getEmergencyBonusFromSafetyScore = (
-  safetyScore: number
-): { bonus: number; legend: string } => {
-  for (const rule of EMERGENCY_BONUS_RULES) {
-    if (safetyScore >= rule.minSafetyScore) {
-      return { bonus: rule.bonus, legend: rule.legend };
-    }
-  }
-
-  return { bonus: 0, legend: "emergency safety fallback => +0" };
+const toPanatagScoreInput = (value: number): number => {
+  if (!Number.isFinite(value)) return SAFETY_SCORE_MIN;
+  return clampNumber(value, SAFETY_SCORE_MIN, SAFETY_SCORE_MAX);
 };
 
 const computePanatagComputation = (
-  categoryRiskScores: SafetyCategoryScores
+  inputs: PanatagScoreInputs
 ): PanatagComputation => {
-  const safetyScores: SafetyCategoryScores = {
-    home_entrance: clampNumber(
-      categoryRiskScores.home_entrance,
-      SAFETY_SCORE_MIN,
-      SAFETY_SCORE_MAX
-    ),
-    neighborhood_safety_check: clampNumber(
-      categoryRiskScores.neighborhood_safety_check,
-      SAFETY_SCORE_MIN,
-      SAFETY_SCORE_MAX
-    ),
-    windows_terrace: clampNumber(
-      categoryRiskScores.windows_terrace,
-      SAFETY_SCORE_MIN,
-      SAFETY_SCORE_MAX
-    ),
-    emergency_readiness_home: clampNumber(
-      categoryRiskScores.emergency_readiness_home,
-      SAFETY_SCORE_MIN,
-      SAFETY_SCORE_MAX
-    ),
-  };
-
-  const baseAverage =
-    (safetyScores.home_entrance +
-      safetyScores.windows_terrace +
-      safetyScores.neighborhood_safety_check) /
-    3;
-
-  const { bonus: emergencyBonus, legend: emergencyBonusLegend } =
-    getEmergencyBonusFromSafetyScore(safetyScores.emergency_readiness_home);
-
-  const rawScore = baseAverage + emergencyBonus;
-  const normalizedScore = (rawScore / PANATAG_SCALE.MAX_RAW_SCORE) * PANATAG_SCALE.MAX_RATING;
+  const leadScore = toPanatagScoreInput(inputs.leadScore);
+  const safetyTotal = toPanatagScoreInput(inputs.safetyTotal);
+  const emergencyReadinessScore = toPanatagScoreInput(
+    inputs.emergencyReadinessScore
+  );
+  const leadContribution = leadScore * PANATAG_WEIGHT_LEAD;
+  const safetyContribution = safetyTotal * PANATAG_WEIGHT_SAFETY;
+  const emergencyContribution =
+    emergencyReadinessScore * PANATAG_WEIGHT_EMERGENCY;
+  const weightedScore =
+    leadContribution + safetyContribution + emergencyContribution;
   const outputRating = Math.round(
-    clampNumber(normalizedScore, PANATAG_SCALE.MIN_RATING, PANATAG_SCALE.MAX_RATING)
+    clampNumber(weightedScore, SAFETY_SCORE_MIN, SAFETY_SCORE_MAX)
   );
 
   return {
-    safetyScores,
-    baseAverage,
-    emergencyBonus,
-    emergencyBonusLegend,
-    rawScore,
-    normalizedScore,
+    leadScore,
+    safetyTotal,
+    emergencyReadinessScore,
+    leadContribution,
+    safetyContribution,
+    emergencyContribution,
+    weightedScore,
     outputRating,
   };
 };
@@ -259,9 +220,9 @@ export const getEmergencyReadinessFromRiskScore = (
   return { label: "Worse", severity: "high" };
 };
 
-export const getPanatagRatingFromSafetyCategories = (
-  categoryRiskScores: SafetyCategoryScores
-): number => computePanatagComputation(categoryRiskScores).outputRating;
+export const getPanatagRatingFromScores = (
+  inputs: PanatagScoreInputs
+): number => computePanatagComputation(inputs).outputRating;
 
 export const buildResultsScoringBreakdown = (
   args: BuildResultsScoringBreakdownArgs
@@ -269,7 +230,7 @@ export const buildResultsScoringBreakdown = (
   const safetyLevel = getSafetyLevelFromTotalRiskScore(args.totalRiskScore);
   const priority = getPriorityActionFromLeadTier(args.leadTier);
   const emergency = getEmergencyReadinessFromRiskScore(args.emergencyRiskScore);
-  const panatag = computePanatagComputation(args.categoryRiskScores);
+  const panatag = computePanatagComputation(args.panatagScoreInputs);
 
   return {
     inputs: args,
@@ -278,8 +239,8 @@ export const buildResultsScoringBreakdown = (
       priorityAction: `leadTier ${args.leadTier} => ${priority.label}`,
       emergencyReadiness: getEmergencyReadinessLegend(args.emergencyRiskScore),
       panatagFormula:
-        "((home_entrance + windows_terrace + neighborhood_safety_check) / 3) + emergency_bonus; then normalize to /100",
-      panatagEmergencyBonus: panatag.emergencyBonusLegend,
+        "round((leadScore * 0.10) + (safetyTotal * 0.60) + (emergencyReadinessScore * 0.30))",
+      panatagWeights: "lead 10% + safety 60% + emergency 30%",
     },
     outputs: {
       safetyLevel,

@@ -31,17 +31,17 @@ export default function CurrentSituationStep({
                 onUpdateField("household_stage", option.value);
                 onNext();
               }}
-              className={`group w-full rounded-2xl border p-3 text-center transition-all sm:p-4 ${isSelected ? "border-[#0E79B2] bg-[#F2FAFF] ring-1 ring-[#0E79B2]/30 shadow-sm" : "border-[#E2E8F0] bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+              className={`group flex h-full min-h-[168px] w-full flex-col items-center justify-center gap-3 rounded-2xl border p-3 text-center transition-all sm:min-h-[180px] sm:gap-3.5 sm:p-4 lg:min-h-[188px] ${isSelected ? "border-[#0E79B2] bg-[#F2FAFF] ring-1 ring-[#0E79B2]/30 shadow-sm" : "border-[#E2E8F0] bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
               aria-pressed={isSelected}
             >
               <div
-                className={`mx-auto mb-2 inline-flex h-8 w-8 items-center justify-center rounded-xl transition-colors sm:mb-3 sm:h-10 sm:w-10 ${isSelected ? "bg-[#0E79B2] text-white" : "bg-slate-100 text-slate-600 group-hover:bg-[#0E79B2]/15 group-hover:text-[#0E79B2]"}`}
+                className={`mx-auto mb-0 inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors sm:h-12 sm:w-12 ${isSelected ? "bg-[#0E79B2] text-white" : "bg-slate-100 text-slate-600 group-hover:bg-[#0E79B2]/15 group-hover:text-[#0E79B2]"}`}
                 aria-hidden="true"
               >
-                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <p
-                className={`text-[12px] font-semibold leading-snug sm:text-sm lg:text-[15px] ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}
+                className={`mx-auto flex max-w-[14ch] min-h-[3.1rem] items-center justify-center text-[12px] font-semibold leading-snug sm:min-h-[3.4rem] sm:text-sm lg:text-[15px] ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}
               >
                 {option.title}
               </p>

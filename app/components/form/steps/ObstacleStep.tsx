@@ -29,17 +29,17 @@ export default function ObstacleStep({
                 onUpdateField("goal_obstacle", option.value);
                 onNext();
               }}
-              className={`group flex h-full min-h-[140px] w-full flex-col items-center justify-center rounded-2xl border p-3 text-center transition-all sm:min-h-[150px] sm:p-3.5 ${isSelected ? "border-[#0E79B2] bg-[#F2FAFF] ring-1 ring-[#0E79B2]/30 shadow-sm" : "border-[#E2E8F0] bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+              className={`group flex h-full min-h-[170px] w-full flex-col items-center justify-center gap-3 rounded-2xl border p-3 text-center transition-all sm:min-h-[184px] sm:gap-3.5 sm:p-3.5 md:min-h-[194px] ${isSelected ? "border-[#0E79B2] bg-[#F2FAFF] ring-1 ring-[#0E79B2]/30 shadow-sm" : "border-[#E2E8F0] bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
               aria-pressed={isSelected}
             >
               <div
-                className={`mx-auto mb-2 inline-flex h-8 w-8 items-center justify-center rounded-xl transition-colors sm:mb-3 sm:h-9 sm:w-9 ${isSelected ? "bg-[#0E79B2] text-white" : "bg-slate-100 text-slate-600 group-hover:bg-[#0E79B2]/15 group-hover:text-[#0E79B2]"}`}
+                className={`mx-auto mb-0 inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors sm:h-11 sm:w-11 ${isSelected ? "bg-[#0E79B2] text-white" : "bg-slate-100 text-slate-600 group-hover:bg-[#0E79B2]/15 group-hover:text-[#0E79B2]"}`}
                 aria-hidden="true"
               >
-                <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <p
-                className={`mx-auto max-w-[16ch] text-sm font-semibold leading-snug sm:text-[15px] ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}
+                className={`mx-auto flex max-w-[16ch] min-h-[3.1rem] items-center justify-center text-sm font-semibold leading-snug sm:min-h-[3.4rem] sm:text-[15px] ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}
               >
                 {option.title}
               </p>

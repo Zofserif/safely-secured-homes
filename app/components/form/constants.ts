@@ -107,13 +107,13 @@ export const DESIRED_OUTCOME_CARD_OPTIONS: readonly SingleSelectCardOption<Desir
     {
       value: DESIRED_OUTCOME_OPTIONS[3],
       title: "Prevent break-ins and theft",
-      helper: "Deter intruders and protect valuables with better coverage.",
+      helper: "Prevent intruders and protect valuables.",
       Icon: ShieldAlert,
     },
     {
       value: DESIRED_OUTCOME_OPTIONS[4],
       title: "Get hazard alerts",
-      helper: "Receive fast alerts for smoke, fire, and other urgent risks.",
+      helper: "Receive alerts for smoke, fire, and other urgent risks.",
       Icon: AlarmSmoke,
     },
     {

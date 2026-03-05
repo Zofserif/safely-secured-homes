@@ -31,7 +31,7 @@ export default function IntroStep({
   };
 
   return (
-    <div className="space-y-5 py-6 sm:py-10">
+    <div className="flex min-h-[60svh] flex-col justify-center gap-5">
       <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
         What should we call you?
       </h3>
@@ -41,7 +41,7 @@ export default function IntroStep({
           type="text"
           placeholder="First Name"
           maxLength={FIRST_NAME_MAX_LENGTH}
-          className="w-full rounded-2xl border border-[#D8DDE3] bg-white px-4 py-3.5 text-slate-800 shadow-sm outline-none transition focus-visible:border-[#0E79B2] focus-visible:ring-4 focus-visible:ring-[#0E79B2]/15"
+          className="w-full scroll-mt-[35vh] rounded-2xl border border-[#D8DDE3] bg-white px-4 py-3.5 text-center text-slate-800 shadow-sm outline-none transition focus-visible:border-[#0E79B2] focus-visible:ring-4 focus-visible:ring-[#0E79B2]/15"
           value={formData.first_name}
           onChange={(event) => onUpdateField("first_name", event.target.value)}
           onKeyDown={handleNameInputKeyDown}

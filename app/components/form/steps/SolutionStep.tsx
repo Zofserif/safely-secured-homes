@@ -24,7 +24,7 @@ export default function SolutionStep({
   return (
     <div className="space-y-6">
       <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
-        Hi {firstName}, what kind of help would you need for this?
+        Hi {firstName}, what kind of help would you need for your home?
       </h3>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-1">
@@ -62,21 +62,23 @@ export default function SolutionStep({
               className={`group relative flex h-full min-h-80 cursor-pointer select-none flex-col rounded-2xl border border-[#E2E8F0] bg-white p-5 text-left shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-200 active:scale-[0.99] hover:-translate-y-0.5 hover:border-[#0E79B2]/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0E79B2]/30 ${cardOrderClassName}`}
               aria-pressed={isSelected}
             >
-              <div className="flex w-full justify-center md:min-h-40 md:items-start">
+              <div className="flex w-full justify-center md:min-h-8 md:items-start">
                 <p className="pb-2 text-center text-3xl font-extrabold leading-snug text-[#1F2937] sm:text-4xl">
                   {option.title}
                 </p>
               </div>
 
-              <div className="mt-2 md:min-h-19">
-                <p className="text-sm leading-relaxed text-slate-600">{option.subtitle}</p>
+              <div className="mt-2 md:flex md:min-h-8 md:items-start">
+                <p className="w-full text-center text-xs leading-relaxed text-slate-600">
+                  {option.subtitle}
+                </p>
               </div>
 
-              <ul className="mt-5 flex-1 space-y-2.5">
+              <ul className="mt-3 flex-1 space-y-1 md:grid md:grid-rows-3 md:gap-1 md:space-y-0">
                 {option.benefits.map((benefit) => (
                   <li
                     key={benefit}
-                    className="flex items-start gap-2.5 text-sm leading-relaxed text-slate-700"
+                    className="flex items-start gap-2.5 text-sm leading-5 text-slate-700 md:h-full md:min-h-12"
                   >
                     <span
                       className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#EAF4FB] text-[#0E79B2]"

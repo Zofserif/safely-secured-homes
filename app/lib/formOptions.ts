@@ -85,34 +85,33 @@ export const SOLUTION_OPTION_CARDS: readonly SolutionOptionCard[] = [
   {
     value: SOLUTION_OPTIONS.DIY_HOME_SAFETY_PLAN,
     title: "DIY Home Safety Plan",
-    subtitle:
-      "For homeowners who want a clear plan they can execute at their own pace.",
+    subtitle: "Best for hands-on homeowners.",
     benefits: [
-      "Personalized checklist based on your home and priorities",
-      "Straightforward setup steps you can start this week",
-      "Flexible pace with practical guidance",
+      "Custom plan based on your Home Safety Rating",
+      "Top 7 weak-spot checklist for your home",
+      "Special offer on home security installation",
     ],
   },
   {
     value: SOLUTION_OPTIONS.DONE_FOR_YOU_SETUP,
     title: "Done-for-you Setup",
-    subtitle: "For families who want planning and setup handled end-to-end.",
+    subtitle: "Best for end-to-end support.",
     benefits: [
-      "Expert design tailored to daily routines",
-      "Professional design and installation workflow",
-      "Fastest path to confidence and support",
+      "Onsite visit with a Home Security Expert",
+      "Installation and maintenance matched to your situation",
+      "Special install + maintenance discount with PHP 1K voucher",
     ],
     isFeatured: true,
     badge: "Most Popular",
   },
   {
     value: SOLUTION_OPTIONS.ONE_ON_ONE_HOME_SECURITY_CONSULTATION,
-    title: "1:1 Home Security Consultation",
-    subtitle: "For households that want expert recommendations before deciding.",
+    title: "1:1 Home Consultation",
+    subtitle: "Best for personalized expert guidance.",
     benefits: [
-      "Live walkthrough of your risks and goals",
-      "Custom recommendations matched to your situation",
-      "Action plan you can review before committing",
+      "Live consultation call with a Home Security Expert",
+      "Custom recommendations for your home and priorities",
+      "Special discount on home security installation",
     ],
   },
 ] as const;

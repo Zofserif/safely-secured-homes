@@ -1,0 +1,6 @@
+export {
+  LEAD_SCORING_MODEL_VERSION,
+  TODO_POINT,
+  LEAD_SCORING_SECTIONS,
+  LEAD_SCORING_WEIGHT_TOTAL,
+} from "./leadScoringConfig.ts";

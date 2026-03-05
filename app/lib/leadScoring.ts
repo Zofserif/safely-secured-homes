@@ -1,65 +1,43 @@
 import {
-  BUDGET_BAND_OPTIONS,
-  CURRENT_SETUP_VALUES,
-  PRIORITY_AREAS,
-  PRIORITY_AREA_KEYS,
-  SMART_HOME_FEATURE_OPTIONS,
-  SMART_HOME_FEATURES,
-  TIMELINE_VALUES,
-} from "./formOptions.js";
+  LEAD_SCORING_MODEL_VERSION,
+  LEAD_SCORING_SECTIONS,
+  TODO_POINT,
+} from "./leadScoringConfig.js";
+import type {
+  LeadScorePointValue,
+  LeadScoringFormData,
+  LeadScoreBooleanQuestionConfig,
+  LeadScoreSingleSelectQuestionConfig,
+  LeadScoreSafetySliderInverseQuestionConfig,
+  LeadScoreTextPresenceQuestionConfig,
+} from "./leadScoringConfig";
+import { clampSafetyScore, SAFETY_SCORE_MAX } from "./safetyScale.js";
 import type { LeadScoreBreakdownItem, LeadTier } from "./types";
 
-export const LEAD_SCORING_MODEL_VERSION = "answer-map-v5";
+export { LEAD_SCORING_MODEL_VERSION };
+
 export const LEAD_SCORE_MAX = 100;
 
-type SafetyAverageBucket = "safety_average_lte_40" | "safety_average_gt_40";
-
-type LeadScoreQuestionKey =
-  | "priority_areas"
-  | "current_setup"
-  | "budget_band"
-  | "timeline"
-  | "smart_home_features"
-  | "safety_average";
-
-export type LeadScoringContext = {
-  priority_areas: string[];
-  smart_home_features: string[];
-  current_setup: string;
-  budget_band: string;
-  timeline: string;
-  safety_average: number;
-};
-
-type LeadScoreQuestionDefinition = {
+type SectionQuestionEvaluation = {
   id: string;
   label: string;
-  questionKey: LeadScoreQuestionKey;
-  answerPoints: Readonly<Record<string, number>>;
+  selectedAnswer: string | null;
+  rawPoints: number;
   maxPoints: number;
-  getSelectedAnswers: (context: LeadScoringContext) => string[];
-  getBonusPoints?: (
-    context: LeadScoringContext,
-    selectedAnswers: readonly string[]
-  ) => number;
 };
 
-type RawLeadScoreBreakdownAnswer = {
-  answer: string;
-  points: number;
-};
-
-type RawLeadScoreBreakdownItem = {
+type SectionEvaluation = {
   id: string;
   label: string;
-  questionKey: string;
-  selectedAnswers: string[];
-  matchedAnswers: RawLeadScoreBreakdownAnswer[];
-  matchedPoints: number;
-  bonusPoints: number;
-  maxPoints: number;
-  points: number;
+  weightPercent: number;
+  rawPoints: number;
+  autoMaxPoints: number;
+  effectiveMaxPoints: number;
+  exactWeightedPoints: number;
+  questions: SectionQuestionEvaluation[];
 };
+
+export type LeadScoringContext = LeadScoringFormData;
 
 export type LeadScoreCalculationResult = {
   leadScore: number;
@@ -67,133 +45,317 @@ export type LeadScoreCalculationResult = {
   leadScoringModelVersion: string;
 };
 
-const PRIORITY_AREA_POINTS: Record<(typeof PRIORITY_AREAS)[number], number> = {
-  [PRIORITY_AREA_KEYS.GENERAL_INDOOR_LIVING_AREAS]: 0,
-  [PRIORITY_AREA_KEYS.CHILD_ELDERLY_PET]: 0,
-  [PRIORITY_AREA_KEYS.ENTRANCES_CRITICAL_ZONES]: 0,
-  [PRIORITY_AREA_KEYS.OUTDOOR_PERIMETER_STREET_VIEW]: 0,
-  [PRIORITY_AREA_KEYS.NO_INTERNET_ELECTRICITY_REMOTE_PROPERTY]: 0,
-  [PRIORITY_AREA_KEYS.FRONT_DOOR_VISITOR_CHECKING]: 0,
-};
-
-const CURRENT_SETUP_POINTS: Record<(typeof CURRENT_SETUP_VALUES)[number], number> =
-  {
-    "No, I don't have a security system": 1,
-    "Yes, but it's broken/old (Needs replacement)": 0,
-    "Yes, looking to expand/upgrade": 1,
-  };
-
-const BUDGET_BAND_POINTS: Record<(typeof BUDGET_BAND_OPTIONS)[number], number> = {
-  "Starter Value (₱30K - ₱50K)": 0,
-  "My Needed Features (₱50K - ₱75K)": 1,
-  "Premium Features (₱75K+) ": 2,
-};
-
-const TIMELINE_POINTS: Record<string, number> = {
-  [TIMELINE_VALUES.ASAP]: 2,
-  [TIMELINE_VALUES.THIS_MONTH]: 1,
-  [TIMELINE_VALUES.BEFORE_MOVE_IN]: 2,
-  [TIMELINE_VALUES.RESEARCHING]: 0,
-};
-
-const SMART_HOME_FEATURE_POINTS: Record<
-  (typeof SMART_HOME_FEATURE_OPTIONS)[number],
-  number
-> = {
-  [SMART_HOME_FEATURES.AUTOMATED_LIGHTING_SYSTEM]: 1,
-  [SMART_HOME_FEATURES.SMART_VIDEO_DOORBELL]: 1,
-  [SMART_HOME_FEATURES.AUTOMATIC_ENTRY_EXIT_GATE_OPENERS]: 1,
-  [SMART_HOME_FEATURES.SMART_ENTERTAINMENT_SYSTEM]: 1,
-  [SMART_HOME_FEATURES.SMART_ELECTRONIC_SWITCH_SYSTEM]: 1,
-  [SMART_HOME_FEATURES.EMERGENCY_DECTION_SYSTEM]: 1,
-};
-
-const SAFETY_AVERAGE_POINTS: Record<SafetyAverageBucket, number> = {
-  safety_average_lte_40: 1,
-  safety_average_gt_40: 0,
-};
-
-export const LEAD_SCORE_ANSWER_POINTS = {
-  priority_areas: PRIORITY_AREA_POINTS,
-  current_setup: CURRENT_SETUP_POINTS,
-  budget_band: BUDGET_BAND_POINTS,
-  timeline: TIMELINE_POINTS,
-  smart_home_features: SMART_HOME_FEATURE_POINTS,
-  safety_average: SAFETY_AVERAGE_POINTS,
+export const LEAD_TIER_PERCENT_THRESHOLDS = {
+  HOT: 0.7,
+  WARM: 0.5,
 } as const;
 
-const LEAD_SCORE_QUESTION_DEFINITIONS: readonly LeadScoreQuestionDefinition[] = [
-  {
-    id: "priority_area_coverage",
-    label: "Priority areas coverage/perimeter focus",
-    questionKey: "priority_areas",
-    answerPoints: LEAD_SCORE_ANSWER_POINTS.priority_areas,
-    maxPoints: 2,
-    getSelectedAnswers: ({ priority_areas }) => priority_areas,
-    getBonusPoints: (_, selectedAnswers) => {
-      const validSelectionCount = selectedAnswers.filter((answer) =>
-        typeof getAnswerPoints(LEAD_SCORE_ANSWER_POINTS.priority_areas, answer) ===
-        "number"
-      ).length;
-      const moreThanHalfMin = Math.floor(PRIORITY_AREAS.length / 2) + 1;
+const WARNED_PLACEHOLDER_PATHS = new Set<string>();
 
-      if (validSelectionCount >= moreThanHalfMin) return 2;
-      if (validSelectionCount >= 1) return 1;
-      return 0;
-    },
-  },
-  {
-    id: "current_setup_urgency",
-    label: "Current setup indicates install/replacement urgency",
-    questionKey: "current_setup",
-    answerPoints: LEAD_SCORE_ANSWER_POINTS.current_setup,
-    maxPoints: 1,
-    getSelectedAnswers: ({ current_setup }) =>
-      current_setup ? [current_setup] : [],
-  },
-  {
-    id: "budget_readiness",
-    label: "Budget indicates implementation readiness",
-    questionKey: "budget_band",
-    answerPoints: LEAD_SCORE_ANSWER_POINTS.budget_band,
-    maxPoints: 2,
-    getSelectedAnswers: ({ budget_band }) => (budget_band ? [budget_band] : []),
-  },
-  {
-    id: "timeline_urgency",
-    label: "Timeline urgency",
-    questionKey: "timeline",
-    answerPoints: LEAD_SCORE_ANSWER_POINTS.timeline,
-    maxPoints: 2,
-    getSelectedAnswers: ({ timeline }) => (timeline ? [timeline] : []),
-  },
-  {
-    id: "smart_home_bonus",
-    label: "Smart home feature bonus",
-    questionKey: "smart_home_features",
-    answerPoints: LEAD_SCORE_ANSWER_POINTS.smart_home_features,
-    maxPoints: 1,
-    getSelectedAnswers: ({ smart_home_features }) => smart_home_features,
-  },
-  {
-    id: "safety_risk_signal",
-    label: "Safety score risk signal",
-    questionKey: "safety_average",
-    answerPoints: LEAD_SCORE_ANSWER_POINTS.safety_average,
-    maxPoints: 1,
-    getSelectedAnswers: ({ safety_average }) => [
-      safety_average <= 40 ? "safety_average_lte_40" : "safety_average_gt_40",
-    ],
-  },
-];
+const normalizeToNonNegativeNumber = (value: number): number => {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, value);
+};
 
-const RAW_LEAD_SCORE_MAX = LEAD_SCORE_QUESTION_DEFINITIONS.reduce<number>(
-  (sum, definition) => sum + definition.maxPoints,
-  0
-);
+const toNonNegativeInteger = (value: number): number => {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.round(value));
+};
+
+const clampLeadScore = (score: number): number =>
+  Math.min(LEAD_SCORE_MAX, Math.max(0, Math.round(score)));
+
+const uniqueAnswers = (answers: readonly string[]): string[] => {
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+
+  for (const answer of answers) {
+    const trimmed = answer.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    normalized.push(trimmed);
+  }
+
+  return normalized;
+};
+
+const getPlaceholderPolicy = (): "throw" | "warn" => {
+  const environment = process.env.NODE_ENV;
+  if (environment === "development" || environment === "test") {
+    return "throw";
+  }
+
+  return "warn";
+};
+
+const applyPlaceholderPolicy = (paths: Set<string>): void => {
+  if (paths.size === 0) return;
+
+  const sortedPaths = [...paths].sort();
+  const policy = getPlaceholderPolicy();
+
+  if (policy === "throw") {
+    throw new Error(
+      [
+        "Lead scoring has unresolved TODO points. Fill these config paths:",
+        ...sortedPaths.map((path) => `- ${path}`),
+      ].join("\n")
+    );
+  }
+
+  const unseenPaths = sortedPaths.filter((path) => !WARNED_PLACEHOLDER_PATHS.has(path));
+  if (unseenPaths.length === 0) return;
+
+  for (const path of unseenPaths) {
+    WARNED_PLACEHOLDER_PATHS.add(path);
+  }
+
+  console.warn(
+    [
+      "[leadScoring] Unresolved TODO points defaulted to 0 in production mode:",
+      ...unseenPaths.map((path) => `- ${path}`),
+    ].join("\n")
+  );
+};
+
+const resolveConfiguredPoint = (
+  value: LeadScorePointValue,
+  path: string,
+  unresolvedPaths: Set<string>
+): number => {
+  if (value === TODO_POINT) {
+    unresolvedPaths.add(path);
+    return 0;
+  }
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    unresolvedPaths.add(path);
+    return 0;
+  }
+
+  return toNonNegativeInteger(value);
+};
+
+const findMatchingAnswerKey = (
+  answerPoints: Readonly<Record<string, LeadScorePointValue>>,
+  answer: string
+): string | null => {
+  if (Object.prototype.hasOwnProperty.call(answerPoints, answer)) {
+    return answer;
+  }
+
+  const normalizedAnswer = answer.trim();
+  for (const key of Object.keys(answerPoints)) {
+    if (key.trim() === normalizedAnswer) {
+      return key;
+    }
+  }
+
+  return null;
+};
+
+const averageSafetySliderValue = (
+  context: LeadScoringContext,
+  fields: readonly (keyof LeadScoringContext)[]
+): number | null => {
+  const values: number[] = [];
+
+  for (const field of fields) {
+    const value = context[field];
+    if (typeof value !== "number" || !Number.isFinite(value)) continue;
+    values.push(clampSafetyScore(value));
+  }
+
+  if (values.length === 0) return null;
+
+  const total = values.reduce((sum, value) => sum + value, 0);
+  return clampSafetyScore(total / values.length);
+};
+
+const evaluateBooleanQuestion = (
+  sectionPath: string,
+  question: LeadScoreBooleanQuestionConfig,
+  context: LeadScoringContext,
+  unresolvedPaths: Set<string>
+): SectionQuestionEvaluation => {
+  const yesPath = `${sectionPath}.questions.${question.id}.points.yes`;
+  const noPath = `${sectionPath}.questions.${question.id}.points.no`;
+
+  const yesPoints = resolveConfiguredPoint(question.points.yes, yesPath, unresolvedPaths);
+  const noPoints = resolveConfiguredPoint(question.points.no, noPath, unresolvedPaths);
+
+  const value = context[question.field];
+  const selectedAnswer =
+    value === true ? "Yes" : value === false ? "No" : null;
+
+  const rawPoints =
+    value === true ? yesPoints : value === false ? noPoints : 0;
+
+  return {
+    id: question.id,
+    label: question.label,
+    selectedAnswer,
+    rawPoints,
+    maxPoints: Math.max(yesPoints, noPoints),
+  };
+};
+
+const evaluateSingleSelectQuestion = (
+  sectionPath: string,
+  question: LeadScoreSingleSelectQuestionConfig,
+  context: LeadScoringContext,
+  unresolvedPaths: Set<string>
+): SectionQuestionEvaluation => {
+  let maxPoints = 0;
+  for (const [answer, configuredValue] of Object.entries(question.points)) {
+    const resolved = resolveConfiguredPoint(
+      configuredValue,
+      `${sectionPath}.questions.${question.id}.points.${answer}`,
+      unresolvedPaths
+    );
+    maxPoints = Math.max(maxPoints, resolved);
+  }
+
+  const selectedRawValue = context[question.field];
+  const selectedValue = typeof selectedRawValue === "string" ? selectedRawValue.trim() : "";
+
+  if (!selectedValue) {
+    return {
+      id: question.id,
+      label: question.label,
+      selectedAnswer: null,
+      rawPoints: 0,
+      maxPoints,
+    };
+  }
+
+  const selectedAnswerKey = findMatchingAnswerKey(question.points, selectedValue);
+  if (!selectedAnswerKey) {
+    return {
+      id: question.id,
+      label: question.label,
+      selectedAnswer: selectedValue,
+      rawPoints: 0,
+      maxPoints,
+    };
+  }
+
+  const rawPoints = resolveConfiguredPoint(
+    question.points[selectedAnswerKey],
+    `${sectionPath}.questions.${question.id}.points.${selectedAnswerKey}`,
+    unresolvedPaths
+  );
+
+  return {
+    id: question.id,
+    label: question.label,
+    selectedAnswer: selectedAnswerKey,
+    rawPoints,
+    maxPoints,
+  };
+};
+
+const evaluateSafetySliderInverseQuestion = (
+  question: LeadScoreSafetySliderInverseQuestionConfig,
+  context: LeadScoringContext
+): SectionQuestionEvaluation => {
+  const sliderValue = averageSafetySliderValue(context, question.fields);
+  const rawPoints = sliderValue === null ? 0 : SAFETY_SCORE_MAX - sliderValue;
+
+  return {
+    id: question.id,
+    label: question.label,
+    selectedAnswer: sliderValue === null ? null : `Score ${sliderValue}`,
+    rawPoints,
+    maxPoints: SAFETY_SCORE_MAX,
+  };
+};
+
+const evaluateTextPresenceQuestion = (
+  sectionPath: string,
+  question: LeadScoreTextPresenceQuestionConfig,
+  context: LeadScoringContext,
+  unresolvedPaths: Set<string>
+): SectionQuestionEvaluation => {
+  const filledPath = `${sectionPath}.questions.${question.id}.points.filled`;
+  const emptyPath = `${sectionPath}.questions.${question.id}.points.empty`;
+
+  const filledPoints = resolveConfiguredPoint(
+    question.points.filled,
+    filledPath,
+    unresolvedPaths
+  );
+  const emptyPoints = resolveConfiguredPoint(
+    question.points.empty,
+    emptyPath,
+    unresolvedPaths
+  );
+
+  const rawValue = context[question.field];
+  const hasValue = typeof rawValue === "string" && rawValue.trim().length > 0;
+
+  return {
+    id: question.id,
+    label: question.label,
+    selectedAnswer: hasValue ? "Provided" : "Not provided",
+    rawPoints: hasValue ? filledPoints : emptyPoints,
+    maxPoints: Math.max(filledPoints, emptyPoints),
+  };
+};
+
+const evaluateSection = (
+  section: (typeof LEAD_SCORING_SECTIONS)[number],
+  context: LeadScoringContext,
+  unresolvedPaths: Set<string>
+): SectionEvaluation => {
+  const sectionPath = `sections.${section.id}`;
+
+  const questions: SectionQuestionEvaluation[] = section.questions.map((question) => {
+    if (question.type === "boolean") {
+      return evaluateBooleanQuestion(sectionPath, question, context, unresolvedPaths);
+    }
+
+    if (question.type === "single_select") {
+      return evaluateSingleSelectQuestion(sectionPath, question, context, unresolvedPaths);
+    }
+
+    if (question.type === "text_presence") {
+      return evaluateTextPresenceQuestion(sectionPath, question, context, unresolvedPaths);
+    }
+
+    return evaluateSafetySliderInverseQuestion(question, context);
+  });
+
+  const rawPoints = questions.reduce((sum, item) => sum + item.rawPoints, 0);
+  const autoMaxPoints = questions.reduce((sum, item) => sum + item.maxPoints, 0);
+
+  const override =
+    typeof section.maxPointsOverride === "number" && Number.isFinite(section.maxPointsOverride)
+      ? Math.max(0, section.maxPointsOverride)
+      : undefined;
+  const effectiveMaxPoints = override ?? autoMaxPoints;
+  const weightPercent = toNonNegativeInteger(section.weightPercent);
+
+  const exactWeightedPoints =
+    effectiveMaxPoints > 0
+      ? Math.min(weightPercent, (rawPoints / effectiveMaxPoints) * weightPercent)
+      : 0;
+
+  return {
+    id: section.id,
+    label: section.label,
+    weightPercent,
+    rawPoints,
+    autoMaxPoints,
+    effectiveMaxPoints,
+    exactWeightedPoints,
+    questions,
+  };
+};
 
 const allocateByWeights = (weights: readonly number[], target: number): number[] => {
-  if (target <= 0) return weights.map(() => 0);
+  const normalizedTarget = toNonNegativeInteger(target);
+  if (normalizedTarget <= 0) return weights.map(() => 0);
 
   const normalizedWeights = weights.map((weight) =>
     Number.isFinite(weight) ? Math.max(0, weight) : 0
@@ -201,9 +363,9 @@ const allocateByWeights = (weights: readonly number[], target: number): number[]
   const weightTotal = normalizedWeights.reduce((sum, weight) => sum + weight, 0);
   if (weightTotal <= 0) return normalizedWeights.map(() => 0);
 
-  const exacts = normalizedWeights.map((weight) => (weight / weightTotal) * target);
+  const exacts = normalizedWeights.map((weight) => (weight / weightTotal) * normalizedTarget);
   const points = exacts.map((value) => Math.floor(value));
-  let remaining = target - points.reduce((sum, value) => sum + value, 0);
+  let remaining = normalizedTarget - points.reduce((sum, value) => sum + value, 0);
 
   const order = exacts
     .map((exact, index) => ({ index, remainder: exact - points[index] }))
@@ -220,23 +382,107 @@ const allocateByWeights = (weights: readonly number[], target: number): number[]
   return points;
 };
 
-const NORMALIZED_MAX_POINTS_BY_QUESTION = allocateByWeights(
-  LEAD_SCORE_QUESTION_DEFINITIONS.map((definition) => definition.maxPoints),
-  LEAD_SCORE_MAX
-);
+const allocateSectionPoints = (
+  sectionExacts: readonly number[],
+  sectionMaxPoints: readonly number[],
+  targetScore: number
+): number[] => {
+  const normalizedTarget = toNonNegativeInteger(targetScore);
+  if (normalizedTarget <= 0) return sectionExacts.map(() => 0);
 
-export const LEAD_TIER_PERCENT_THRESHOLDS = {
-  HOT: 0.7,
-  WARM: 0.5,
-} as const;
+  const states = sectionExacts.map((exactValue, index) => {
+    const maxPoints = toNonNegativeInteger(sectionMaxPoints[index] ?? 0);
+    const exact = Math.min(maxPoints, normalizeToNonNegativeNumber(exactValue));
+    const points = Math.min(maxPoints, Math.floor(exact));
 
-const normalizeToNonNegativeNumber = (value: number): number => {
-  if (!Number.isFinite(value)) return 0;
-  return Math.max(0, value);
+    return {
+      index,
+      maxPoints,
+      exact,
+      remainder: exact - points,
+      points,
+    };
+  });
+
+  let delta = normalizedTarget - states.reduce((sum, state) => sum + state.points, 0);
+
+  const increaseOrder = [...states]
+    .sort((a, b) => b.remainder - a.remainder || a.index - b.index)
+    .map((state) => state.index);
+  const decreaseOrder = [...states]
+    .sort((a, b) => a.remainder - b.remainder || a.index - b.index)
+    .map((state) => state.index);
+
+  let cursor = 0;
+  let stalled = 0;
+  while (delta > 0 && increaseOrder.length > 0) {
+    const state = states[increaseOrder[cursor % increaseOrder.length]];
+    if (state.points < state.maxPoints) {
+      state.points += 1;
+      delta -= 1;
+      stalled = 0;
+    } else {
+      stalled += 1;
+      if (stalled >= increaseOrder.length) break;
+    }
+    cursor += 1;
+  }
+
+  cursor = 0;
+  stalled = 0;
+  while (delta < 0 && decreaseOrder.length > 0) {
+    const state = states[decreaseOrder[cursor % decreaseOrder.length]];
+    if (state.points > 0) {
+      state.points -= 1;
+      delta += 1;
+      stalled = 0;
+    } else {
+      stalled += 1;
+      if (stalled >= decreaseOrder.length) break;
+    }
+    cursor += 1;
+  }
+
+  return states.map((state) => state.points);
 };
 
-const clampLeadScore = (score: number): number =>
-  Math.min(LEAD_SCORE_MAX, Math.max(0, Math.round(score)));
+const buildLeadScoreBreakdown = (
+  sections: readonly SectionEvaluation[],
+  sectionPoints: readonly number[]
+): LeadScoreBreakdownItem[] =>
+  sections.map((section, index) => {
+    const points = toNonNegativeInteger(sectionPoints[index] ?? 0);
+    const questionPoints = allocateByWeights(
+      section.questions.map((question) => question.rawPoints),
+      points
+    );
+
+    const matchedAnswers = section.questions.map((question, questionIndex) => ({
+      answer: `${question.label}: ${question.selectedAnswer ?? "Unanswered"}`,
+      points: questionPoints[questionIndex] ?? 0,
+    }));
+
+    const matchedPoints = matchedAnswers.reduce<number>(
+      (sum, item) => sum + item.points,
+      0
+    );
+
+    return {
+      id: section.id,
+      label: section.label,
+      questionKey: section.id,
+      selectedAnswers: uniqueAnswers(
+        section.questions
+          .map((question) => question.selectedAnswer)
+          .filter((value): value is string => typeof value === "string")
+      ),
+      matchedAnswers,
+      matchedPoints,
+      bonusPoints: 0,
+      maxPoints: section.weightPercent,
+      points,
+    };
+  });
 
 export const getLeadTierThresholds = (
   maxScore: number = LEAD_SCORE_MAX
@@ -265,236 +511,31 @@ export const getLeadTierFromScore = (
   return "Nurture";
 };
 
-const toNonNegativeInteger = (value: number): number => {
-  if (!Number.isFinite(value)) return 0;
-  return Math.max(0, Math.round(value));
-};
-
-const getAnswerPoints = (
-  answerPoints: Readonly<Record<string, number>>,
-  answer: string
-): number | undefined => {
-  if (Object.prototype.hasOwnProperty.call(answerPoints, answer)) {
-    return toNonNegativeInteger(answerPoints[answer] ?? 0);
-  }
-
-  const normalizedAnswer = answer.trim();
-  for (const key of Object.keys(answerPoints)) {
-    if (key.trim() === normalizedAnswer) {
-      return toNonNegativeInteger(answerPoints[key] ?? 0);
-    }
-  }
-
-  return undefined;
-};
-
-const uniqueAnswers = (answers: readonly string[]): string[] => {
-  const seen = new Set<string>();
-  const normalized: string[] = [];
-
-  for (const answer of answers) {
-    if (typeof answer !== "string") continue;
-    const trimmed = answer.trim();
-    if (!trimmed || seen.has(trimmed)) continue;
-    seen.add(trimmed);
-    normalized.push(trimmed);
-  }
-
-  return normalized;
-};
-
-const buildRawBreakdownItem = (
-  definition: LeadScoreQuestionDefinition,
-  context: LeadScoringContext
-): RawLeadScoreBreakdownItem => {
-  const selectedAnswers = uniqueAnswers(definition.getSelectedAnswers(context));
-
-  const matchedAnswers = selectedAnswers
-    .map((answer) => {
-      const points = getAnswerPoints(definition.answerPoints, answer);
-      if (typeof points !== "number") return null;
-      return { answer, points };
-    })
-    .filter((item): item is RawLeadScoreBreakdownAnswer => Boolean(item));
-
-  const matchedPoints = matchedAnswers.reduce<number>(
-    (sum, item) => sum + item.points,
-    0
-  );
-  const bonusPoints = toNonNegativeInteger(
-    definition.getBonusPoints?.(context, selectedAnswers) ?? 0
-  );
-  const uncappedPoints = matchedPoints + bonusPoints;
-  const points = Math.min(definition.maxPoints, uncappedPoints);
-
-  return {
-    id: definition.id,
-    label: definition.label,
-    questionKey: definition.questionKey,
-    selectedAnswers,
-    matchedAnswers,
-    matchedPoints,
-    bonusPoints,
-    maxPoints: definition.maxPoints,
-    points,
-  };
-};
-
-const normalizeItemPoints = (
-  rawItems: readonly RawLeadScoreBreakdownItem[],
-  normalizedScore: number
-): number[] => {
-  const states = rawItems.map((item, index) => {
-    const normalizedMax = NORMALIZED_MAX_POINTS_BY_QUESTION[index] ?? 0;
-    const exact =
-      item.maxPoints > 0 ? (item.points / item.maxPoints) * normalizedMax : 0;
-    const basePoints = Math.min(normalizedMax, Math.floor(exact));
-
-    return {
-      index,
-      exact,
-      remainder: exact - basePoints,
-      maxPoints: normalizedMax,
-      points: basePoints,
-    };
-  });
-
-  let delta =
-    normalizedScore - states.reduce((sum, state) => sum + state.points, 0);
-  const increaseOrder = [...states]
-    .sort((a, b) => b.remainder - a.remainder || a.index - b.index)
-    .map((state) => state.index);
-  const decreaseOrder = [...states]
-    .sort((a, b) => a.remainder - b.remainder || a.index - b.index)
-    .map((state) => state.index);
-
-  let cursor = 0;
-  let stalled = 0;
-  while (delta > 0 && increaseOrder.length > 0) {
-    const targetIndex = increaseOrder[cursor % increaseOrder.length];
-    const target = states[targetIndex];
-    if (target.points < target.maxPoints) {
-      target.points += 1;
-      delta -= 1;
-      stalled = 0;
-    } else {
-      stalled += 1;
-      if (stalled >= increaseOrder.length) break;
-    }
-    cursor += 1;
-  }
-
-  cursor = 0;
-  stalled = 0;
-  while (delta < 0 && decreaseOrder.length > 0) {
-    const targetIndex = decreaseOrder[cursor % decreaseOrder.length];
-    const target = states[targetIndex];
-    if (target.points > 0) {
-      target.points -= 1;
-      delta += 1;
-      stalled = 0;
-    } else {
-      stalled += 1;
-      if (stalled >= decreaseOrder.length) break;
-    }
-    cursor += 1;
-  }
-
-  return states.map((state) => state.points);
-};
-
-const normalizeBreakdownItem = (
-  rawItem: RawLeadScoreBreakdownItem,
-  normalizedItemPoints: number,
-  normalizedItemMaxPoints: number
-): LeadScoreBreakdownItem => {
-  const clampedItemPoints = Math.min(
-    normalizedItemMaxPoints,
-    Math.max(0, normalizedItemPoints)
-  );
-
-  if (clampedItemPoints === 0 || rawItem.points <= 0) {
-    return {
-      id: rawItem.id,
-      label: rawItem.label,
-      questionKey: rawItem.questionKey,
-      selectedAnswers: rawItem.selectedAnswers,
-      matchedAnswers: rawItem.matchedAnswers.map((item) => ({
-        answer: item.answer,
-        points: 0,
-      })),
-      matchedPoints: 0,
-      bonusPoints: 0,
-      maxPoints: normalizedItemMaxPoints,
-      points: 0,
-    };
-  }
-
-  const cappedMatchedPoints = Math.min(rawItem.matchedPoints, rawItem.points);
-  const cappedBonusPoints = Math.min(
-    rawItem.bonusPoints,
-    Math.max(0, rawItem.points - cappedMatchedPoints)
-  );
-
-  let matchedPoints = 0;
-  let bonusPoints = 0;
-  if (cappedMatchedPoints <= 0) {
-    matchedPoints = 0;
-    bonusPoints = clampedItemPoints;
-  } else if (cappedBonusPoints <= 0) {
-    matchedPoints = clampedItemPoints;
-    bonusPoints = 0;
-  } else {
-    const [normalizedMatched, normalizedBonus] = allocateByWeights(
-      [cappedMatchedPoints, cappedBonusPoints],
-      clampedItemPoints
-    );
-    matchedPoints = normalizedMatched;
-    bonusPoints = normalizedBonus;
-  }
-
-  const normalizedMatchedAnswerPoints = allocateByWeights(
-    rawItem.matchedAnswers.map((item) => item.points),
-    matchedPoints
-  );
-
-  return {
-    id: rawItem.id,
-    label: rawItem.label,
-    questionKey: rawItem.questionKey,
-    selectedAnswers: rawItem.selectedAnswers,
-    matchedAnswers: rawItem.matchedAnswers.map((item, index) => ({
-      answer: item.answer,
-      points: normalizedMatchedAnswerPoints[index] ?? 0,
-    })),
-    matchedPoints,
-    bonusPoints,
-    maxPoints: normalizedItemMaxPoints,
-    points: clampedItemPoints,
-  };
-};
-
 export const calculateLeadScore = (
   context: LeadScoringContext
 ): LeadScoreCalculationResult => {
-  const rawBreakdown = LEAD_SCORE_QUESTION_DEFINITIONS.map((definition) =>
-    buildRawBreakdownItem(definition, context)
+  const unresolvedPaths = new Set<string>();
+  const sections = LEAD_SCORING_SECTIONS.map((section) =>
+    evaluateSection(section, context, unresolvedPaths)
   );
 
-  const rawScore = rawBreakdown.reduce<number>((sum, item) => sum + item.points, 0);
-  const leadScore = clampLeadScore((rawScore / RAW_LEAD_SCORE_MAX) * LEAD_SCORE_MAX);
-  const normalizedItemPoints = normalizeItemPoints(rawBreakdown, leadScore);
-  const leadScoreBreakdown = rawBreakdown.map((item, index) =>
-    normalizeBreakdownItem(
-      item,
-      normalizedItemPoints[index] ?? 0,
-      NORMALIZED_MAX_POINTS_BY_QUESTION[index] ?? 0
-    )
+  applyPlaceholderPolicy(unresolvedPaths);
+
+  const exactScore = sections.reduce(
+    (sum, section) => sum + section.exactWeightedPoints,
+    0
+  );
+  const leadScore = clampLeadScore(exactScore);
+
+  const sectionPoints = allocateSectionPoints(
+    sections.map((section) => section.exactWeightedPoints),
+    sections.map((section) => section.weightPercent),
+    leadScore
   );
 
   return {
     leadScore,
-    leadScoreBreakdown,
+    leadScoreBreakdown: buildLeadScoreBreakdown(sections, sectionPoints),
     leadScoringModelVersion: LEAD_SCORING_MODEL_VERSION,
   };
 };

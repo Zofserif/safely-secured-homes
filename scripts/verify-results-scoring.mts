@@ -15,9 +15,9 @@ const scoringModule = (await import(
 const leadScoringModule = (await import(
   new URL("../app/lib/leadScoring.ts", import.meta.url).href
 )) as typeof import("../app/lib/leadScoring");
-const formOptionsModule = (await import(
-  new URL("../app/lib/formOptions.ts", import.meta.url).href
-)) as typeof import("../app/lib/formOptions");
+const leadScoringConfigModule = (await import(
+  new URL("../app/lib/leadScoringConfig.ts", import.meta.url).href
+)) as typeof import("../app/lib/leadScoringConfig");
 
 const { getSafetyCategoryScores, getSafetySummary } = safetyScoresModule;
 const {
@@ -31,14 +31,10 @@ const {
   calculateLeadScore,
   getLeadTierFromScore,
   LEAD_SCORE_MAX,
+  LEAD_SCORING_MODEL_VERSION,
 } = leadScoringModule;
-const {
-  PRIORITY_AREAS,
-  SMART_HOME_FEATURE_OPTIONS,
-  BUDGET_BAND_OPTIONS,
-  CURRENT_SETUP_VALUES,
-  TIMELINE_VALUES,
-} = formOptionsModule;
+const { LEAD_SCORING_SECTIONS, LEAD_SCORING_WEIGHT_TOTAL } =
+  leadScoringConfigModule;
 
 // Mirrors app/lib/calculations.ts getResultsSummary orchestration (without camera-plan concerns).
 const getResultsSummaryForVerification = (
@@ -96,13 +92,13 @@ const createBaseFormData = (): FormData => ({
   has_smoke_alarm_or_fire_extinguisher: null,
   has_first_aid_or_medicine_ready: null,
   knows_local_emergency_contacts: null,
-  safety_gate_entry: 0,
-  safety_blindspots: 0,
-  safety_side_back_entry: 0,
-  safety_windows_terrace: 0,
-  safety_driveway_garage: 0,
-  safety_indoor_choke_points: 0,
-  safety_emergency_readiness: 0,
+  safety_gate_entry: null,
+  safety_blindspots: null,
+  safety_side_back_entry: null,
+  safety_windows_terrace: null,
+  safety_driveway_garage: null,
+  safety_indoor_choke_points: null,
+  safety_emergency_readiness: null,
   features_must: [],
   smart_home_features: [],
   smart_home_interest: "",
@@ -409,68 +405,238 @@ assertEqual(
   getPanatagRatingFromSafetyCategories(createCategorySafetyScores(60, 60, 50, 40))
 );
 
-// Lead scoring normalization checks.
-const createLeadContext = (
-  overrides: Partial<{
-    priority_areas: string[];
-    smart_home_features: string[];
-    current_setup: string;
-    budget_band: string;
-    timeline: string;
-    safety_average: number;
-  }> = {}
-) => ({
-  priority_areas: [] as string[],
-  smart_home_features: [] as string[],
-  current_setup: "",
-  budget_band: "",
-  timeline: "",
-  safety_average: 100,
-  ...overrides,
-});
+// Lead scoring checks for section-weight v2.
+const withNodeEnv = <T,>(env: string, run: () => T): T => {
+  const envRecord = process.env as Record<string, string | undefined>;
+  const previous = process.env.NODE_ENV;
+  envRecord.NODE_ENV = env;
 
-const maxLead = calculateLeadScore(
-  createLeadContext({
-    priority_areas: [...PRIORITY_AREAS],
-    smart_home_features: [...SMART_HOME_FEATURE_OPTIONS],
-    current_setup: CURRENT_SETUP_VALUES[0],
-    budget_band: BUDGET_BAND_OPTIONS[BUDGET_BAND_OPTIONS.length - 1],
-    timeline: TIMELINE_VALUES.ASAP,
-    safety_average: 0,
-  })
-);
-const zeroLead = calculateLeadScore(
-  createLeadContext({
-    current_setup: CURRENT_SETUP_VALUES[1],
-    budget_band: BUDGET_BAND_OPTIONS[0],
-    timeline: TIMELINE_VALUES.RESEARCHING,
-    safety_average: 100,
-  })
-);
-const midLead = calculateLeadScore(
-  createLeadContext({
-    priority_areas: [PRIORITY_AREAS[0]],
-    smart_home_features: [SMART_HOME_FEATURE_OPTIONS[0]],
-    current_setup: CURRENT_SETUP_VALUES[0],
-    budget_band: BUDGET_BAND_OPTIONS[1],
-    timeline: TIMELINE_VALUES.THIS_MONTH,
-    safety_average: 100,
-  })
-);
+  try {
+    return run();
+  } finally {
+    if (typeof previous === "string") {
+      envRecord.NODE_ENV = previous;
+    } else {
+      delete envRecord.NODE_ENV;
+    }
+  }
+};
 
 assertEqual("Lead score max constant is 100", LEAD_SCORE_MAX, 100);
-assertEqual("Lead max context maps to 100", maxLead.leadScore, 100);
-assertEqual("Lead zero context maps to 0", zeroLead.leadScore, 0);
-assertEqual("Lead mid context maps to rounded percentage", midLead.leadScore, 56);
 assertEqual(
-  "Lead breakdown maxPoints sum to 100",
-  maxLead.leadScoreBreakdown.reduce((sum, item) => sum + item.maxPoints, 0),
+  "Lead scoring model version is section-weight-v2",
+  LEAD_SCORING_MODEL_VERSION,
+  "section-weight-v2"
+);
+assertEqual("Lead scoring section weights sum to 100", LEAD_SCORING_WEIGHT_TOTAL, 100);
+assertEqual(
+  "Lead scoring sections and maxPoints sum match",
+  LEAD_SCORING_SECTIONS.reduce((sum, section) => sum + section.weightPercent, 0),
   100
+);
+
+const propertyTypeSingleHomeLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    property_type: "Single-family house",
+  })
+);
+assertEqual(
+  "Lead scoring single-family house maps to 3 points (1/2 of property_type weight)",
+  propertyTypeSingleHomeLead.leadScore,
+  3
+);
+
+const propertyTypeBeachHomeLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    property_type: "Vacation Home / Beach House",
+  })
+);
+assertEqual(
+  "Lead scoring vacation home/beach house maps to 5 points (2/2 of property_type weight)",
+  propertyTypeBeachHomeLead.leadScore,
+  5
+);
+assertEqual(
+  "Lead scoring property type high-priority option outranks low-priority option",
+  propertyTypeBeachHomeLead.leadScore > propertyTypeSingleHomeLead.leadScore,
+  true
+);
+
+const householdStageSoloLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    household_stage: "Just me",
+  })
+);
+const householdStageFamilyLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    household_stage: "Family with kids at home",
+  })
+);
+assertEqual(
+  "Lead scoring household stage high-priority option outranks low-priority option",
+  householdStageFamilyLead.leadScore > householdStageSoloLead.leadScore,
+  true
+);
+
+const desiredOutcomeRemoteCheckLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    desired_outcome: "Check on family/pets while I'm away",
+  })
+);
+const desiredOutcomeBreakInProtectionLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    desired_outcome: "Protect my home and valuables from break-ins/theft",
+  })
+);
+assertEqual(
+  "Lead scoring desired outcome high-priority option outranks low-priority option",
+  desiredOutcomeBreakInProtectionLead.leadScore > desiredOutcomeRemoteCheckLead.leadScore,
+  true
+);
+
+const goalObstacleAestheticLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    goal_obstacle: "I don't want solutions that feel uninviting",
+  })
+);
+const goalObstacleUncertainLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    goal_obstacle: "I'm not sure what's right for my home",
+  })
+);
+assertEqual(
+  "Lead scoring goal obstacle high-priority option outranks low-priority option",
+  goalObstacleUncertainLead.leadScore > goalObstacleAestheticLead.leadScore,
+  true
+);
+
+const solutionDiyLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    solution: "Start with DIY Home Safety Plan",
+  })
+);
+const solutionDoneForYouLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    solution: "Done for you Setup",
+  })
+);
+assertEqual(
+  "Lead scoring solution high-priority option outranks low-priority option",
+  solutionDoneForYouLead.leadScore > solutionDiyLead.leadScore,
+  true
+);
+
+const yesNoLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    changed_wifi_default_password: false,
+    locks_windows_gate_at_night: false,
+  })
+);
+assertEqual("Lead scoring yes/no raw 3 maps to 13 points", yesNoLead.leadScore, 13);
+
+const weightedFormulaLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    changed_wifi_default_password: false,
+  })
+);
+assertEqual(
+  "Lead scoring formula raw/max*weight => 1/7*30 => 4",
+  weightedFormulaLead.leadScore,
+  4
+);
+
+const additionalNotesCommentLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    goal_obstacle_other: "Need weekend install",
+  })
+);
+assertEqual(
+  "Lead scoring non-empty additional notes comment adds 3 points",
+  additionalNotesCommentLead.leadScore,
+  3
+);
+
+const mobileLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    mobile: "09123456789",
+  })
+);
+assertEqual("Lead scoring non-empty mobile adds 2 points", mobileLead.leadScore, 2);
+
+const commentAndMobileLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    goal_obstacle_other: "Need weekend install",
+    mobile: "09123456789",
+  })
+);
+assertEqual(
+  "Lead scoring non-empty additional notes + mobile adds 5 points",
+  commentAndMobileLead.leadScore,
+  5
+);
+
+const whitespaceCommentAndMobileLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    goal_obstacle_other: "   ",
+    mobile: "   ",
+  })
+);
+assertEqual(
+  "Lead scoring whitespace-only additional notes + mobile does not add points",
+  whitespaceCommentAndMobileLead.leadScore,
+  0
+);
+
+const safetyLowSliderLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    safety_gate_entry: 20,
+    safety_side_back_entry: 20,
+    safety_windows_terrace: 20,
+  })
+);
+const safetyHighSliderLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    safety_gate_entry: 90,
+    safety_side_back_entry: 90,
+    safety_windows_terrace: 90,
+  })
+);
+assertEqual(
+  "Lead scoring safety inverse maps lower safety slider to higher lead score",
+  safetyLowSliderLead.leadScore > safetyHighSliderLead.leadScore,
+  true
+);
+
+const sectionSumLead = withNodeEnv("production", () =>
+  calculateLeadScore({
+    ...createBaseFormData(),
+    changed_wifi_default_password: false,
+    locks_windows_gate_at_night: false,
+    safety_driveway_garage: 20,
+  })
 );
 assertEqual(
   "Lead breakdown points sum to lead score",
-  maxLead.leadScoreBreakdown.reduce((sum, item) => sum + item.points, 0),
-  maxLead.leadScore
+  sectionSumLead.leadScoreBreakdown.reduce((sum, item) => sum + item.points, 0),
+  sectionSumLead.leadScore
 );
 assertEqual("Lead tier 70 => Hot", getLeadTierFromScore(70), "Hot");
 assertEqual("Lead tier 50 => Warm", getLeadTierFromScore(50), "Warm");

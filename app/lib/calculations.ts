@@ -104,11 +104,6 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   const floors = data.floors ?? "1";
   const size = data.home_size ?? HOME_SIZE_OPTIONS.SMALL;
   const featuresMust = data.features_must ?? [];
-  const smartHomeFeatures = data.smart_home_features ?? [];
-  const currentSetup = data.current_setup ?? "";
-  const budgetBand = data.budget_band ?? "";
-  const timeline = data.timeline ?? "";
-  const safetyAverage = getSafetySummary(data).average;
 
   const computedCameraTotal = areas.reduce(
     (sum, area) =>
@@ -119,14 +114,7 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   const nvrChannel = getNvrChannelTier(cameraCount);
 
   const { leadScore, leadScoreBreakdown, leadScoringModelVersion } =
-    calculateLeadScore({
-      priority_areas: areas,
-      smart_home_features: smartHomeFeatures,
-      current_setup: currentSetup,
-      budget_band: budgetBand,
-      timeline,
-      safety_average: safetyAverage,
-    });
+    calculateLeadScore(data);
   const tier = getLeadTierFromScore(leadScore);
 
   // Recommendations

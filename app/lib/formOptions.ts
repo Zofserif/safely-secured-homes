@@ -84,33 +84,34 @@ export type SolutionOptionCard = {
 export const SOLUTION_OPTION_CARDS: readonly SolutionOptionCard[] = [
   {
     value: SOLUTION_OPTIONS.DIY_HOME_SAFETY_PLAN,
-    title: "Start with DIY Home Safety Plan",
-    subtitle: "For families who want clear guidance they can execute on their own.",
+    title: "DIY Home Safety Plan",
+    subtitle:
+      "For homeowners who want a clear plan they can execute at their own pace.",
     benefits: [
-      "Personalized checklist based on your current risks",
-      "Straightforward setup steps for quick action",
-      "Best if you prefer to move at your own pace",
+      "Personalized checklist based on your home and priorities",
+      "Straightforward setup steps you can start this week",
+      "Flexible pace with practical guidance",
     ],
   },
   {
     value: SOLUTION_OPTIONS.DONE_FOR_YOU_SETUP,
-    title: "Done for you Setup",
-    subtitle: "For homeowners who want planning, setup, and execution handled end-to-end.",
+    title: "Done-for-you Setup",
+    subtitle: "For families who want planning and setup handled end-to-end.",
     benefits: [
+      "Expert design tailored to daily routines",
       "Professional design and installation workflow",
-      "Balanced security and convenience for daily living",
-      "Best value for speed, confidence, and support",
+      "Fastest path to confidence and support",
     ],
     isFeatured: true,
-    badge: "Best value",
+    badge: "Most Popular",
   },
   {
     value: SOLUTION_OPTIONS.ONE_ON_ONE_HOME_SECURITY_CONSULTATION,
-    title: "Get 1:1 Home Security Consultation",
+    title: "1:1 Home Security Consultation",
     subtitle: "For households that want expert recommendations before deciding.",
     benefits: [
-      "Live walkthrough of your home's priorities",
-      "Custom recommendations matched to your goals",
+      "Live walkthrough of your risks and goals",
+      "Custom recommendations matched to your situation",
       "Action plan you can review before committing",
     ],
   },

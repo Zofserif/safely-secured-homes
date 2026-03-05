@@ -35,7 +35,7 @@ export default function GoalObstacleOtherStep({
         Anything else you&apos;d like us to know?
       </h3>
 
-      <div className="mx-auto grid w-full max-w-[41rem] grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
+      <div className="mx-auto grid w-full max-w-164 grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
         <button
           type="button"
           onClick={() => onUpdateField("has_additional_notes", true)}

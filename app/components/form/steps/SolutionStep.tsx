@@ -1,7 +1,17 @@
-import { Check, ChevronRight } from "lucide-react";
+import { Check } from "lucide-react";
 import { resolveFirstName } from "../../../lib/contactName";
-import { SOLUTION_OPTION_CARDS } from "../../../lib/formOptions";
+import {
+  SOLUTION_OPTIONS,
+  SOLUTION_OPTION_CARDS,
+  type SolutionOptionValue,
+} from "../../../lib/formOptions";
 import type { SolutionStepProps } from "../types";
+
+const solutionCardOrderClasses: Record<SolutionOptionValue, string> = {
+  [SOLUTION_OPTIONS.DONE_FOR_YOU_SETUP]: "order-1 md:order-3",
+  [SOLUTION_OPTIONS.ONE_ON_ONE_HOME_SECURITY_CONSULTATION]: "order-2 md:order-2",
+  [SOLUTION_OPTIONS.DIY_HOME_SAFETY_PLAN]: "order-3 md:order-1",
+};
 
 export default function SolutionStep({
   formData,
@@ -9,6 +19,7 @@ export default function SolutionStep({
   onUpdateField,
 }: SolutionStepProps) {
   const firstName = resolveFirstName(formData.first_name);
+  const hasSelection = Boolean(formData.solution);
 
   return (
     <div className="space-y-6">
@@ -16,10 +27,29 @@ export default function SolutionStep({
         Hi {firstName}, what kind of help would you need for this?
       </h3>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-1">
         {SOLUTION_OPTION_CARDS.map((option) => {
           const isSelected = formData.solution === option.value;
-          const isFeatured = Boolean(option.isFeatured);
+          const isMobileDefaultOption =
+            !hasSelection && option.value === SOLUTION_OPTIONS.DONE_FOR_YOU_SETUP;
+          const isDesktopDefaultOption =
+            !hasSelection &&
+            option.value === SOLUTION_OPTIONS.ONE_ON_ONE_HOME_SECURITY_CONSULTATION;
+          const cardOrderClassName = solutionCardOrderClasses[option.value];
+          const highlightedButtonClass =
+            "border-[#0E79B2] bg-[#0E79B2] text-white group-hover:bg-[#0C6798]";
+          const neutralButtonClass =
+            "border-slate-300 bg-white text-slate-900 group-hover:border-slate-400 group-hover:bg-slate-50";
+
+          let buttonToneClassName = neutralButtonClass;
+
+          if (isSelected) {
+            buttonToneClassName = highlightedButtonClass;
+          } else if (isMobileDefaultOption) {
+            buttonToneClassName = `${highlightedButtonClass} md:border-slate-300 md:bg-white md:text-slate-900 md:group-hover:border-slate-400 md:group-hover:bg-slate-50`;
+          } else if (isDesktopDefaultOption) {
+            buttonToneClassName = `${neutralButtonClass} md:border-[#0E79B2] md:bg-[#0E79B2] md:text-white md:group-hover:border-[#0E79B2] md:group-hover:bg-[#0C6798]`;
+          }
 
           return (
             <button
@@ -29,34 +59,27 @@ export default function SolutionStep({
                 onUpdateField("solution", option.value);
                 onNext();
               }}
-              className={`group relative flex min-h-[280px] h-full cursor-pointer select-none flex-col rounded-2xl border p-5 text-left transition-[transform,box-shadow,border-color,background-color] duration-200 active:scale-[0.99] focus-visible:border-[#0E79B2]/55 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0E79B2]/20 ${isSelected ? "border-[#0E79B2]/45 bg-[#F7FCFF] ring-1 ring-[#0E79B2]/20 shadow-sm" : isFeatured ? "border-[#0E79B2]/35 bg-[#FBFDFF] shadow-sm hover:-translate-y-0.5 hover:border-[#0E79B2]/50 hover:shadow-md" : "border-slate-200 bg-white shadow-sm hover:-translate-y-0.5 hover:border-[#0E79B2]/35 hover:shadow-md"}`}
+              className={`group relative flex h-full min-h-80 cursor-pointer select-none flex-col rounded-2xl border border-[#E2E8F0] bg-white p-5 text-left shadow-sm transition-[transform,box-shadow,border-color,background-color] duration-200 active:scale-[0.99] hover:-translate-y-0.5 hover:border-[#0E79B2]/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0E79B2]/30 ${cardOrderClassName}`}
               aria-pressed={isSelected}
             >
-              <div className="flex items-start justify-between gap-3">
-                <p
-                  className={`text-base font-semibold leading-snug sm:text-lg ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}
-                >
+              <div className="flex w-full justify-center md:min-h-40 md:items-start">
+                <p className="pb-2 text-center text-3xl font-extrabold leading-snug text-[#1F2937] sm:text-4xl">
                   {option.title}
                 </p>
-                {option.badge ? (
-                  <span className="shrink-0 rounded-full border border-[#D6E8F6] bg-[#F7FBFF] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#0E79B2]">
-                    {option.badge}
-                  </span>
-                ) : null}
               </div>
 
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Best for: {option.subtitle}
-              </p>
+              <div className="mt-2 md:min-h-19">
+                <p className="text-sm leading-relaxed text-slate-600">{option.subtitle}</p>
+              </div>
 
-              <ul className="mt-4 flex-1 space-y-2.5">
+              <ul className="mt-5 flex-1 space-y-2.5">
                 {option.benefits.map((benefit) => (
                   <li
                     key={benefit}
                     className="flex items-start gap-2.5 text-sm leading-relaxed text-slate-700"
                   >
                     <span
-                      className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${isSelected ? "bg-[#0E79B2]/15 text-[#0E79B2]" : "bg-slate-100 text-slate-500"}`}
+                      className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#EAF4FB] text-[#0E79B2]"
                       aria-hidden="true"
                     >
                       <Check className="h-3 w-3" />
@@ -66,15 +89,15 @@ export default function SolutionStep({
                 ))}
               </ul>
 
-              <div
-                className={`mt-4 flex items-center justify-between border-t border-slate-200 pt-3 text-sm ${isSelected ? "text-[#0E79B2]" : "text-slate-500 group-hover:text-[#0E79B2]"}`}
-              >
-                <span>{isSelected ? "Selected" : "Choose option"}</span>
-                {isSelected ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-                )}
+              <div className="mt-5 pt-4">
+                <div className="mx-auto mb-4 h-px w-2/3 bg-slate-200" />
+                <div className="flex justify-center">
+                  <span
+                    className={`inline-flex min-h-10 items-center justify-center rounded-xl border px-5 py-2 text-sm font-semibold transition-colors ${buttonToneClassName}`}
+                  >
+                    {isSelected ? "Selected" : "This is for me"}
+                  </span>
+                </div>
               </div>
             </button>
           );

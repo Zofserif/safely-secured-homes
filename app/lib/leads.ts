@@ -67,8 +67,8 @@ type LeadPayloadBase = {
   recommendations: string[];
 };
 
-type LeadPayloadV3 = LeadPayloadBase & {
-  v: 3;
+type LeadPayloadV4 = LeadPayloadBase & {
+  v: 4;
   scoring: {
     model_version: string;
     lead_score: number;
@@ -85,7 +85,7 @@ type LeadInsertBody = {
   score: number;
   camera_count: number;
   safety_score_total: number;
-  payload: LeadPayloadV3;
+  payload: LeadPayloadV4;
 };
 
 const toSafeString = (value: unknown): string =>
@@ -104,7 +104,7 @@ const toStringArray = (value: unknown): string[] => {
 };
 
 const toPanatagHomeRating = (value: number): number =>
-  Math.max(1, Math.min(10, Math.round(value)));
+  Math.max(0, Math.min(100, Math.round(value)));
 
 const buildLeadPayloadBase = (
   data: FormData,
@@ -168,14 +168,14 @@ const toLeadScoreBreakdown = (value: unknown): LeadScoreBreakdownItem[] => {
   );
 };
 
-const buildLeadPayloadV3 = (
+const buildLeadPayloadV4 = (
   data: FormData,
   result: CalculationResult,
   safetyCategories: SafetyCategoryScores,
   panatagHomeRating: number,
   source?: string
-): LeadPayloadV3 => ({
-  v: 3,
+): LeadPayloadV4 => ({
+  v: 4,
   ...buildLeadPayloadBase(data, safetyCategories, panatagHomeRating, source),
   recommendations: toStringArray(result.recommendations),
   scoring: {
@@ -284,7 +284,7 @@ export async function submitLeadToSupabase(
     score: result.leadScore,
     camera_count: result.cameraCount,
     safety_score_total: safetySummary.total,
-    payload: buildLeadPayloadV3(
+    payload: buildLeadPayloadV4(
       data,
       result,
       safetyCategories,

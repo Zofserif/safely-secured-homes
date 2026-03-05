@@ -23,8 +23,8 @@ const SAFETY_FIELD_COUNT = 7;
 
 type SafetyTuple = [number, number, number, number, number, number, number];
 
-type ResultsTokenV4 = {
-  v: 4;
+type ResultsTokenV5 = {
+  v: 5;
   p: number;
   h: number;
   f: number;
@@ -237,8 +237,8 @@ export const createResultsToken = (formData: FormData): string => {
   const safePriorityAreas = priorityAreas ?? [];
   const safeMustFeatures = mustFeatures ?? [];
 
-  const payload: ResultsTokenV4 = {
-    v: 4,
+  const payload: ResultsTokenV5 = {
+    v: 5,
     p: propertyType,
     h: homeSize,
     f: floors,
@@ -274,7 +274,7 @@ export const parseResultsToken = (token: string): FormData | null => {
     return null;
   }
 
-  if (!isRecord(parsed) || parsed.v !== 4) {
+  if (!isRecord(parsed) || parsed.v !== 5) {
     return null;
   }
 

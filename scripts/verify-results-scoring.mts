@@ -12,6 +12,12 @@ const safetyScoresModule = (await import(
 const scoringModule = (await import(
   new URL("../app/lib/resultsScoring.ts", import.meta.url).href
 )) as typeof import("../app/lib/resultsScoring");
+const leadScoringModule = (await import(
+  new URL("../app/lib/leadScoring.ts", import.meta.url).href
+)) as typeof import("../app/lib/leadScoring");
+const formOptionsModule = (await import(
+  new URL("../app/lib/formOptions.ts", import.meta.url).href
+)) as typeof import("../app/lib/formOptions");
 
 const { getSafetyCategoryScores, getSafetySummary } = safetyScoresModule;
 const {
@@ -21,6 +27,18 @@ const {
   getPriorityActionFromLeadTier,
   getSafetyLevelFromTotalRiskScore,
 } = scoringModule;
+const {
+  calculateLeadScore,
+  getLeadTierFromScore,
+  LEAD_SCORE_MAX,
+} = leadScoringModule;
+const {
+  PRIORITY_AREAS,
+  SMART_HOME_FEATURE_OPTIONS,
+  BUDGET_BAND_OPTIONS,
+  CURRENT_SETUP_VALUES,
+  TIMELINE_VALUES,
+} = formOptionsModule;
 
 // Mirrors app/lib/calculations.ts getResultsSummary orchestration (without camera-plan concerns).
 const getResultsSummaryForVerification = (
@@ -54,14 +72,9 @@ type SafetyFixture = {
 const failures: string[] = [];
 let totalChecks = 0;
 
-const toSerialized = (value: unknown): string =>
-  JSON.stringify(value, null, 2);
+const toSerialized = (value: unknown): string => JSON.stringify(value, null, 2);
 
-const assertEqual = (
-  label: string,
-  actual: unknown,
-  expected: unknown
-): void => {
+const assertEqual = (label: string, actual: unknown, expected: unknown): void => {
   totalChecks += 1;
   if (toSerialized(actual) === toSerialized(expected)) return;
   failures.push(
@@ -99,6 +112,7 @@ const createBaseFormData = (): FormData => ({
   household_stage: "",
   desired_outcome: "",
   goal_obstacle: "",
+  has_additional_notes: null,
   goal_obstacle_other: "",
   solution: "",
   first_name: "",
@@ -145,34 +159,34 @@ const createCategorySafetyScores = (
 });
 
 // Safety level boundaries.
-assertEqual("Safety level 140 => Protected", getSafetyLevelFromTotalRiskScore(140), {
+assertEqual("Safety level 70 => Protected", getSafetyLevelFromTotalRiskScore(70), {
   label: "Protected",
-  range: "140-200",
+  range: "70-100",
   severity: "low",
 });
-assertEqual("Safety level 200 => Protected", getSafetyLevelFromTotalRiskScore(200), {
+assertEqual("Safety level 100 => Protected", getSafetyLevelFromTotalRiskScore(100), {
   label: "Protected",
-  range: "140-200",
+  range: "70-100",
   severity: "low",
 });
-assertEqual("Safety level 90 => Alert", getSafetyLevelFromTotalRiskScore(90), {
+assertEqual("Safety level 45 => Alert", getSafetyLevelFromTotalRiskScore(45), {
   label: "Alert",
-  range: "90-139",
+  range: "45-69",
   severity: "medium",
 });
-assertEqual("Safety level 139 => Alert", getSafetyLevelFromTotalRiskScore(139), {
+assertEqual("Safety level 69 => Alert", getSafetyLevelFromTotalRiskScore(69), {
   label: "Alert",
-  range: "90-139",
+  range: "45-69",
   severity: "medium",
 });
 assertEqual("Safety level 0 => Urgent Action", getSafetyLevelFromTotalRiskScore(0), {
   label: "Urgent Action",
-  range: "0-89",
+  range: "0-44",
   severity: "high",
 });
-assertEqual("Safety level 89 => Urgent Action", getSafetyLevelFromTotalRiskScore(89), {
+assertEqual("Safety level 44 => Urgent Action", getSafetyLevelFromTotalRiskScore(44), {
   label: "Urgent Action",
-  range: "0-89",
+  range: "0-44",
   severity: "high",
 });
 
@@ -195,23 +209,23 @@ assertEqual(
 
 // Emergency readiness boundaries.
 assertEqual(
-  "Emergency safety 50 => Good",
-  getEmergencyReadinessFromRiskScore(50),
+  "Emergency safety 100 => Good",
+  getEmergencyReadinessFromRiskScore(100),
   { label: "Good", severity: "low" }
 );
 assertEqual(
-  "Emergency safety 49 => Not There",
-  getEmergencyReadinessFromRiskScore(49),
+  "Emergency safety 99 => Not There",
+  getEmergencyReadinessFromRiskScore(99),
   { label: "Not There", severity: "medium" }
 );
 assertEqual(
-  "Emergency safety 20 => Not There",
-  getEmergencyReadinessFromRiskScore(20),
+  "Emergency safety 40 => Not There",
+  getEmergencyReadinessFromRiskScore(40),
   { label: "Not There", severity: "medium" }
 );
 assertEqual(
-  "Emergency safety 19 => Worse",
-  getEmergencyReadinessFromRiskScore(19),
+  "Emergency safety 39 => Worse",
+  getEmergencyReadinessFromRiskScore(39),
   { label: "Worse", severity: "high" }
 );
 assertEqual(
@@ -241,41 +255,41 @@ assertEqual(
   "Decimal floor fixture safety summary reflects floored totals",
   getSafetySummary(decimalFloorFixtureData),
   {
-    total: 136,
+    total: 34,
     average: 34,
-    max: 200,
+    max: 100,
     emergencyReadinessScore: 39,
   }
 );
 
 // Panatag deterministic scenarios using safety score fixtures.
 assertEqual(
-  "Panatag 50,50,50 + emergency 50 => 10",
+  "Panatag 100,100,100 + emergency 100 => 100",
   getPanatagRatingFromSafetyCategories(
-    createCategorySafetyScores(50, 50, 50, 50)
+    createCategorySafetyScores(100, 100, 100, 100)
   ),
-  10
+  100
 );
 assertEqual(
-  "Panatag 0,0,0 + emergency 0 => 1",
+  "Panatag 0,0,0 + emergency 0 => 0",
   getPanatagRatingFromSafetyCategories(
     createCategorySafetyScores(0, 0, 0, 0)
   ),
-  1
+  0
 );
 assertEqual(
-  "Panatag 30,30,30 + emergency 29 => 6",
+  "Panatag 30,30,30 + emergency 29 => 31",
   getPanatagRatingFromSafetyCategories(
     createCategorySafetyScores(30, 30, 30, 29)
   ),
-  6
+  31
 );
 assertEqual(
-  "Panatag 20,40,30 + emergency 45 => 7",
+  "Panatag 20,40,30 + emergency 45 => 31",
   getPanatagRatingFromSafetyCategories(
     createCategorySafetyScores(20, 40, 30, 45)
   ),
-  7
+  31
 );
 
 // Non-regression matrix for getResultsSummary orchestration output.
@@ -288,39 +302,39 @@ const summaryFixtures: Array<{
   {
     name: "high-safety + nurture",
     data: createSafetyFormData({
-      homeSafety: 50,
-      neighborhoodSafety: 50,
-      blindspotsSafety: 50,
-      emergencySafety: 50,
+      homeSafety: 100,
+      neighborhoodSafety: 100,
+      blindspotsSafety: 100,
+      emergencySafety: 100,
     }),
     result: createResult("Nurture"),
     expected: {
-      safetyTotal: 200,
-      safetyMax: 200,
-      safetyLevel: { label: "Protected", range: "140-200", severity: "low" },
+      safetyTotal: 100,
+      safetyMax: 100,
+      safetyLevel: { label: "Protected", range: "70-100", severity: "low" },
       priority: { label: "Plan & Assess", severity: "low" },
       emergency: { label: "Good", severity: "low" },
-      emergencyReadinessScore: 50,
-      panatagRating: 10,
+      emergencyReadinessScore: 100,
+      panatagRating: 100,
     },
   },
   {
     name: "mid-safety + warm",
     data: createSafetyFormData({
-      homeSafety: 30,
-      neighborhoodSafety: 20,
-      blindspotsSafety: 30,
-      emergencySafety: 30,
+      homeSafety: 60,
+      neighborhoodSafety: 50,
+      blindspotsSafety: 60,
+      emergencySafety: 40,
     }),
     result: createResult("Warm"),
     expected: {
-      safetyTotal: 110,
-      safetyMax: 200,
-      safetyLevel: { label: "Alert", range: "90-139", severity: "medium" },
+      safetyTotal: 52,
+      safetyMax: 100,
+      safetyLevel: { label: "Alert", range: "45-69", severity: "medium" },
       priority: { label: "Book & Secure", severity: "medium" },
       emergency: { label: "Not There", severity: "medium" },
-      emergencyReadinessScore: 30,
-      panatagRating: 6,
+      emergencyReadinessScore: 40,
+      panatagRating: 48,
     },
   },
   {
@@ -333,13 +347,13 @@ const summaryFixtures: Array<{
     }),
     result: createResult("Hot"),
     expected: {
-      safetyTotal: 30,
-      safetyMax: 200,
-      safetyLevel: { label: "Urgent Action", range: "0-89", severity: "high" },
+      safetyTotal: 7,
+      safetyMax: 100,
+      safetyLevel: { label: "Urgent Action", range: "0-44", severity: "high" },
       priority: { label: "Emergency Secure", severity: "high" },
       emergency: { label: "Worse", severity: "high" },
       emergencyReadinessScore: 10,
-      panatagRating: 3,
+      panatagRating: 4,
     },
   },
   {
@@ -347,13 +361,13 @@ const summaryFixtures: Array<{
     data: decimalFloorFixtureData,
     result: createResult("Warm"),
     expected: {
-      safetyTotal: 136,
-      safetyMax: 200,
-      safetyLevel: { label: "Alert", range: "90-139", severity: "medium" },
+      safetyTotal: 34,
+      safetyMax: 100,
+      safetyLevel: { label: "Urgent Action", range: "0-44", severity: "high" },
       priority: { label: "Book & Secure", severity: "medium" },
-      emergency: { label: "Not There", severity: "medium" },
+      emergency: { label: "Worse", severity: "high" },
       emergencyReadinessScore: 39,
-      panatagRating: 7,
+      panatagRating: 33,
     },
   },
 ];
@@ -369,15 +383,15 @@ for (const fixture of summaryFixtures) {
 
 // Troubleshooting helper shape sanity check.
 const breakdown = buildResultsScoringBreakdown({
-  totalRiskScore: 110,
+  totalRiskScore: 60,
   leadTier: "Warm",
-  emergencyRiskScore: 30,
-  categoryRiskScores: createCategorySafetyScores(30, 30, 20, 30),
+  emergencyRiskScore: 40,
+  categoryRiskScores: createCategorySafetyScores(60, 60, 50, 40),
 });
 
 assertEqual("Breakdown includes expected safety output", breakdown.outputs.safetyLevel, {
   label: "Alert",
-  range: "90-139",
+  range: "45-69",
   severity: "medium",
 });
 assertEqual("Breakdown includes expected priority output", breakdown.outputs.priority, {
@@ -388,11 +402,79 @@ assertEqual("Breakdown includes expected emergency output", breakdown.outputs.em
   label: "Not There",
   severity: "medium",
 });
+assertEqual("Breakdown includes expected panatag output", breakdown.outputs.panatagRating, 48);
 assertEqual(
   "Breakdown panatag output matches helper",
   breakdown.outputs.panatagRating,
-  getPanatagRatingFromSafetyCategories(createCategorySafetyScores(30, 30, 20, 30))
+  getPanatagRatingFromSafetyCategories(createCategorySafetyScores(60, 60, 50, 40))
 );
+
+// Lead scoring normalization checks.
+const createLeadContext = (
+  overrides: Partial<{
+    priority_areas: string[];
+    smart_home_features: string[];
+    current_setup: string;
+    budget_band: string;
+    timeline: string;
+    safety_average: number;
+  }> = {}
+) => ({
+  priority_areas: [] as string[],
+  smart_home_features: [] as string[],
+  current_setup: "",
+  budget_band: "",
+  timeline: "",
+  safety_average: 100,
+  ...overrides,
+});
+
+const maxLead = calculateLeadScore(
+  createLeadContext({
+    priority_areas: [...PRIORITY_AREAS],
+    smart_home_features: [...SMART_HOME_FEATURE_OPTIONS],
+    current_setup: CURRENT_SETUP_VALUES[0],
+    budget_band: BUDGET_BAND_OPTIONS[BUDGET_BAND_OPTIONS.length - 1],
+    timeline: TIMELINE_VALUES.ASAP,
+    safety_average: 0,
+  })
+);
+const zeroLead = calculateLeadScore(
+  createLeadContext({
+    current_setup: CURRENT_SETUP_VALUES[1],
+    budget_band: BUDGET_BAND_OPTIONS[0],
+    timeline: TIMELINE_VALUES.RESEARCHING,
+    safety_average: 100,
+  })
+);
+const midLead = calculateLeadScore(
+  createLeadContext({
+    priority_areas: [PRIORITY_AREAS[0]],
+    smart_home_features: [SMART_HOME_FEATURE_OPTIONS[0]],
+    current_setup: CURRENT_SETUP_VALUES[0],
+    budget_band: BUDGET_BAND_OPTIONS[1],
+    timeline: TIMELINE_VALUES.THIS_MONTH,
+    safety_average: 100,
+  })
+);
+
+assertEqual("Lead score max constant is 100", LEAD_SCORE_MAX, 100);
+assertEqual("Lead max context maps to 100", maxLead.leadScore, 100);
+assertEqual("Lead zero context maps to 0", zeroLead.leadScore, 0);
+assertEqual("Lead mid context maps to rounded percentage", midLead.leadScore, 56);
+assertEqual(
+  "Lead breakdown maxPoints sum to 100",
+  maxLead.leadScoreBreakdown.reduce((sum, item) => sum + item.maxPoints, 0),
+  100
+);
+assertEqual(
+  "Lead breakdown points sum to lead score",
+  maxLead.leadScoreBreakdown.reduce((sum, item) => sum + item.points, 0),
+  maxLead.leadScore
+);
+assertEqual("Lead tier 70 => Hot", getLeadTierFromScore(70), "Hot");
+assertEqual("Lead tier 50 => Warm", getLeadTierFromScore(50), "Warm");
+assertEqual("Lead tier 49 => Nurture", getLeadTierFromScore(49), "Nurture");
 
 if (failures.length > 0) {
   console.error(

@@ -5,8 +5,8 @@ import {
   trackBookConsultClick,
   trackChecklistDownloadClick,
 } from "../../lib/analytics";
-import { getPanatagDisplayFromSafetyCategories } from "../../lib/resultsScoring";
-import { getSafetyCategoryScoresPrecise } from "../../lib/safetyScores";
+import { getPanatagRatingFromSafetyCategories } from "../../lib/resultsScoring";
+import { getSafetyCategoryScores } from "../../lib/safetyScores";
 import { panatagChecklistPath } from "../../lib/site";
 import { deriveFirstNameFromEmail } from "../../lib/contactName";
 import type { CalculationResult, FormData } from "../../lib/types";
@@ -219,9 +219,9 @@ export default function ResultsPage({
     data,
     result,
   );
-  const basePanatagRating100 = getPanatagDisplayFromSafetyCategories(
-    getSafetyCategoryScoresPrecise(data),
-  ).panatag100;
+  const basePanatagRating100 = getPanatagRatingFromSafetyCategories(
+    getSafetyCategoryScores(data),
+  );
   const remainingPanatagGap = Math.max(0, 100 - basePanatagRating100);
   const gainPointsByBlueprint = computeBlueprintGainPoints(remainingPanatagGap);
   const appliedGain = BLUEPRINT_CARDS.reduce<number>(

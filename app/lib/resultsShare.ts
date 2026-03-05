@@ -41,8 +41,8 @@ type ResultsSharePayloadBase = {
   timeline: string;
 };
 
-export type ResultsSharePayloadV3 = ResultsSharePayloadBase & {
-  v: 3;
+export type ResultsSharePayloadV4 = ResultsSharePayloadBase & {
+  v: 4;
 };
 
 type InvalidField = {
@@ -109,7 +109,7 @@ const normalizeBoolean = (value: unknown): boolean =>
   typeof value === "boolean" ? value : Boolean(value);
 
 const collectInvalidFields = (
-  payload: Partial<ResultsSharePayloadV3>
+  payload: Partial<ResultsSharePayloadV4>
 ): InvalidField[] => {
   const invalid: InvalidField[] = [];
 
@@ -142,12 +142,12 @@ const collectInvalidFields = (
 };
 
 const toPayload = (formData: FormData): {
-  payload: ResultsSharePayloadV3 | null;
+  payload: ResultsSharePayloadV4 | null;
   invalidFields: InvalidField[];
 } => {
   const normalizedTimeline = normalizeOption(TIMELINE_VALUES, formData.timeline);
-  const payload: Partial<ResultsSharePayloadV3> = {
-    v: 3,
+  const payload: Partial<ResultsSharePayloadV4> = {
+    v: 4,
     property_type: normalizeOption(PROPERTY_TYPE_VALUES, formData.property_type),
     home_size: normalizeOption(HOME_SIZE_VALUES, formData.home_size),
     floors: normalizeOption(FLOOR_OPTIONS, formData.floors),
@@ -184,7 +184,7 @@ const toPayload = (formData: FormData): {
 
   const invalidFields = collectInvalidFields(payload);
 
-  const safetyFields: Array<keyof ResultsSharePayloadV3> = [
+  const safetyFields: Array<keyof ResultsSharePayloadV4> = [
     "safety_gate_entry",
     "safety_blindspots",
     "safety_side_back_entry",
@@ -204,12 +204,12 @@ const toPayload = (formData: FormData): {
     return { payload: null, invalidFields };
   }
 
-  return { payload: payload as ResultsSharePayloadV3, invalidFields: [] };
+  return { payload: payload as ResultsSharePayloadV4, invalidFields: [] };
 };
 
 export const createShareableResultsPayload = (
   formData: FormData
-): ResultsSharePayloadV3 | null => {
+): ResultsSharePayloadV4 | null => {
   const { payload, invalidFields } = toPayload(formData);
 
   if (!payload) {
@@ -229,7 +229,7 @@ export const parseShareableResultsPayload = (
   value: unknown
 ): FormData | null => {
   if (!isRecord(value)) return null;
-  if (value.v !== 3) return null;
+  if (value.v !== 4) return null;
 
   const propertyType = normalizeOption(PROPERTY_TYPE_VALUES, value.property_type);
   const homeSize = normalizeOption(HOME_SIZE_VALUES, value.home_size);

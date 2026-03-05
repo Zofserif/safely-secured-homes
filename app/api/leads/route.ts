@@ -68,12 +68,8 @@ type LeadPayloadBase = {
   recommendations: string[];
 };
 
-type LeadPayloadV2 = LeadPayloadBase & {
-  v: 2;
-};
-
-type LeadPayloadV3 = LeadPayloadBase & {
-  v: 3;
+type LeadPayloadV4 = LeadPayloadBase & {
+  v: 4;
   scoring: {
     model_version: string;
     lead_score: number;
@@ -90,7 +86,7 @@ type LeadInsertBody = {
   score: number;
   camera_count: number;
   safety_score_total: number;
-  payload: LeadPayloadV2 | LeadPayloadV3;
+  payload: LeadPayloadV4;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -125,14 +121,13 @@ const toFiniteNumber = (value: unknown): number =>
 const toNonNegativeInteger = (value: unknown): number =>
   Math.max(0, Math.round(toFiniteNumber(value)));
 
+const toScore100 = (value: unknown): number =>
+  Math.max(0, Math.min(100, Math.round(toFiniteNumber(value))));
+
 const toSafetyScore = (value: unknown): number =>
   clampSafetyScore(toFiniteNumber(value));
 
-const toPanatagHomeRating = (value: unknown): number => {
-  const normalized = Math.round(toFiniteNumber(value));
-  if (normalized <= 0) return 0;
-  return Math.max(1, Math.min(10, normalized));
-};
+const toPanatagHomeRating = (value: unknown): number => toScore100(value);
 
 const toLeadTier = (value: unknown): LeadTier =>
   value === "Hot" || value === "Warm" || value === "Nurture"
@@ -160,12 +155,8 @@ const sanitizeLeadPayloadBase = (payload: Record<string, unknown>): LeadPayloadB
     priorities: toStringArray(payload.priorities),
     safety: {
       home_entrance: toSafetyScore(safety.home_entrance),
-      neighborhood_safety_check: toSafetyScore(
-        safety.neighborhood_safety_check
-      ),
-      windows_terrace: toSafetyScore(
-        safety.windows_terrace
-      ),
+      neighborhood_safety_check: toSafetyScore(safety.neighborhood_safety_check),
+      windows_terrace: toSafetyScore(safety.windows_terrace),
       emergency_readiness_home: toSafetyScore(safety.emergency_readiness_home),
     },
     preferences: {
@@ -214,7 +205,7 @@ const sanitizeLeadScoreBreakdownAnswer = (
 
   return {
     answer: toSafeString(value.answer),
-    points: toNonNegativeInteger(value.points),
+    points: toScore100(value.points),
   };
 };
 
@@ -240,24 +231,15 @@ const sanitizeLeadScoreBreakdownItem = (
     questionKey: toSafeString(value.questionKey),
     selectedAnswers: toStringArray(value.selectedAnswers),
     matchedAnswers,
-    matchedPoints: toNonNegativeInteger(value.matchedPoints),
-    bonusPoints: toNonNegativeInteger(value.bonusPoints),
-    maxPoints: toNonNegativeInteger(value.maxPoints),
-    points: toNonNegativeInteger(value.points),
+    matchedPoints: toScore100(value.matchedPoints),
+    bonusPoints: toScore100(value.bonusPoints),
+    maxPoints: toScore100(value.maxPoints),
+    points: toScore100(value.points),
   };
 };
 
-const sanitizeLeadPayloadV2 = (value: unknown): LeadPayloadV2 | null => {
-  if (!isRecord(value) || value.v !== 2) return null;
-
-  return {
-    v: 2,
-    ...sanitizeLeadPayloadBase(value),
-  };
-};
-
-const sanitizeLeadPayloadV3 = (value: unknown): LeadPayloadV3 | null => {
-  if (!isRecord(value) || value.v !== 3) return null;
+const sanitizeLeadPayloadV4 = (value: unknown): LeadPayloadV4 | null => {
+  if (!isRecord(value) || value.v !== 4) return null;
 
   const scoring = isRecord(value.scoring) ? value.scoring : null;
   if (!scoring || !Array.isArray(scoring.breakdown)) return null;
@@ -269,29 +251,22 @@ const sanitizeLeadPayloadV3 = (value: unknown): LeadPayloadV3 | null => {
     breakdown.push(sanitized);
   }
 
-  const sanitizedLeadScoreMax = toNonNegativeInteger(scoring.lead_score_max);
-  const leadScoreMax =
-    sanitizedLeadScoreMax > 0 ? sanitizedLeadScoreMax : LEAD_SCORE_MAX;
-
   return {
-    v: 3,
+    v: 4,
     ...sanitizeLeadPayloadBase(value),
     scoring: {
       model_version: toSafeString(scoring.model_version),
-      lead_score: toNonNegativeInteger(scoring.lead_score),
-      lead_score_max: leadScoreMax,
+      lead_score: toScore100(scoring.lead_score),
+      lead_score_max: LEAD_SCORE_MAX,
       lead_tier: toLeadTier(scoring.lead_tier),
       breakdown,
     },
   };
 };
 
-const sanitizeLeadPayload = (value: unknown): LeadPayloadV2 | LeadPayloadV3 | null => {
+const sanitizeLeadPayload = (value: unknown): LeadPayloadV4 | null => {
   if (!isRecord(value)) return null;
-
-  if (value.v === 2) return sanitizeLeadPayloadV2(value);
-  if (value.v === 3) return sanitizeLeadPayloadV3(value);
-  return null;
+  return sanitizeLeadPayloadV4(value);
 };
 
 const sanitizeLeadInsertBody = (value: unknown): LeadInsertBody | null => {
@@ -306,9 +281,9 @@ const sanitizeLeadInsertBody = (value: unknown): LeadInsertBody | null => {
     email,
     name: toSafeString(value.name),
     tier: toSafeString(value.tier),
-    score: toFiniteNumber(value.score),
+    score: toScore100(value.score),
     camera_count: toNonNegativeInteger(value.camera_count),
-    safety_score_total: toNonNegativeInteger(value.safety_score_total),
+    safety_score_total: toScore100(value.safety_score_total),
     payload,
   };
 };

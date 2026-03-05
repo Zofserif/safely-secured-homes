@@ -12,7 +12,7 @@ export type FormData = {
   has_smoke_alarm_or_fire_extinguisher: boolean | null;
   has_first_aid_or_medicine_ready: boolean | null;
   knows_local_emergency_contacts: boolean | null;
-  // Stored on a safety-oriented 0..50 scale: 0 = riskiest, 50 = safest.
+  // Stored on a safety-oriented 0..100 scale: 0 = riskiest, 100 = safest.
   safety_gate_entry: number | null;
   safety_blindspots: number | null;
   safety_side_back_entry: number | null;
@@ -52,6 +52,7 @@ export type LeadScoreBreakdownItem = {
   questionKey: string;
   selectedAnswers: string[];
   matchedAnswers: LeadScoreBreakdownAnswer[];
+  // All numeric breakdown fields are normalized to a 0..100 lead scale.
   matchedPoints: number;
   bonusPoints: number;
   maxPoints: number;
@@ -59,7 +60,7 @@ export type LeadScoreBreakdownItem = {
 };
 
 export type ResultsSummary = {
-  // Aggregate safety score: 0..200 (4 categories x max 50 each).
+  // Canonical safety score: 0..100.
   safetyTotal: number;
   safetyMax: number;
   safetyLevel: {
@@ -75,7 +76,9 @@ export type ResultsSummary = {
     label: string;
     severity: SeverityLevel;
   };
+  // Emergency readiness score on a canonical 0..100 scale.
   emergencyReadinessScore: number;
+  // Panatag rating on a canonical 0..100 scale.
   panatagRating: number;
 };
 
@@ -83,6 +86,7 @@ export type CalculationResult = {
   cameraCount: number;
   nvrChannel: number;
   storage1TB: boolean;
+  // Lead score normalized to 0..100.
   leadScore: number;
   leadTier: LeadTier;
   leadScoringModelVersion: string;

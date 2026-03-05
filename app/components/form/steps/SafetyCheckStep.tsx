@@ -41,7 +41,7 @@ export default function SafetyCheckStep({
   const sliderValue = hasDraft
     ? draftSliderValue
     : storedValue === null
-      ? 25
+      ? 50
       : storedValue;
 
   const isCurrentAreaRated = activeCategory.legacyFields.every(
@@ -54,12 +54,12 @@ export default function SafetyCheckStep({
         label: "Not rated",
         className: "border-slate-200 bg-slate-100 text-slate-600",
       }
-    : sliderValue <= 19
+    : sliderValue <= 39
       ? {
           label: "I feel Unsafe",
           className: "border-rose-200 bg-rose-50 text-rose-700",
         }
-      : sliderValue <= 39
+      : sliderValue <= 79
         ? {
             label: "Needs work",
             className: "border-amber-200 bg-amber-50 text-amber-700",
@@ -74,9 +74,9 @@ export default function SafetyCheckStep({
     100;
 
   const fillColor =
-    sliderValue <= 19
+    sliderValue <= 39
       ? "#ef4444"
-      : sliderValue <= 39
+      : sliderValue <= 79
         ? "#f59e0b"
         : "#22c55e";
 

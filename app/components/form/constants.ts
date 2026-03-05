@@ -1,17 +1,31 @@
 import {
+  AlarmSmoke,
+  Baby,
   BellRing,
+  Camera,
+  CircleHelp,
   DoorOpen,
   Fence,
+  Heart,
+  House,
   Lightbulb,
   ShieldAlert,
   Sofa,
+  Sparkles,
   ToggleLeft,
+  TriangleAlert,
   Tv,
+  UserRound,
   Users,
+  UsersRound,
   WifiOff,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import {
+  DESIRED_OUTCOME_OPTIONS,
+  GOAL_OBSTACLE_OPTIONS,
+  HOUSEHOLD_STAGE_OPTIONS,
   PRIORITY_AREAS,
   SMART_HOME_FEATURE_OPTIONS,
   SMART_HOME_FEATURES,
@@ -24,6 +38,119 @@ import type {
   SafetyHabitQuestion,
   WizardMode,
 } from "./types";
+
+type HouseholdStageOptionValue = (typeof HOUSEHOLD_STAGE_OPTIONS)[number];
+type DesiredOutcomeOptionValue = (typeof DESIRED_OUTCOME_OPTIONS)[number];
+type GoalObstacleOptionValue = (typeof GOAL_OBSTACLE_OPTIONS)[number];
+
+type SingleSelectCardOption<TValue extends string> = {
+  value: TValue;
+  title: string;
+  helper: string;
+  Icon: LucideIcon;
+};
+
+export const HOUSEHOLD_STAGE_CARD_OPTIONS: readonly SingleSelectCardOption<HouseholdStageOptionValue>[] =
+  [
+    {
+      value: HOUSEHOLD_STAGE_OPTIONS[0],
+      title: "Living solo",
+      helper: "You're mainly securing the home for yourself.",
+      Icon: UserRound,
+    },
+    {
+      value: HOUSEHOLD_STAGE_OPTIONS[1],
+      title: "Couple household",
+      helper: "Two adults sharing home routines and entry points.",
+      Icon: UsersRound,
+    },
+    {
+      value: HOUSEHOLD_STAGE_OPTIONS[2],
+      title: "Preparing for baby",
+      helper: "Safety and quick alerts are becoming more urgent.",
+      Icon: Baby,
+    },
+    {
+      value: HOUSEHOLD_STAGE_OPTIONS[3],
+      title: "Family with kids",
+      helper: "Protect children, caregivers, and busy daily movement.",
+      Icon: House,
+    },
+    {
+      value: HOUSEHOLD_STAGE_OPTIONS[4],
+      title: "Older adults at home",
+      helper: "Prioritize emergency response and easy daily use.",
+      Icon: Heart,
+    },
+  ] as const;
+
+export const DESIRED_OUTCOME_CARD_OPTIONS: readonly SingleSelectCardOption<DesiredOutcomeOptionValue>[] =
+  [
+    {
+      value: DESIRED_OUTCOME_OPTIONS[0],
+      title: "Check loved ones remotely",
+      helper: "See family members or pets when you're not home.",
+      Icon: Camera,
+    },
+    {
+      value: DESIRED_OUTCOME_OPTIONS[1],
+      title: "Screen visitors first",
+      helper: "Know who is outside before opening the gate or door.",
+      Icon: DoorOpen,
+    },
+    {
+      value: DESIRED_OUTCOME_OPTIONS[2],
+      title: "Watch outdoor perimeter",
+      helper: "Track movement in driveway, gate, and street-facing areas.",
+      Icon: Fence,
+    },
+    {
+      value: DESIRED_OUTCOME_OPTIONS[3],
+      title: "Prevent break-ins and theft",
+      helper: "Deter intruders and protect valuables with better coverage.",
+      Icon: ShieldAlert,
+    },
+    {
+      value: DESIRED_OUTCOME_OPTIONS[4],
+      title: "Get hazard alerts",
+      helper: "Receive fast alerts for smoke, fire, and other urgent risks.",
+      Icon: AlarmSmoke,
+    },
+    {
+      value: DESIRED_OUTCOME_OPTIONS[5],
+      title: "Improve convenience with automation",
+      helper: "Control key devices remotely and simplify routines.",
+      Icon: Sparkles,
+    },
+  ] as const;
+
+export const GOAL_OBSTACLE_CARD_OPTIONS: readonly SingleSelectCardOption<GoalObstacleOptionValue>[] =
+  [
+    {
+      value: GOAL_OBSTACLE_OPTIONS[0],
+      title: "Not sure what fits",
+      helper: "You need clear guidance for your specific home.",
+      Icon: CircleHelp,
+    },
+    {
+      value: GOAL_OBSTACLE_OPTIONS[1],
+      title: "Worried it's too complicated",
+      helper: "You want setup and daily use to stay simple.",
+      Icon: Wrench,
+    },
+    {
+      value: GOAL_OBSTACLE_OPTIONS[2],
+      title: "Past solution didn't fit",
+      helper: "You need a setup tailored to your actual situation.",
+      Icon: TriangleAlert,
+    },
+    {
+      value: GOAL_OBSTACLE_OPTIONS[3],
+      title: "Don't want a harsh-looking setup",
+      helper: "You prefer security that still feels welcoming.",
+      Icon: House,
+    },
+  ] as const;
 
 export const createInitialFormData = (mode: WizardMode): FormData => {
   const baseFormData: FormData = {
@@ -56,6 +183,7 @@ export const createInitialFormData = (mode: WizardMode): FormData => {
     household_stage: "",
     desired_outcome: "",
     goal_obstacle: "",
+    has_additional_notes: null,
     goal_obstacle_other: "",
     solution: "",
     first_name: "",
@@ -83,56 +211,48 @@ export const SAFETY_HABIT_QUESTIONS: readonly SafetyHabitQuestion[] = [
     id: "safety_habit_spare_key",
     field: "has_spare_key",
     question: "Do you have a spare key for your home?",
-    subtitle: "Answer honestly so we can tailor your safety checklist.",
     badgeLabel: "Safety Habit 1 of 8",
   },
   {
     id: "safety_habit_wifi_password",
     field: "changed_wifi_default_password",
     question: "Have you changed your Wi-Fi default password?",
-    subtitle: "Default passwords are easy to guess and risky for smart devices.",
     badgeLabel: "Safety Habit 2 of 8",
   },
   {
     id: "safety_habit_earphones_sleep",
     field: "sleeps_with_earphones",
     question: "Do you sleep with earphones on?",
-    subtitle: "This affects how quickly you can respond to alarms.",
     badgeLabel: "Safety Habit 3 of 8",
   },
   {
     id: "safety_habit_lock_windows_gate",
     field: "locks_windows_gate_at_night",
     question: "Do you lock your windows and gate at night?",
-    subtitle: "A consistent night routine lowers avoidable risks.",
     badgeLabel: "Safety Habit 4 of 8",
   },
   {
     id: "safety_habit_security_cameras",
     field: "has_security_cameras",
     question: "Do you have security cameras at home?",
-    subtitle: "We use this to suggest upgrades and coverage priorities.",
     badgeLabel: "Safety Habit 5 of 8",
   },
   {
     id: "safety_habit_smoke_alarm_extinguisher",
     field: "has_smoke_alarm_or_fire_extinguisher",
     question: "Do you have a smoke alarm or fire extinguisher at home?",
-    subtitle: "Emergency readiness matters as much as intrusion prevention.",
     badgeLabel: "Safety Habit 6 of 8",
   },
   {
     id: "safety_habit_first_aid",
     field: "has_first_aid_or_medicine_ready",
     question: "Do you have first-aid supplies or medicine ready at home?",
-    subtitle: "Prepared households recover faster during urgent situations.",
     badgeLabel: "Safety Habit 7 of 8",
   },
   {
     id: "safety_habit_emergency_contacts",
     field: "knows_local_emergency_contacts",
     question: "Do you know the emergency contacts in your town or city?",
-    subtitle: "Quick access to help can prevent high-impact incidents.",
     badgeLabel: "Safety Habit 8 of 8",
   },
 ];
@@ -140,7 +260,7 @@ export const SAFETY_HABIT_QUESTIONS: readonly SafetyHabitQuestion[] = [
 export const SAFETY_CATEGORIES: SafetyCategory[] = [
   {
     id: "home_entrance",
-    title: "Home entrance",
+    title: "Home entrance + Indoor home layout",
     subtitle: "Check if entry points are secure, visible, and hard to access.",
     legacyFields: [
       "safety_gate_entry",
@@ -150,19 +270,19 @@ export const SAFETY_CATEGORIES: SafetyCategory[] = [
   },
   {
     id: "neighborhood_safety_check",
-    title: "Your Neighborhood Safety check",
+    title: "Your Neighborhood + Outdoor surrounding",
     subtitle: "Rate outside lighting, visibility, and street-side exposure.",
     legacyFields: ["safety_driveway_garage"],
   },
   {
-    id: "indoor_outdoor_blindspots",
-    title: "Indoor and outdoor Blindspots",
+    id: "windows_terrace",
+    title: "Windows + Terrace",
     subtitle: "Rate how many hidden areas can be missed around your home.",
     legacyFields: ["safety_blindspots", "safety_indoor_choke_points"],
   },
   {
     id: "emergency_readiness_home",
-    title: "Emergency readiness home",
+    title: "Emergency preparedness",
     subtitle: "Rate your family’s emergency planning and response readiness.",
     legacyFields: ["safety_emergency_readiness"],
   },

@@ -10,7 +10,7 @@ import {
 export type SafetyCategoryScores = {
   home_entrance: number;
   neighborhood_safety_check: number;
-  indoor_outdoor_blindspots: number;
+  windows_terrace: number;
   emergency_readiness_home: number;
 };
 
@@ -62,7 +62,7 @@ export const getSafetyCategoryScores = (data: FormData): SafetyCategoryScores =>
     data.safety_windows_terrace,
   ]),
   neighborhood_safety_check: toSafetyScore(data.safety_driveway_garage),
-  indoor_outdoor_blindspots: averageSafetyScore([
+  windows_terrace: averageSafetyScore([
     data.safety_blindspots,
     data.safety_indoor_choke_points,
   ]),
@@ -79,7 +79,7 @@ export const getSafetyCategoryScoresPrecise = (
     data.safety_windows_terrace,
   ]),
   neighborhood_safety_check: toSafetyScorePrecise(data.safety_driveway_garage),
-  indoor_outdoor_blindspots: averageSafetyScorePrecise([
+  windows_terrace: averageSafetyScorePrecise([
     data.safety_blindspots,
     data.safety_indoor_choke_points,
   ]),

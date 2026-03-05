@@ -15,9 +15,6 @@ export default function SolutionStep({
       <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
         Hi {firstName}, what kind of help would you need for this?
       </h3>
-      <p className="text-center text-sm text-slate-600 sm:text-base">
-        Choose the option that fits how involved you want to be.
-      </p>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {SOLUTION_OPTION_CARDS.map((option) => {

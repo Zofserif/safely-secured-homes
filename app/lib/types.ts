@@ -29,6 +29,7 @@ export type FormData = {
   household_stage: string;
   desired_outcome: string;
   goal_obstacle: string;
+  has_additional_notes: boolean | null;
   goal_obstacle_other: string;
   solution: string;
   first_name: string;

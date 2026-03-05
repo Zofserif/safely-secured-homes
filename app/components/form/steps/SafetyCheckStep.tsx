@@ -1,5 +1,4 @@
 import { ShieldCheck } from "lucide-react";
-import { useMemo, useState } from "react";
 import { SAFETY_CATEGORIES } from "../constants";
 import type { SafetyCheckStepProps, SafetyRangeStyle } from "../types";
 import {
@@ -8,42 +7,26 @@ import {
   SAFETY_SCORE_STEP,
 } from "../../../lib/safetyScale.js";
 
-const getInitialAreaIndex = (
-  categories: typeof SAFETY_CATEGORIES,
-  formData: SafetyCheckStepProps["formData"]
-): number => {
-  const firstUnratedIndex = categories.findIndex((category) =>
-    category.legacyFields.some((field) => typeof formData[field] !== "number")
-  );
-
-  return firstUnratedIndex === -1 ? 0 : firstUnratedIndex;
-};
-
 export default function SafetyCheckStep({
+  categoryId,
+  isLastSafetyAreaStep,
   formData,
   safetySliderDrafts,
   onCommitSafetyCategorySliderValue,
+  onNavigateToSafetyArea,
   isSafetyComplete,
   onNext,
 }: SafetyCheckStepProps) {
-  const safetyCategories = SAFETY_CATEGORIES;
-  const [activeAreaIndex, setActiveAreaIndex] = useState(() =>
-    getInitialAreaIndex(safetyCategories, formData)
+  const activeCategory = SAFETY_CATEGORIES.find((category) => category.id === categoryId);
+  if (!activeCategory) return null;
+  const activeCategoryIndex = SAFETY_CATEGORIES.findIndex(
+    (category) => category.id === categoryId
   );
+  const areaCount = SAFETY_CATEGORIES.length;
 
-  const boundedActiveAreaIndex = Math.min(
-    safetyCategories.length - 1,
-    Math.max(0, activeAreaIndex)
-  );
-  const activeCategory = safetyCategories[boundedActiveAreaIndex];
-
-  const storedValues = useMemo(
-    () =>
-      activeCategory.legacyFields
-        .map((field) => formData[field])
-        .filter((value): value is number => typeof value === "number"),
-    [activeCategory, formData]
-  );
+  const storedValues = activeCategory.legacyFields
+    .map((field) => formData[field])
+    .filter((value): value is number => typeof value === "number");
 
   const hasStoredValue = storedValues.length > 0;
   const storedValue = hasStoredValue
@@ -65,7 +48,6 @@ export default function SafetyCheckStep({
     (field) => typeof formData[field] === "number"
   );
   const isSliderUnrated = !isCurrentAreaRated;
-  const isLastArea = boundedActiveAreaIndex === safetyCategories.length - 1;
 
   const safetyState = !isCurrentAreaRated
     ? {
@@ -74,7 +56,7 @@ export default function SafetyCheckStep({
       }
     : sliderValue <= 19
       ? {
-          label: "High risk",
+          label: "I feel Unsafe",
           className: "border-rose-200 bg-rose-50 text-rose-700",
         }
       : sliderValue <= 39
@@ -83,7 +65,7 @@ export default function SafetyCheckStep({
             className: "border-amber-200 bg-amber-50 text-amber-700",
           }
         : {
-            label: "Safer",
+            label: "I feel Safer",
             className: "border-emerald-200 bg-emerald-50 text-emerald-700",
           };
 
@@ -108,33 +90,58 @@ export default function SafetyCheckStep({
   } as SafetyRangeStyle;
 
   return (
-    <div className="space-y-8 py-4 sm:py-8">
-      <div className="flex justify-center">
-        <span className="inline-flex items-center gap-2 rounded-full border border-[#B8D7EB] bg-[#EEF7FD] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0E79B2]">
-          <ShieldCheck className="h-3.5 w-3.5" />
-          Home Safety Check
-        </span>
+    <div className="space-y-5 py-1 sm:py-2">
+      <div className="space-y-3">
+        <div className="flex justify-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#B8D7EB] bg-[#EEF7FD] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0E79B2]">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Home Safety Check
+          </span>
+        </div>
+        <div className="space-y-1 text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+            Area {Math.max(0, activeCategoryIndex) + 1} of {areaCount}
+          </p>
+          <div className="flex items-center justify-center gap-1.5">
+            {SAFETY_CATEGORIES.map((category, categoryIndex) => {
+              const isActive = category.id === activeCategory.id;
+              const isRated = category.legacyFields.every(
+                (field) => typeof formData[field] === "number"
+              );
+              const isFuture = categoryIndex > activeCategoryIndex;
+              const isCompletedPast = categoryIndex < activeCategoryIndex && isRated;
+
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => onNavigateToSafetyArea(category.id)}
+                  disabled={isFuture}
+                  aria-current={isActive ? "step" : undefined}
+                  aria-label={`Go to area ${categoryIndex + 1}: ${category.title}`}
+                  className={`h-1.5 w-8 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40 ${isActive ? "bg-[#0E79B2]" : isCompletedPast ? "bg-emerald-400/80" : "bg-slate-200"} ${isFuture ? "cursor-not-allowed opacity-85" : "cursor-pointer hover:opacity-90"}`}
+                />
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-5">
-        <div className="space-y-2">
-          <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-4xl">
+      <div className="space-y-2.5 rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-5">
+        <div className="space-y-1.5">
+          <h3 className="mx-auto max-w-2xl text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
             {activeCategory.title}
           </h3>
           <div className="flex justify-center">
             <span
-              className={`inline-flex min-w-[7.25rem] justify-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap sm:px-3 sm:text-[11px] ${safetyState.className}`}
+              className={`inline-flex min-w-29 justify-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap sm:px-3 sm:text-[11px] ${safetyState.className}`}
             >
               {safetyState.label}
             </span>
           </div>
         </div>
 
-        <p className="text-center text-xs leading-snug text-slate-600 sm:text-sm">
-          {activeCategory.subtitle}
-        </p>
-
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <input
             type="range"
             min={SAFETY_SCORE_MIN}
@@ -143,19 +150,19 @@ export default function SafetyCheckStep({
             value={sliderValue}
             onInput={(event) => {
               onCommitSafetyCategorySliderValue(
-                activeCategory.id,
+                categoryId,
                 Number(event.currentTarget.value)
               );
             }}
             onChange={(event) => {
               onCommitSafetyCategorySliderValue(
-                activeCategory.id,
+                categoryId,
                 Number(event.currentTarget.value)
               );
             }}
             onBlur={(event) => {
               onCommitSafetyCategorySliderValue(
-                activeCategory.id,
+                categoryId,
                 Number(event.currentTarget.value)
               );
             }}
@@ -164,40 +171,20 @@ export default function SafetyCheckStep({
             aria-label={`${activeCategory.title} safety rating`}
           />
           <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-            <span>Riskiest</span>
-            <span>Safest</span>
+            <span>I feel Unsafe</span>
+            <span>I feel Safe</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <button
-          type="button"
-          onClick={() => setActiveAreaIndex((current) => Math.max(0, current - 1))}
-          disabled={boundedActiveAreaIndex === 0}
-          className="w-full rounded-2xl border border-slate-300 bg-white py-3 font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Previous area
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            if (isLastArea) {
-              onNext();
-              return;
-            }
-
-            setActiveAreaIndex((current) =>
-              Math.min(safetyCategories.length - 1, current + 1)
-            );
-          }}
-          disabled={isLastArea ? !isSafetyComplete : !isCurrentAreaRated}
-          className="w-full rounded-2xl bg-[#0E79B2] py-3 font-bold text-white shadow-lg shadow-[#0E79B2]/30 transition hover:bg-[#0C6798] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isLastArea ? "Continue" : "Next area"}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={isLastSafetyAreaStep ? !isSafetyComplete : !isCurrentAreaRated}
+        className="w-full rounded-2xl bg-[#0E79B2] py-3 font-bold text-white shadow-lg shadow-[#0E79B2]/30 transition hover:bg-[#0C6798] disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {isLastSafetyAreaStep ? "Continue" : "Next area"}
+      </button>
     </div>
   );
 }

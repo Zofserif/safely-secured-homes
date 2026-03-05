@@ -5,7 +5,6 @@ export default function YesNoQuestionStep({
   formData,
   field,
   question,
-  subtitle,
   badgeLabel,
   onNext,
   onUpdateField,
@@ -30,11 +29,6 @@ export default function YesNoQuestionStep({
         <h3 className="text-2xl font-black tracking-tight text-[#1F2937] sm:text-4xl">
           {question}
         </h3>
-        {subtitle ? (
-          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
-            {subtitle}
-          </p>
-        ) : null}
       </div>
 
       <div className="mx-auto grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">

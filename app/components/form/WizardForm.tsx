@@ -2,10 +2,11 @@ import { FORM_STEPS } from "../../lib/formSteps";
 import { SAFETY_HABIT_QUESTIONS } from "./constants";
 import WizardFrame from "./components/WizardFrame";
 import { useWizardController } from "./hooks/useWizardController";
-import type { StepRenderMap, WizardFormProps } from "./types";
+import type { SafetyCategoryId, StepRenderMap, WizardFormProps } from "./types";
 import ContactStep from "./steps/ContactStep";
 import CurrentSituationStep from "./steps/CurrentSituationStep";
 import DesiredOutcomeStep from "./steps/DesiredOutcomeStep";
+import GoalObstacleOtherStep from "./steps/GoalObstacleOtherStep";
 import IntroStep from "./steps/IntroStep";
 import ObstacleStep from "./steps/ObstacleStep";
 import PropertyTypeStep from "./steps/PropertyTypeStep";
@@ -32,6 +33,7 @@ export default function WizardForm({
     updateField,
     nextStep,
     prevStep,
+    goToStep,
     submitFinal,
     commitSafetyCategorySliderValue,
   } = useWizardController({
@@ -39,6 +41,23 @@ export default function WizardForm({
     onComplete,
     analyticsContext,
   });
+
+  const safetyStepIdByCategory: Record<
+    SafetyCategoryId,
+    (typeof FORM_STEPS)[number]["id"]
+  > = {
+    home_entrance: "safety_check_home_entrance",
+    neighborhood_safety_check: "safety_check_neighborhood",
+    windows_terrace: "safety_check_blindspots",
+    emergency_readiness_home: "safety_check_emergency_readiness",
+  };
+
+  const navigateToSafetyArea = (targetCategoryId: SafetyCategoryId) => {
+    const targetStepId = safetyStepIdByCategory[targetCategoryId];
+    const targetStepIndex = FORM_STEPS.findIndex((item) => item.id === targetStepId);
+    if (targetStepIndex === -1) return;
+    goToStep(targetStepIndex);
+  };
 
   const safetyHabitQuestionsById = new Map(
     SAFETY_HABIT_QUESTIONS.map((question) => [question.id, question] as const),
@@ -53,7 +72,6 @@ export default function WizardForm({
         formData={formData}
         field={question.field}
         question={question.question}
-        subtitle={question.subtitle}
         badgeLabel={question.badgeLabel}
         onNext={nextStep}
         onUpdateField={updateField}
@@ -92,11 +110,50 @@ export default function WizardForm({
     safety_habit_emergency_contacts: renderSafetyHabitStep(
       "safety_habit_emergency_contacts",
     ),
-    safety_check: (
+    safety_check_home_entrance: (
       <SafetyCheckStep
+        categoryId="home_entrance"
+        isLastSafetyAreaStep={false}
         formData={formData}
         safetySliderDrafts={safetySliderDrafts}
         onCommitSafetyCategorySliderValue={commitSafetyCategorySliderValue}
+        onNavigateToSafetyArea={navigateToSafetyArea}
+        isSafetyComplete={isSafetyComplete}
+        onNext={nextStep}
+      />
+    ),
+    safety_check_neighborhood: (
+      <SafetyCheckStep
+        categoryId="neighborhood_safety_check"
+        isLastSafetyAreaStep={false}
+        formData={formData}
+        safetySliderDrafts={safetySliderDrafts}
+        onCommitSafetyCategorySliderValue={commitSafetyCategorySliderValue}
+        onNavigateToSafetyArea={navigateToSafetyArea}
+        isSafetyComplete={isSafetyComplete}
+        onNext={nextStep}
+      />
+    ),
+    safety_check_blindspots: (
+      <SafetyCheckStep
+        categoryId="windows_terrace"
+        isLastSafetyAreaStep={false}
+        formData={formData}
+        safetySliderDrafts={safetySliderDrafts}
+        onCommitSafetyCategorySliderValue={commitSafetyCategorySliderValue}
+        onNavigateToSafetyArea={navigateToSafetyArea}
+        isSafetyComplete={isSafetyComplete}
+        onNext={nextStep}
+      />
+    ),
+    safety_check_emergency_readiness: (
+      <SafetyCheckStep
+        categoryId="emergency_readiness_home"
+        isLastSafetyAreaStep
+        formData={formData}
+        safetySliderDrafts={safetySliderDrafts}
+        onCommitSafetyCategorySliderValue={commitSafetyCategorySliderValue}
+        onNavigateToSafetyArea={navigateToSafetyArea}
         isSafetyComplete={isSafetyComplete}
         onNext={nextStep}
       />
@@ -117,6 +174,13 @@ export default function WizardForm({
     ),
     goal_obstacle: (
       <ObstacleStep
+        formData={formData}
+        onNext={nextStep}
+        onUpdateField={updateField}
+      />
+    ),
+    goal_obstacle_other: (
+      <GoalObstacleOtherStep
         formData={formData}
         onNext={nextStep}
         onUpdateField={updateField}

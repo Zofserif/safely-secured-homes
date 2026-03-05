@@ -318,6 +318,7 @@ export const parseShareableResultsPayload = (
     household_stage: "",
     desired_outcome: "",
     goal_obstacle: "",
+    has_additional_notes: null,
     goal_obstacle_other: "",
     solution: "",
     first_name: "",

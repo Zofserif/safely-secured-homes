@@ -22,6 +22,34 @@ body {
   font-family: var(--font-sans), "Avenir Next", "Segoe UI", sans-serif;
 }
 
+@layer components {
+  .wizard-questionnaire-shell {
+    width: 100%;
+    max-width: 54rem;
+    margin-inline: auto;
+  }
+
+  .wizard-questionnaire-viewport {
+    display: flex;
+    min-height: clamp(22rem, 56vh, 35rem);
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  @media (min-width: 640px) {
+    .wizard-questionnaire-viewport {
+      min-height: clamp(24rem, 58vh, 40rem);
+    }
+  }
+
+  .wizard-questionnaire-shell :where(h3) {
+    margin-inline: auto;
+    max-width: 28ch;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+}
+
 .safety-range {
   --slider-track: #e2e8f0;
   --slider-fill: none;

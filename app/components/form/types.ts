@@ -27,7 +27,7 @@ export type SafetyField =
 export type SafetyCategoryId =
   | "home_entrance"
   | "neighborhood_safety_check"
-  | "indoor_outdoor_blindspots"
+  | "windows_terrace"
   | "emergency_readiness_home";
 
 export type SafetyHabitField =
@@ -51,7 +51,6 @@ export type SafetyHabitQuestion = {
   id: FormStepId;
   field: SafetyHabitField;
   question: string;
-  subtitle?: string;
   badgeLabel?: string;
 };
 
@@ -88,7 +87,6 @@ export type YesNoQuestionStepProps = {
   formData: FormData;
   field: SafetyHabitField;
   question: string;
-  subtitle?: string;
   badgeLabel?: string;
   onNext: () => void;
   onUpdateField: UpdateField;
@@ -101,12 +99,15 @@ export type HomeDetailsStepProps = {
 };
 
 export type SafetyCheckStepProps = {
+  categoryId: SafetyCategoryId;
+  isLastSafetyAreaStep: boolean;
   formData: FormData;
   safetySliderDrafts: Partial<Record<SafetyCategoryId, number>>;
   onCommitSafetyCategorySliderValue: (
     categoryId: SafetyCategoryId,
     rawValue: number
   ) => void;
+  onNavigateToSafetyArea: (categoryId: SafetyCategoryId) => void;
   isSafetyComplete: boolean;
   onNext: () => void;
 };
@@ -124,6 +125,12 @@ export type DesiredOutcomeStepProps = {
 };
 
 export type ObstacleStepProps = {
+  formData: FormData;
+  onNext: () => void;
+  onUpdateField: UpdateField;
+};
+
+export type GoalObstacleOtherStepProps = {
   formData: FormData;
   onNext: () => void;
   onUpdateField: UpdateField;
@@ -195,6 +202,7 @@ export type WizardControllerActions = {
   updateField: UpdateField;
   nextStep: () => void;
   prevStep: () => void;
+  goToStep: (stepIndex: number) => void;
   submitFinal: () => void;
   commitSafetyCategorySliderValue: (
     categoryId: SafetyCategoryId,

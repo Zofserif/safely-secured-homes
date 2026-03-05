@@ -144,8 +144,8 @@ const computePanatagComputation = (
       SAFETY_SCORE_MIN,
       SAFETY_SCORE_MAX
     ),
-    indoor_outdoor_blindspots: clampNumber(
-      categoryRiskScores.indoor_outdoor_blindspots,
+    windows_terrace: clampNumber(
+      categoryRiskScores.windows_terrace,
       SAFETY_SCORE_MIN,
       SAFETY_SCORE_MAX
     ),
@@ -158,7 +158,7 @@ const computePanatagComputation = (
 
   const baseAverage =
     (safetyScores.home_entrance +
-      safetyScores.indoor_outdoor_blindspots +
+      safetyScores.windows_terrace +
       safetyScores.neighborhood_safety_check) /
     3;
 
@@ -304,7 +304,7 @@ export const buildResultsScoringBreakdown = (
       priorityAction: `leadTier ${args.leadTier} => ${priority.label}`,
       emergencyReadiness: getEmergencyReadinessLegend(args.emergencyRiskScore),
       panatagFormula:
-        "((home_entrance + indoor_outdoor_blindspots + neighborhood_safety_check) / 3) + emergency_bonus; then normalize to /10",
+        "((home_entrance + windows_terrace + neighborhood_safety_check) / 3) + emergency_bonus; then normalize to /10",
       panatagEmergencyBonus: panatag.emergencyBonusLegend,
     },
     outputs: {

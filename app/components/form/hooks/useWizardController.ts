@@ -11,6 +11,7 @@ import {
   createInitialFormData,
   SAFETY_CATEGORIES,
 } from "../constants";
+import { FORM_STEPS } from "../../../lib/formSteps";
 import { clampSafetyScore } from "../../../lib/safetyScale.js";
 import type {
   FieldErrors,
@@ -64,17 +65,26 @@ export const useWizardController = ({
   };
 
   const prevStep = () => setStep((current) => current - 1);
+  const goToStep = (stepIndex: number) => {
+    const roundedStep = Math.round(stepIndex);
+    const minStep = 0;
+    const maxStep = FORM_STEPS.length - 1;
+    const clampedStep = Math.min(maxStep, Math.max(minStep, roundedStep));
+    setStep(clampedStep);
+  };
 
   const validateContactInfo = () => {
     const nextErrors: FieldErrors = {};
     const mobileRegex = /^09\d{9}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const normalizedEmail = formData.email.trim();
+    const normalizedMobile = formData.mobile.trim();
 
-    if (!mobileRegex.test(formData.mobile)) {
+    if (normalizedMobile && !mobileRegex.test(normalizedMobile)) {
       nextErrors.mobile = "Please enter a valid PH mobile number (09xxxxxxxxx)";
     }
 
-    if (!emailRegex.test(formData.email)) {
+    if (!emailRegex.test(normalizedEmail)) {
       nextErrors.email = "Please enter a valid email address";
     }
 
@@ -86,11 +96,13 @@ export const useWizardController = ({
     if (!validateContactInfo()) return;
 
     const normalizedEmail = formData.email.trim();
+    const normalizedMobile = formData.mobile.trim();
     const normalizedFirstName = normalizeFirstName(formData.first_name).slice(0, 50);
     const derivedFirstName = deriveFirstNameFromEmail(normalizedEmail).slice(0, 50);
     const normalizedData = {
       ...formData,
       email: normalizedEmail,
+      mobile: normalizedMobile,
       first_name: normalizedFirstName || derivedFirstName,
     };
 
@@ -142,6 +154,7 @@ export const useWizardController = ({
     toggleArrayField,
     nextStep,
     prevStep,
+    goToStep,
     submitFinal,
     commitSafetyCategorySliderValue,
   };

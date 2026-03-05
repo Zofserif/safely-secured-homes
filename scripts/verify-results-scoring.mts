@@ -139,7 +139,7 @@ const createCategorySafetyScores = (
   emergencySafety: number
 ): SafetyCategoryScores => ({
   home_entrance: homeSafety,
-  indoor_outdoor_blindspots: blindspotsSafety,
+  windows_terrace: blindspotsSafety,
   neighborhood_safety_check: neighborhoodSafety,
   emergency_readiness_home: emergencySafety,
 });
@@ -233,7 +233,7 @@ assertEqual(
   {
     home_entrance: 29,
     neighborhood_safety_check: 29,
-    indoor_outdoor_blindspots: 39,
+    windows_terrace: 39,
     emergency_readiness_home: 39,
   }
 );

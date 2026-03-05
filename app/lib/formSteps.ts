@@ -27,10 +27,26 @@ export const FORM_STEPS = [
     id: "safety_habit_emergency_contacts",
     label: "Safety habit: emergency contacts",
   },
-  { id: "safety_check", label: "Safety check" },
+  {
+    id: "safety_check_home_entrance",
+    label: "Safety check: Home entrance",
+  },
+  {
+    id: "safety_check_neighborhood",
+    label: "Safety check: Neighborhood",
+  },
+  {
+    id: "safety_check_blindspots",
+    label: "Safety check: Windows + Terrace",
+  },
+  {
+    id: "safety_check_emergency_readiness",
+    label: "Safety check: Emergency readiness",
+  },
   { id: "household_stage", label: "Household stage" },
   { id: "desired_outcome", label: "Desired outcome" },
   { id: "goal_obstacle", label: "Goal obstacle" },
+  { id: "goal_obstacle_other", label: "Anything else (optional)" },
   { id: "solution", label: "Solution" },
   { id: "contact_details", label: "Contact details" },
 ] as const;

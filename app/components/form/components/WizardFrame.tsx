@@ -61,18 +61,23 @@ export default function WizardFrame({
           </div>
         </div>
 
-        <div className="rounded-[1.5rem] border border-[#EAE4D3] bg-white p-4 sm:p-6 md:p-8">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={step}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
+        <div className="rounded-[1.5rem] border border-[#EAE4D3] bg-white p-4 sm:p-6 md:p-6">
+          <div className="wizard-questionnaire-shell">
+            <div className="wizard-questionnaire-viewport">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full"
+                >
+                  {children}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>

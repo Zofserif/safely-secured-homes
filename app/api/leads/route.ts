@@ -37,7 +37,7 @@ type LeadPayloadBase = {
   safety: {
     home_entrance: number;
     neighborhood_safety_check: number;
-    indoor_outdoor_blindspots: number;
+    windows_terrace: number;
     emergency_readiness_home: number;
   };
   preferences: {
@@ -50,6 +50,7 @@ type LeadPayloadBase = {
     household_stage: string;
     desired_outcome: string;
     goal_obstacle: string;
+    has_additional_notes: boolean | null;
     goal_obstacle_other: string;
     solution: string;
     safety_habits: {
@@ -162,8 +163,8 @@ const sanitizeLeadPayloadBase = (payload: Record<string, unknown>): LeadPayloadB
       neighborhood_safety_check: toSafetyScore(
         safety.neighborhood_safety_check
       ),
-      indoor_outdoor_blindspots: toSafetyScore(
-        safety.indoor_outdoor_blindspots
+      windows_terrace: toSafetyScore(
+        safety.windows_terrace
       ),
       emergency_readiness_home: toSafetyScore(safety.emergency_readiness_home),
     },
@@ -177,6 +178,7 @@ const sanitizeLeadPayloadBase = (payload: Record<string, unknown>): LeadPayloadB
       household_stage: toSafeString(preferences.household_stage),
       desired_outcome: toSafeString(preferences.desired_outcome),
       goal_obstacle: toSafeString(preferences.goal_obstacle),
+      has_additional_notes: toNullableBoolean(preferences.has_additional_notes),
       goal_obstacle_other: toSafeString(preferences.goal_obstacle_other),
       solution: toSafeString(preferences.solution),
       safety_habits: {

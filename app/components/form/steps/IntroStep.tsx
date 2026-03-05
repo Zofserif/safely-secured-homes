@@ -35,9 +35,6 @@ export default function IntroStep({
       <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
         What should we call you?
       </h3>
-      <p className="text-center text-sm text-slate-600 sm:text-base">
-        Let&apos;s personalize your home safety quiz.
-      </p>
 
       <form onSubmit={handleSubmit} className="mx-auto max-w-xl space-y-4">
         <input

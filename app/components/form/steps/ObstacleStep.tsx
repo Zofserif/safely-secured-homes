@@ -12,8 +12,7 @@ export default function ObstacleStep({
   return (
     <div className="space-y-5">
       <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
-        Hi {firstName}, what is the main reason you have not achieved your goal
-        yet?
+        Hi {firstName}, what is the main thing holding you back right now?
       </h3>
 
       <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">

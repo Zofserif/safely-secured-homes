@@ -40,30 +40,24 @@ export default function GoalObstacleOtherStep({
           type="button"
           onClick={() => onUpdateField("has_additional_notes", true)}
           aria-pressed={hasAdditionalNotes === true}
-          className={`group mx-auto w-full max-w-[20rem] rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0E79B2]/20 ${hasAdditionalNotes === true ? "border-[#0E79B2] bg-[#F2FAFF] ring-1 ring-[#0E79B2]/30 shadow-sm" : "border-[#E2E8F0] bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+          className={`group mx-auto flex min-h-[4.75rem] w-full max-w-[20rem] items-center justify-center rounded-2xl border p-4 text-center transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0E79B2]/20 ${hasAdditionalNotes === true ? "border-[#0E79B2] bg-[#F2FAFF] ring-1 ring-[#0E79B2]/30 shadow-sm" : "border-[#CBD5E1] bg-[#F7FBFF] ring-1 ring-[#0E79B2]/15 hover:border-[#0E79B2]/60 hover:bg-[#F2FAFF]"}`}
         >
           <p
-            className={`text-sm font-semibold leading-tight sm:text-base ${hasAdditionalNotes === true ? "text-[#0E79B2]" : "text-slate-800"}`}
+            className={`text-sm font-semibold leading-tight sm:text-base ${hasAdditionalNotes === true ? "text-[#0E79B2]" : "text-[#0D5E89]"}`}
           >
             Add notes or a question
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-600">
-            Share extra details we should keep in mind.
           </p>
         </button>
         <button
           type="button"
           onClick={handleSkipForNow}
           aria-pressed={hasAdditionalNotes === false}
-          className={`group mx-auto w-full max-w-[20rem] rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0E79B2]/20 ${hasAdditionalNotes === false ? "border-[#0E79B2] bg-[#F2FAFF] ring-1 ring-[#0E79B2]/30 shadow-sm" : "border-[#E2E8F0] bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+          className={`group mx-auto flex min-h-[4.75rem] w-full max-w-[20rem] items-center justify-center rounded-2xl border p-4 text-center transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0E79B2]/20 ${hasAdditionalNotes === false ? "border-[#0E79B2] bg-[#F2FAFF] ring-1 ring-[#0E79B2]/30 shadow-sm" : "border-[#CBD5E1] bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
         >
           <p
             className={`text-sm font-semibold leading-tight sm:text-base ${hasAdditionalNotes === false ? "text-[#0E79B2]" : "text-slate-800"}`}
           >
             Skip for now
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-600">
-            Continue without adding extra notes.
           </p>
         </button>
       </div>

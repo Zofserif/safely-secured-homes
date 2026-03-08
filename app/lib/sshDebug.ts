@@ -7,6 +7,23 @@ export type LeadSendsStatus = {
   persisted: boolean;
 };
 
+export type NtfyTestMode = "stored_lead" | "synthetic";
+
+export type NtfyTestSuccessResult = {
+  ok: true;
+  mode: NtfyTestMode;
+  ntfy_status: "sent" | "skipped";
+  reason?: "missing_config";
+};
+
+export type NtfyTestErrorResult = {
+  ok: false;
+  mode: NtfyTestMode;
+  error: string;
+};
+
+export type NtfyTestResult = NtfyTestSuccessResult | NtfyTestErrorResult;
+
 export type SshDebugApi = {
   bonusOn?: () => void;
   expireBonus?: () => void;
@@ -15,6 +32,7 @@ export type SshDebugApi = {
   leadSendsOn?: () => void;
   leadSendsOff?: () => void;
   leadSendsStatus?: () => LeadSendsStatus;
+  ntfyTest?: () => Promise<NtfyTestResult>;
   posthogOn?: () => void;
   posthogOff?: () => void;
   posthogStatus?: () => PostHogDebugStatus;

@@ -1,16 +1,11 @@
 import {
-  BUDGET_BAND_OPTIONS,
-  CURRENT_SETUP_VALUES,
-  FEATURE_OPTIONS,
-  FLOOR_OPTIONS,
-  HOME_SIZE_VALUES,
-  PRIORITY_AREAS,
+  DESIRED_OUTCOME_OPTIONS,
+  GOAL_OBSTACLE_OPTIONS,
+  HOUSEHOLD_STAGE_OPTIONS,
   PROPERTY_TYPES,
-  SMART_HOME_FEATURE_OPTIONS,
-  TIMELINE_OPTIONS,
+  SOLUTION_OPTIONS,
 } from "./formOptions";
-import { deriveDiySecurityPlan } from "./diySecurityPlan";
-import { FormData } from "./types";
+import type { FormData } from "./types";
 import {
   normalizeSafetyScore,
   SAFETY_SCORE_MAX,
@@ -18,14 +13,18 @@ import {
 } from "./safetyScale.js";
 
 const PROPERTY_TYPE_VALUES = PROPERTY_TYPES.map((option) => option.value);
-const TIMELINE_VALUES = TIMELINE_OPTIONS.map((option) => option.value);
+const SOLUTION_VALUES = Object.values(SOLUTION_OPTIONS);
 
 type ResultsSharePayloadBase = {
   property_type: string;
-  home_size: string;
-  floors: string;
-  priority_areas: string[];
-  current_setup: string;
+  has_spare_key: boolean | null;
+  changed_wifi_default_password: boolean | null;
+  sleeps_with_earphones: boolean | null;
+  locks_windows_gate_at_night: boolean | null;
+  has_security_cameras: boolean | null;
+  has_smoke_alarm_or_fire_extinguisher: boolean | null;
+  has_first_aid_or_medicine_ready: boolean | null;
+  knows_local_emergency_contacts: boolean | null;
   safety_gate_entry: number;
   safety_blindspots: number;
   safety_side_back_entry: number;
@@ -33,24 +32,16 @@ type ResultsSharePayloadBase = {
   safety_driveway_garage: number;
   safety_indoor_choke_points: number;
   safety_emergency_readiness: number;
-  has_spare_key?: boolean | null;
-  changed_wifi_default_password?: boolean | null;
-  sleeps_with_earphones?: boolean | null;
-  locks_windows_gate_at_night?: boolean | null;
-  has_security_cameras?: boolean | null;
-  has_smoke_alarm_or_fire_extinguisher?: boolean | null;
-  has_first_aid_or_medicine_ready?: boolean | null;
-  knows_local_emergency_contacts?: boolean | null;
-  features_must: string[];
-  smart_home_features?: string[];
-  smart_home_interest: boolean;
-  diy_security_plan: boolean;
-  budget_band: string;
-  timeline: string;
+  household_stage: string;
+  desired_outcome: string;
+  goal_obstacle: string;
+  has_additional_notes: boolean;
+  goal_obstacle_other: string;
+  solution: string;
 };
 
-export type ResultsSharePayloadV4 = ResultsSharePayloadBase & {
-  v: 4;
+export type ResultsSharePayloadV5 = ResultsSharePayloadBase & {
+  v: 5;
 };
 
 type InvalidField = {
@@ -76,32 +67,6 @@ const normalizeOption = (
   return options.find((option) => option.trim() === trimmed);
 };
 
-const normalizeOptionArray = (
-  options: readonly string[],
-  value: unknown,
-  requireAtLeastOne: boolean
-): string[] | undefined => {
-  if (!Array.isArray(value)) return undefined;
-
-  const normalized: string[] = [];
-  const seen = new Set<string>();
-
-  for (const item of value) {
-    const option = normalizeOption(options, item);
-    if (!option || seen.has(option)) {
-      return undefined;
-    }
-    seen.add(option);
-    normalized.push(option);
-  }
-
-  if (requireAtLeastOne && normalized.length === 0) {
-    return undefined;
-  }
-
-  return normalized;
-};
-
 const normalizeStoredSafetyScore = (value: unknown): number | undefined => {
   const normalized = normalizeSafetyScore(value);
   if (typeof normalized !== "number") return undefined;
@@ -113,72 +78,57 @@ const normalizeStoredSafetyScore = (value: unknown): number | undefined => {
   return normalized;
 };
 
-const normalizeBoolean = (value: unknown): boolean =>
-  typeof value === "boolean" ? value : Boolean(value);
-
 const normalizeNullableBoolean = (value: unknown): boolean | null =>
   typeof value === "boolean" ? value : null;
 
+const normalizeRequiredBoolean = (value: unknown): boolean | undefined =>
+  typeof value === "boolean" ? value : undefined;
+
+const normalizeText = (value: unknown): string =>
+  typeof value === "string" ? value.trim() : "";
+
 const collectInvalidFields = (
-  payload: Partial<ResultsSharePayloadV4>
+  payload: Partial<ResultsSharePayloadV5>
 ): InvalidField[] => {
   const invalid: InvalidField[] = [];
 
   if (!payload.property_type) {
     invalid.push({ field: "property_type", value: payload.property_type });
   }
-  if (!payload.home_size) {
-    invalid.push({ field: "home_size", value: payload.home_size });
+
+  if (!payload.household_stage) {
+    invalid.push({ field: "household_stage", value: payload.household_stage });
   }
-  if (!payload.floors) {
-    invalid.push({ field: "floors", value: payload.floors });
+
+  if (!payload.desired_outcome) {
+    invalid.push({ field: "desired_outcome", value: payload.desired_outcome });
   }
-  if (!payload.priority_areas || payload.priority_areas.length === 0) {
-    invalid.push({ field: "priority_areas", value: payload.priority_areas });
+
+  if (!payload.goal_obstacle) {
+    invalid.push({ field: "goal_obstacle", value: payload.goal_obstacle });
   }
-  if (!payload.current_setup) {
-    invalid.push({ field: "current_setup", value: payload.current_setup });
+
+  if (typeof payload.has_additional_notes !== "boolean") {
+    invalid.push({
+      field: "has_additional_notes",
+      value: payload.has_additional_notes,
+    });
   }
-  if (!payload.features_must) {
-    invalid.push({ field: "features_must", value: payload.features_must });
-  }
-  if (!payload.budget_band) {
-    invalid.push({ field: "budget_band", value: payload.budget_band });
-  }
-  if (!payload.timeline) {
-    invalid.push({ field: "timeline", value: payload.timeline });
+
+  if (!payload.solution) {
+    invalid.push({ field: "solution", value: payload.solution });
   }
 
   return invalid;
 };
 
 const toPayload = (formData: FormData): {
-  payload: ResultsSharePayloadV4 | null;
+  payload: ResultsSharePayloadV5 | null;
   invalidFields: InvalidField[];
 } => {
-  const normalizedTimeline = normalizeOption(TIMELINE_VALUES, formData.timeline);
-  const payload: Partial<ResultsSharePayloadV4> = {
-    v: 4,
+  const payload: Partial<ResultsSharePayloadV5> = {
+    v: 5,
     property_type: normalizeOption(PROPERTY_TYPE_VALUES, formData.property_type),
-    home_size: normalizeOption(HOME_SIZE_VALUES, formData.home_size),
-    floors: normalizeOption(FLOOR_OPTIONS, formData.floors),
-    priority_areas: normalizeOptionArray(
-      PRIORITY_AREAS,
-      formData.priority_areas,
-      true
-    ),
-    current_setup: normalizeOption(CURRENT_SETUP_VALUES, formData.current_setup),
-    safety_gate_entry: normalizeStoredSafetyScore(formData.safety_gate_entry),
-    safety_blindspots: normalizeStoredSafetyScore(formData.safety_blindspots),
-    safety_side_back_entry: normalizeStoredSafetyScore(formData.safety_side_back_entry),
-    safety_windows_terrace: normalizeStoredSafetyScore(formData.safety_windows_terrace),
-    safety_driveway_garage: normalizeStoredSafetyScore(formData.safety_driveway_garage),
-    safety_indoor_choke_points: normalizeStoredSafetyScore(
-      formData.safety_indoor_choke_points
-    ),
-    safety_emergency_readiness: normalizeStoredSafetyScore(
-      formData.safety_emergency_readiness
-    ),
     has_spare_key: normalizeNullableBoolean(formData.has_spare_key),
     changed_wifi_default_password: normalizeNullableBoolean(
       formData.changed_wifi_default_password
@@ -197,23 +147,31 @@ const toPayload = (formData: FormData): {
     knows_local_emergency_contacts: normalizeNullableBoolean(
       formData.knows_local_emergency_contacts
     ),
-    features_must: normalizeOptionArray(FEATURE_OPTIONS, formData.features_must, false),
-    smart_home_features: normalizeOptionArray(
-      SMART_HOME_FEATURE_OPTIONS,
-      formData.smart_home_features,
-      false
+    safety_gate_entry: normalizeStoredSafetyScore(formData.safety_gate_entry),
+    safety_blindspots: normalizeStoredSafetyScore(formData.safety_blindspots),
+    safety_side_back_entry: normalizeStoredSafetyScore(formData.safety_side_back_entry),
+    safety_windows_terrace: normalizeStoredSafetyScore(formData.safety_windows_terrace),
+    safety_driveway_garage: normalizeStoredSafetyScore(formData.safety_driveway_garage),
+    safety_indoor_choke_points: normalizeStoredSafetyScore(
+      formData.safety_indoor_choke_points
     ),
-    smart_home_interest: normalizeBoolean(formData.smart_home_interest),
-    diy_security_plan: normalizedTimeline
-      ? deriveDiySecurityPlan(normalizedTimeline)
-      : undefined,
-    budget_band: normalizeOption(BUDGET_BAND_OPTIONS, formData.budget_band),
-    timeline: normalizedTimeline,
+    safety_emergency_readiness: normalizeStoredSafetyScore(
+      formData.safety_emergency_readiness
+    ),
+    household_stage: normalizeOption(HOUSEHOLD_STAGE_OPTIONS, formData.household_stage),
+    desired_outcome: normalizeOption(
+      DESIRED_OUTCOME_OPTIONS,
+      formData.desired_outcome
+    ),
+    goal_obstacle: normalizeOption(GOAL_OBSTACLE_OPTIONS, formData.goal_obstacle),
+    has_additional_notes: normalizeRequiredBoolean(formData.has_additional_notes),
+    goal_obstacle_other: normalizeText(formData.goal_obstacle_other),
+    solution: normalizeOption(SOLUTION_VALUES, formData.solution),
   };
 
   const invalidFields = collectInvalidFields(payload);
 
-  const safetyFields: Array<keyof ResultsSharePayloadV4> = [
+  const safetyFields: Array<keyof ResultsSharePayloadV5> = [
     "safety_gate_entry",
     "safety_blindspots",
     "safety_side_back_entry",
@@ -233,12 +191,12 @@ const toPayload = (formData: FormData): {
     return { payload: null, invalidFields };
   }
 
-  return { payload: payload as ResultsSharePayloadV4, invalidFields: [] };
+  return { payload: payload as ResultsSharePayloadV5, invalidFields: [] };
 };
 
 export const createShareableResultsPayload = (
   formData: FormData
-): ResultsSharePayloadV4 | null => {
+): ResultsSharePayloadV5 | null => {
   const { payload, invalidFields } = toPayload(formData);
 
   if (!payload) {
@@ -258,17 +216,9 @@ export const parseShareableResultsPayload = (
   value: unknown
 ): FormData | null => {
   if (!isRecord(value)) return null;
-  if (value.v !== 4) return null;
+  if (value.v !== 5) return null;
 
   const propertyType = normalizeOption(PROPERTY_TYPE_VALUES, value.property_type);
-  const homeSize = normalizeOption(HOME_SIZE_VALUES, value.home_size);
-  const floors = normalizeOption(FLOOR_OPTIONS, value.floors);
-  const priorityAreas = normalizeOptionArray(
-    PRIORITY_AREAS,
-    value.priority_areas,
-    true
-  );
-  const currentSetup = normalizeOption(CURRENT_SETUP_VALUES, value.current_setup);
   const safetyGateEntry = normalizeStoredSafetyScore(value.safety_gate_entry);
   const safetyBlindspots = normalizeStoredSafetyScore(value.safety_blindspots);
   const safetySideBackEntry = normalizeStoredSafetyScore(value.safety_side_back_entry);
@@ -280,28 +230,17 @@ export const parseShareableResultsPayload = (
   const safetyEmergencyReadiness = normalizeStoredSafetyScore(
     value.safety_emergency_readiness
   );
-  const featuresMust = normalizeOptionArray(
-    FEATURE_OPTIONS,
-    value.features_must,
-    false
+  const householdStage = normalizeOption(HOUSEHOLD_STAGE_OPTIONS, value.household_stage);
+  const desiredOutcome = normalizeOption(
+    DESIRED_OUTCOME_OPTIONS,
+    value.desired_outcome
   );
-  const smartHomeFeatures =
-    typeof value.smart_home_features === "undefined"
-      ? []
-      : normalizeOptionArray(
-          SMART_HOME_FEATURE_OPTIONS,
-          value.smart_home_features,
-          false
-        );
-  const budgetBand = normalizeOption(BUDGET_BAND_OPTIONS, value.budget_band);
-  const timeline = normalizeOption(TIMELINE_VALUES, value.timeline);
+  const goalObstacle = normalizeOption(GOAL_OBSTACLE_OPTIONS, value.goal_obstacle);
+  const solution = normalizeOption(SOLUTION_VALUES, value.solution);
+  const hasAdditionalNotes = normalizeRequiredBoolean(value.has_additional_notes);
 
   if (
     !propertyType ||
-    !homeSize ||
-    !floors ||
-    !priorityAreas ||
-    !currentSetup ||
     typeof safetyGateEntry !== "number" ||
     typeof safetyBlindspots !== "number" ||
     typeof safetySideBackEntry !== "number" ||
@@ -309,20 +248,17 @@ export const parseShareableResultsPayload = (
     typeof safetyDrivewayGarage !== "number" ||
     typeof safetyIndoorChokePoints !== "number" ||
     typeof safetyEmergencyReadiness !== "number" ||
-    !featuresMust ||
-    !smartHomeFeatures ||
-    !budgetBand ||
-    !timeline
+    !householdStage ||
+    !desiredOutcome ||
+    !goalObstacle ||
+    typeof hasAdditionalNotes !== "boolean" ||
+    !solution
   ) {
     return null;
   }
 
   return {
     property_type: propertyType,
-    home_size: homeSize,
-    floors,
-    priority_areas: priorityAreas,
-    current_setup: currentSetup,
     has_spare_key: normalizeNullableBoolean(value.has_spare_key),
     changed_wifi_default_password: normalizeNullableBoolean(
       value.changed_wifi_default_password
@@ -348,18 +284,12 @@ export const parseShareableResultsPayload = (
     safety_driveway_garage: safetyDrivewayGarage,
     safety_indoor_choke_points: safetyIndoorChokePoints,
     safety_emergency_readiness: safetyEmergencyReadiness,
-    features_must: featuresMust,
-    smart_home_features: smartHomeFeatures,
-    smart_home_interest: value.smart_home_interest ? "Yes" : "",
-    diy_security_plan: deriveDiySecurityPlan(timeline),
-    budget_band: budgetBand,
-    timeline,
-    household_stage: "",
-    desired_outcome: "",
-    goal_obstacle: "",
-    has_additional_notes: null,
-    goal_obstacle_other: "",
-    solution: "",
+    household_stage: householdStage,
+    desired_outcome: desiredOutcome,
+    goal_obstacle: goalObstacle,
+    has_additional_notes: hasAdditionalNotes,
+    goal_obstacle_other: normalizeText(value.goal_obstacle_other),
+    solution,
     first_name: "",
     email: "",
     mobile: "",

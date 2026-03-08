@@ -7,6 +7,7 @@ import {
 } from "../../lib/analytics";
 import { panatagChecklistPath } from "../../lib/site";
 import { deriveFirstNameFromEmail } from "../../lib/contactName";
+import { SOLUTION_OPTIONS } from "../../lib/formOptions";
 import type { CalculationResult, FormData } from "../../lib/types";
 import { RESULTS_BOOK_VISIT_URL, RESULTS_CALL_HREF } from "./constants";
 import { BLUEPRINT_CARDS } from "./blueprints";
@@ -189,7 +190,8 @@ export default function ResultsPage({
   data: FormData;
 }) {
   const [showDIY, setShowDIY] = useState(false);
-  const showDIYPlan = Boolean(data.diy_security_plan);
+  const showDIYPlan =
+    data.solution === SOLUTION_OPTIONS.DIY_HOME_SAFETY_PLAN;
   const normalizedEmail = data.email.trim().toLowerCase() || "unknown";
   const shouldAutoCompleteAwareness = hasAuditBookedSignal();
   const completionStorageKey = `${BLUEPRINT_COMPLETION_STORAGE_PREFIX}${normalizedEmail}`;

@@ -1,9 +1,5 @@
 export type FormData = {
   property_type: string;
-  home_size: string;
-  floors: string;
-  priority_areas: string[];
-  current_setup: string;
   has_spare_key: boolean | null;
   changed_wifi_default_password: boolean | null;
   sleeps_with_earphones: boolean | null;
@@ -20,12 +16,6 @@ export type FormData = {
   safety_driveway_garage: number | null;
   safety_indoor_choke_points: number | null;
   safety_emergency_readiness: number | null;
-  features_must: string[];
-  smart_home_features: string[];
-  smart_home_interest: string;
-  diy_security_plan: boolean;
-  budget_band: string;
-  timeline: string;
   household_stage: string;
   desired_outcome: string;
   goal_obstacle: string;

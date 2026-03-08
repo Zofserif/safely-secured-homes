@@ -43,6 +43,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
   - `window.sshDebug.posthogOn()`
   - `window.sshDebug.posthogOff()`
   - `window.sshDebug.posthogStatus()`
+  - `window.sshDebug.ntfyTest()`
 - Local PostHog override state persists across reloads via `localStorage`.
 
 ## Asset Storage Strategy
@@ -73,6 +74,11 @@ This project uses a hybrid media strategy:
 - `REPORT_CYCLE_ANCHOR_ISO`: ISO-8601 UTC timestamp that anchors 72-hour complimentary-plan cycles in `/api/reports-remaining`.
   Initial anchor value: `2026-02-26T09:42:57Z`.
   Changing this value re-anchors all future 72-hour cycles.
+- `NTFY_TOPIC_URL`: server-side ntfy publish URL for lead alerts (for example `https://ntfy.sh/your-topic`).
+  If missing, lead inserts still succeed and ntfy notification delivery is skipped with a warning log.
+- `NTFY_ACCESS_TOKEN`: server-side Bearer token used to authenticate ntfy lead alerts.
+  If missing, lead inserts still succeed and ntfy notification delivery is skipped with a warning log.
+- `DEBUG_NTFY_TEST`: optional flag (`true`) to allow `POST /api/leads/ntfy-test` outside local development.
 
 ### Campaign Unsubscribe Link
 

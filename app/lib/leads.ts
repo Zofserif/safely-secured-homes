@@ -13,8 +13,6 @@ import type {
   LeadTier,
 } from "./types";
 
-const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT;
-
 type LeadLocation = {
   source: "ip_header" | "unavailable";
   country_code: string | null;
@@ -28,11 +26,15 @@ type LeadPayloadBase = {
   location?: LeadLocation;
   property: {
     type: string;
-    size: string;
-    floors: string;
-    current_setup: string;
   };
-  priorities: string[];
+  priorities: {
+    household_stage: string;
+    desired_outcome: string;
+    goal_obstacle: string;
+    has_additional_notes: boolean | null;
+    goal_obstacle_other: string;
+    solution: string;
+  };
   safety: {
     home_entrance: number;
     neighborhood_safety_check: number;
@@ -40,18 +42,6 @@ type LeadPayloadBase = {
     emergency_readiness_home: number;
   };
   preferences: {
-    security_features: string[];
-    budget_band: string;
-    timeline: string;
-    diy_security_plan: boolean;
-    smart_home_interest: boolean;
-    smart_home_features: string[];
-    household_stage: string;
-    desired_outcome: string;
-    goal_obstacle: string;
-    has_additional_notes: boolean | null;
-    goal_obstacle_other: string;
-    solution: string;
     safety_habits: {
       has_spare_key: boolean | null;
       changed_wifi_default_password: boolean | null;
@@ -61,6 +51,15 @@ type LeadPayloadBase = {
       has_smoke_alarm_or_fire_extinguisher: boolean | null;
       has_first_aid_or_medicine_ready: boolean | null;
       knows_local_emergency_contacts: boolean | null;
+    };
+    safety_sliders: {
+      safety_gate_entry: number | null;
+      safety_blindspots: number | null;
+      safety_side_back_entry: number | null;
+      safety_windows_terrace: number | null;
+      safety_driveway_garage: number | null;
+      safety_indoor_choke_points: number | null;
+      safety_emergency_readiness: number | null;
     };
   };
   panatag_home_rating: number;
@@ -94,14 +93,8 @@ const toSafeString = (value: unknown): string =>
 const toNullableBoolean = (value: unknown): boolean | null =>
   typeof value === "boolean" ? value : null;
 
-const toStringArray = (value: unknown): string[] => {
-  if (!Array.isArray(value)) return [];
-
-  return value
-    .filter((item): item is string => typeof item === "string")
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
-};
+const toNullableFiniteNumber = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : null;
 
 const toPanatagHomeRating = (value: number): number =>
   Math.max(0, Math.min(100, Math.round(value)));
@@ -116,25 +109,17 @@ const buildLeadPayloadBase = (
   mobile: toSafeString(data.mobile),
   property: {
     type: toSafeString(data.property_type),
-    size: toSafeString(data.home_size),
-    floors: toSafeString(data.floors),
-    current_setup: toSafeString(data.current_setup),
   },
-  priorities: toStringArray(data.priority_areas),
-  safety: safetyCategories,
-  preferences: {
-    security_features: toStringArray(data.features_must),
-    budget_band: toSafeString(data.budget_band),
-    timeline: toSafeString(data.timeline),
-    diy_security_plan: Boolean(data.diy_security_plan),
-    smart_home_interest: Boolean(data.smart_home_interest),
-    smart_home_features: toStringArray(data.smart_home_features),
+  priorities: {
     household_stage: toSafeString(data.household_stage),
     desired_outcome: toSafeString(data.desired_outcome),
     goal_obstacle: toSafeString(data.goal_obstacle),
     has_additional_notes: toNullableBoolean(data.has_additional_notes),
     goal_obstacle_other: toSafeString(data.goal_obstacle_other),
     solution: toSafeString(data.solution),
+  },
+  safety: safetyCategories,
+  preferences: {
     safety_habits: {
       has_spare_key: toNullableBoolean(data.has_spare_key),
       changed_wifi_default_password: toNullableBoolean(
@@ -153,6 +138,19 @@ const buildLeadPayloadBase = (
       ),
       knows_local_emergency_contacts: toNullableBoolean(
         data.knows_local_emergency_contacts
+      ),
+    },
+    safety_sliders: {
+      safety_gate_entry: toNullableFiniteNumber(data.safety_gate_entry),
+      safety_blindspots: toNullableFiniteNumber(data.safety_blindspots),
+      safety_side_back_entry: toNullableFiniteNumber(data.safety_side_back_entry),
+      safety_windows_terrace: toNullableFiniteNumber(data.safety_windows_terrace),
+      safety_driveway_garage: toNullableFiniteNumber(data.safety_driveway_garage),
+      safety_indoor_choke_points: toNullableFiniteNumber(
+        data.safety_indoor_choke_points
+      ),
+      safety_emergency_readiness: toNullableFiniteNumber(
+        data.safety_emergency_readiness
       ),
     },
   },
@@ -177,7 +175,7 @@ const buildLeadPayloadV4 = (
 ): LeadPayloadV4 => ({
   v: 4,
   ...buildLeadPayloadBase(data, safetyCategories, panatagHomeRating, source),
-  recommendations: toStringArray(result.recommendations),
+  recommendations: [],
   scoring: {
     model_version: toSafeString(result.leadScoringModelVersion) || "unknown",
     lead_score: result.leadScore,
@@ -208,61 +206,6 @@ export async function submitToEmail(
     console.log("Email sent successfully via EmailJS");
   } catch (error) {
     console.error("Email submission failed:", error);
-  }
-}
-
-export async function submitToFormspree(
-  data: FormData,
-  result: CalculationResult,
-  source?: string
-) {
-  const { panatagRating } = getResultsSummary(data, result);
-
-  const payload = {
-    ...data,
-    _subject: `New Lead: ${data.first_name} [${result.leadTier}]`,
-    summary_camera_count: result.cameraCount,
-    summary_nvr_channel: result.nvrChannel,
-    summary_lead_score: result.leadScore,
-    summary_lead_tier: result.leadTier,
-    summary_panatag_home_rating: panatagRating,
-    summary_recommendations: result.recommendations.join(", "),
-    lead_source: source ?? "website",
-  };
-
-  if (!FORMSPREE_ENDPOINT) {
-    console.warn(
-      "⚠️ FORMSPREE_ENDPOINT is not configured. Please set NEXT_PUBLIC_FORMSPREE_ENDPOINT."
-    );
-    return;
-  }
-
-  try {
-    const response = await fetch(FORMSPREE_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        error: "Unknown error",
-      }));
-      console.error("❌ Formspree submission failed:", errorData);
-
-      if (FORMSPREE_ENDPOINT.includes("YOUR_FORMSPREE_ID")) {
-        console.warn(
-          "⚠️ Placeholder Formspree URL detected. Update NEXT_PUBLIC_FORMSPREE_ENDPOINT."
-        );
-      }
-    } else {
-      console.log("✅ Formspree submission successful!");
-    }
-  } catch (error) {
-    console.error("❌ Network error during Formspree submission:", error);
   }
 }
 

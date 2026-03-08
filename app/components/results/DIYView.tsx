@@ -21,7 +21,6 @@ export default function DIYView({
   const storageLabel = result.storage1TB ? "1TB+" : "500GB";
   const firstName =
     data.first_name?.trim() || deriveFirstNameFromEmail(data.email) || "there";
-  const priorityAreas = data.priority_areas?.filter(Boolean) ?? [];
   const storageRows = [
     { cams: 4, bitrate: "1 Mbps", days14: "~0.61 TB", days30: "~1.30 TB" },
     { cams: 4, bitrate: "2.5 Mbps", days14: "~1.51 TB", days30: "~3.24 TB" },
@@ -42,16 +41,6 @@ export default function DIYView({
             <strong className="text-slate-700">Recommended camera count:</strong>{" "}
             <span className="font-semibold text-slate-800">{result.cameraCount}</span> Cameras
           </p>
-          {priorityAreas.length > 0 && (
-            <div>
-              <p className="mb-1 font-semibold text-slate-700">Priority zones</p>
-              <ul className="list-disc pl-5 space-y-1">
-                {priorityAreas.map((area) => (
-                  <li key={area}>{area}</li>
-                ))}
-              </ul>
-            </div>
-          )}
           <div>
             <p className="mb-1 font-semibold text-slate-700">Quick CCTV camera types</p>
             <ul className="list-disc pl-5 space-y-1">
@@ -329,14 +318,6 @@ export default function DIYView({
     const coverageImageUrl = encodeURI("/assets/img/DIYView Assets/Camera Coverage and deadZones.png");
     const lightingImageUrl = encodeURI("/assets/img/DIYView Assets/solar light.png");
     const safeFirstName = escapeHtml(firstName);
-    const priorityAreasMarkup = priorityAreas.length
-      ? `<div class="subsection">
-          <div class="subheading">Priority zones</div>
-          <ul class="list">
-            ${priorityAreas.map((area) => `<li>${escapeHtml(area)}</li>`).join("")}
-          </ul>
-        </div>`
-      : "";
     const storageRowsMarkup = storageRows
       .map((row) => `
         <tr>
@@ -364,7 +345,6 @@ export default function DIYView({
             <div class="step-details">${escapeHtml(step1.details)}</div>
             <div class="step-content">
               <p><strong>Recommended camera count:</strong> ${result.cameraCount} Cameras</p>
-              ${priorityAreasMarkup}
               <div class="subsection">
                 <div class="subheading">Quick CCTV camera types</div>
                 <ul class="list">

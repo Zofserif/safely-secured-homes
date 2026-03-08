@@ -55,8 +55,6 @@ export type SafetyHabitQuestion = {
 };
 
 export type UpdateField = (field: keyof FormData, value: unknown) => void;
-export type ToggleArrayField = (field: keyof FormData, value: string) => void;
-export type GetArrayFieldValues = (field: keyof FormData) => string[];
 
 export type WizardFrameProps = {
   step: number;
@@ -77,23 +75,11 @@ export type PropertyTypeStepProps = {
   onUpdateField: UpdateField;
 };
 
-export type CurrentSetupStepProps = {
-  formData: FormData;
-  onNext: () => void;
-  onUpdateField: UpdateField;
-};
-
 export type YesNoQuestionStepProps = {
   formData: FormData;
   field: SafetyHabitField;
   question: string;
   badgeLabel?: string;
-  onNext: () => void;
-  onUpdateField: UpdateField;
-};
-
-export type HomeDetailsStepProps = {
-  formData: FormData;
   onNext: () => void;
   onUpdateField: UpdateField;
 };
@@ -142,32 +128,6 @@ export type SolutionStepProps = {
   onUpdateField: UpdateField;
 };
 
-export type PriorityAreasStepProps = {
-  getArrayFieldValues: GetArrayFieldValues;
-  onNext: () => void;
-  onToggleArrayField: ToggleArrayField;
-};
-
-export type SmartHomeStepProps = {
-  formData: FormData;
-  getArrayFieldValues: GetArrayFieldValues;
-  onNext: () => void;
-  onToggleArrayField: ToggleArrayField;
-  onUpdateField: UpdateField;
-};
-
-export type BudgetDiyStepProps = {
-  formData: FormData;
-  onNext: () => void;
-  onUpdateField: UpdateField;
-};
-
-export type TimelineStepProps = {
-  formData: FormData;
-  onNext: () => void;
-  onUpdateField: UpdateField;
-};
-
 export type ContactStepProps = {
   formData: FormData;
   errors: FieldErrors;
@@ -197,8 +157,6 @@ export type WizardControllerState = {
 };
 
 export type WizardControllerActions = {
-  getArrayFieldValues: GetArrayFieldValues;
-  toggleArrayField: ToggleArrayField;
   updateField: UpdateField;
   nextStep: () => void;
   prevStep: () => void;

@@ -3,11 +3,6 @@ import type {
   CalculationResult,
   ResultsSummary,
 } from "./types";
-import {
-  FEATURES,
-  HOME_SIZE_OPTIONS,
-  PRIORITY_AREA_KEYS,
-} from "./formOptions";
 import { calculateLeadScore, getLeadTierFromScore } from "./leadScoring";
 import { getSafetySummary } from "./safetyScores";
 import {
@@ -27,49 +22,59 @@ const getNvrChannelTier = (cameraCount: number): number => {
   return tier;
 };
 
-const getPriorityAreaCameraContribution = (
-  area: string,
-  propertyType: string,
-  floors: string,
-  size: string
-): number => {
-  const isCondoApartment = propertyType === "Condo / Apartment";
-  const isFloorTwoOrThree = floors === "2" || floors === "3+";
-  const isLargeHome = size === HOME_SIZE_OPTIONS.LARGE;
-  const isExtraLargeHome = size === HOME_SIZE_OPTIONS.EXTRA_LARGE;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  switch (area) {
-    case PRIORITY_AREA_KEYS.GENERAL_INDOOR_LIVING_AREAS: {
-      let cameras = isCondoApartment ? 1 : 2;
-      if (floors === "2" || size === HOME_SIZE_OPTIONS.MEDIUM) cameras += 1;
-      if (floors === "3+") cameras += 2;
-      if (isLargeHome) cameras += 2;
-      if (isExtraLargeHome) cameras += 3;
-      return cameras;
-    }
-    case PRIORITY_AREA_KEYS.CHILD_ELDERLY_PET:
-      return 1;
-    case PRIORITY_AREA_KEYS.ENTRANCES_CRITICAL_ZONES: {
-      let cameras = 1;
-      if (isFloorTwoOrThree || size === HOME_SIZE_OPTIONS.MEDIUM) cameras += 1;
-      if (isLargeHome) cameras += 2;
-      if (isExtraLargeHome) cameras += 3;
-      return cameras;
-    }
-    case PRIORITY_AREA_KEYS.OUTDOOR_PERIMETER_STREET_VIEW: {
-      let cameras = 1;
-      if (isFloorTwoOrThree || size === HOME_SIZE_OPTIONS.MEDIUM) cameras += 1;
-      if (isLargeHome) cameras += 2;
-      if (isExtraLargeHome) cameras += 4;
-      return cameras;
-    }
-    case PRIORITY_AREA_KEYS.NO_INTERNET_ELECTRICITY_REMOTE_PROPERTY:
-      return 1;
-    case PRIORITY_AREA_KEYS.FRONT_DOOR_VISITOR_CHECKING:
-      return isLargeHome || isExtraLargeHome ? 2 : 1;
-    default:
-      return 0;
+const isNonEmpty = (value: string): boolean => value.trim().length > 0;
+const isNumeric = (value: number | null): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+const getCompletedStepCameraCount = (data: FormData): number => {
+  let count = 0;
+
+  if (isNonEmpty(data.first_name)) count += 1;
+  if (isNonEmpty(data.property_type)) count += 1;
+
+  const safetyHabits = [
+    data.has_spare_key,
+    data.changed_wifi_default_password,
+    data.sleeps_with_earphones,
+    data.locks_windows_gate_at_night,
+    data.has_security_cameras,
+    data.has_smoke_alarm_or_fire_extinguisher,
+    data.has_first_aid_or_medicine_ready,
+    data.knows_local_emergency_contacts,
+  ];
+  count += safetyHabits.filter((value) => value !== null).length;
+
+  if (
+    isNumeric(data.safety_gate_entry) &&
+    isNumeric(data.safety_side_back_entry) &&
+    isNumeric(data.safety_windows_terrace)
+  ) {
+    count += 1;
   }
+
+  if (isNumeric(data.safety_driveway_garage)) count += 1;
+
+  if (
+    isNumeric(data.safety_blindspots) &&
+    isNumeric(data.safety_indoor_choke_points)
+  ) {
+    count += 1;
+  }
+
+  if (isNumeric(data.safety_emergency_readiness)) count += 1;
+
+  if (isNonEmpty(data.household_stage)) count += 1;
+  if (isNonEmpty(data.desired_outcome)) count += 1;
+  if (isNonEmpty(data.goal_obstacle)) count += 1;
+  if (isNonEmpty(data.solution)) count += 1;
+
+  if (data.has_additional_notes !== null) count += 1;
+
+  if (EMAIL_REGEX.test(data.email.trim())) count += 1;
+
+  return count;
 };
 
 export const getResultsSummary = (data: FormData, result: CalculationResult): ResultsSummary => {
@@ -99,34 +104,13 @@ export const getResultsSummary = (data: FormData, result: CalculationResult): Re
   };
 };
 export const estimateCameraPlan = (data: FormData): CalculationResult => {
-  const areas = data.priority_areas ?? [];
-  const propertyType = data.property_type ?? "";
-  const floors = data.floors ?? "1";
-  const size = data.home_size ?? HOME_SIZE_OPTIONS.SMALL;
-  const featuresMust = data.features_must ?? [];
-
-  const computedCameraTotal = areas.reduce(
-    (sum, area) =>
-      sum + getPriorityAreaCameraContribution(area, propertyType, floors, size),
-    0
-  );
-  const cameraCount = Math.max(2, computedCameraTotal);
+  const cameraCount = getCompletedStepCameraCount(data);
   const nvrChannel = getNvrChannelTier(cameraCount);
 
   const { leadScore, leadScoreBreakdown, leadScoringModelVersion } =
     calculateLeadScore(data);
   const tier = getLeadTierFromScore(leadScore);
 
-  // Recommendations
-  const recs: string[] = [];
-  if (areas.includes(PRIORITY_AREA_KEYS.OUTDOOR_PERIMETER_STREET_VIEW)) {
-    recs.push("Varifocal cameras for plate recognition");
-  }
-  if (featuresMust.includes(FEATURES.HUMAN_VEHICLE_ALERT)) recs.push("Smart filtering for human/vehicle alerts");
-  if (data.smart_home_interest) {
-    recs.push("Start your Smart Home Starter journey with Smart light and Home Assistant (like Alexa or Google Home) integration for easy control and automation.");
-  }
-  
   return {
     cameraCount,
     nvrChannel,
@@ -134,7 +118,7 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
     leadScore,
     leadTier: tier,
     leadScoringModelVersion,
-    recommendations: recs,
+    recommendations: [],
     leadScoreBreakdown,
   };
 };

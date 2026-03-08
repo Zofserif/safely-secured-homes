@@ -82,10 +82,6 @@ const assertEqual = (label: string, actual: unknown, expected: unknown): void =>
 
 const createBaseFormData = (): FormData => ({
   property_type: "",
-  home_size: "",
-  floors: "",
-  priority_areas: [],
-  current_setup: "",
   has_spare_key: null,
   changed_wifi_default_password: null,
   sleeps_with_earphones: null,
@@ -101,12 +97,6 @@ const createBaseFormData = (): FormData => ({
   safety_driveway_garage: null,
   safety_indoor_choke_points: null,
   safety_emergency_readiness: null,
-  features_must: [],
-  smart_home_features: [],
-  smart_home_interest: "",
-  diy_security_plan: false,
-  budget_band: "",
-  timeline: "",
   household_stage: "",
   desired_outcome: "",
   goal_obstacle: "",

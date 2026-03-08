@@ -59,8 +59,6 @@ const isBrowser = () => typeof window !== "undefined";
 
 const normalizeString = (value: string) => value.trim();
 
-const safeArray = (values: string[]) => values.map((value) => value.trim()).filter(Boolean);
-
 const toNullableBooleanState = (value: boolean | null): "yes" | "no" | "unknown" => {
   if (value === true) return "yes";
   if (value === false) return "no";
@@ -173,11 +171,6 @@ const trackV2 = (
 
 const legacyFormProps = (data: FormData): EventProps => ({
   property_type: normalizeString(data.property_type),
-  home_size: normalizeString(data.home_size),
-  floors: normalizeString(data.floors),
-  priority_areas: safeArray(data.priority_areas),
-  priority_areas_count: data.priority_areas.length,
-  current_setup: normalizeString(data.current_setup),
   household_stage: normalizeString(data.household_stage),
   desired_outcome: normalizeString(data.desired_outcome),
   goal_obstacle: normalizeString(data.goal_obstacle),
@@ -201,26 +194,14 @@ const legacyFormProps = (data: FormData): EventProps => ({
   safety_emergency_readiness: data.safety_emergency_readiness,
   // Safety summary now uses a 0..100 safety-oriented field scale.
   safety_score_avg: getSafetySummary(data).average,
-  features_must: safeArray(data.features_must),
-  features_must_count: data.features_must.length,
-  smart_home_interest: Boolean(data.smart_home_interest),
-  diy_security_plan: Boolean(data.diy_security_plan),
-  budget_band: normalizeString(data.budget_band),
-  timeline: normalizeString(data.timeline),
   email_domain: getEmailDomain(data.email),
 });
 
 const normalizedFormProps = (data: FormData): EventProps => {
-  const priorityAreas = safeArray(data.priority_areas);
-  const featureList = safeArray(data.features_must);
-  const smartHomeFeatures = safeArray(data.smart_home_features ?? []);
   const safety = getSafetySummary(data);
 
   return {
     property_type_key: slugify(data.property_type),
-    home_size_key: slugify(data.home_size),
-    floors_key: slugify(data.floors),
-    current_setup_key: slugify(data.current_setup),
     household_stage_key: slugify(data.household_stage),
     desired_outcome_key: slugify(data.desired_outcome),
     goal_obstacle_key: slugify(data.goal_obstacle),
@@ -245,16 +226,6 @@ const normalizedFormProps = (data: FormData): EventProps => {
     knows_local_emergency_contacts_state: toNullableBooleanState(
       data.knows_local_emergency_contacts
     ),
-    priority_area_keys: priorityAreas.map((value) => slugify(value)),
-    priority_area_count: priorityAreas.length,
-    feature_keys: featureList.map((value) => slugify(value)),
-    features_count: featureList.length,
-    smart_home_feature_keys: smartHomeFeatures.map((value) => slugify(value)),
-    smart_home_features_count: smartHomeFeatures.length,
-    smart_home_interest: Boolean(data.smart_home_interest),
-    diy_security_plan: Boolean(data.diy_security_plan),
-    budget_band_key: slugify(data.budget_band),
-    timeline_key: slugify(data.timeline),
     safety_score_avg: safety.average,
     safety_score_total: safety.total,
     email_domain: getEmailDomain(data.email),

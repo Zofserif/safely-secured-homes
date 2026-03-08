@@ -16,16 +16,16 @@ import ResultsPage from "./results/ResultsPage";
 import type { HomeCtaLocation, HomeCtaTarget } from "./home/types";
 import { FormData, CalculationResult } from "../lib/types";
 import { estimateCameraPlan } from "../lib/calculations";
-import { normalizeDiySecurityPlan } from "../lib/diySecurityPlan";
 import { normalizeSafetyHabitAnswers } from "../lib/safetyHabits";
 import {
   submitLeadToSupabase,
   submitToEmail,
-  submitToFormspree,
 } from "../lib/leads";
 import {
   registerSshDebugMethods,
   type LeadSendsStatus,
+  type NtfyTestMode,
+  type NtfyTestResult,
   type PostHogDebugStatus,
 } from "../lib/sshDebug";
 import {
@@ -37,7 +37,6 @@ import {
   type AppView,
   type FunnelContext,
 } from "../lib/analytics";
-import { parseResultsToken } from "../lib/resultsLink";
 import { createShareableResultsPayload } from "../lib/resultsShare";
 
 declare global {
@@ -50,6 +49,18 @@ declare global {
 type StoredLead = {
   formData: FormData;
   result: CalculationResult;
+};
+
+type NtfyTestRequestBody = {
+  mode: NtfyTestMode;
+  payload?: {
+    name: string;
+    email: string;
+    mobile: string;
+    tier: CalculationResult["leadTier"];
+    score: CalculationResult["leadScore"];
+    source: string;
+  };
 };
 
 const STORAGE_KEY = "ssh_lead_state";
@@ -128,7 +139,41 @@ const writeStoredLead = (formData: FormData, result: CalculationResult) => {
 };
 
 const normalizeFormDataForApp = (data: FormData): FormData =>
-  normalizeSafetyHabitAnswers(normalizeDiySecurityPlan(data));
+  normalizeSafetyHabitAnswers(data);
+
+const normalizeError = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "Unknown error";
+  }
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isNtfyTestResult = (value: unknown): value is NtfyTestResult => {
+  if (!isRecord(value) || typeof value.ok !== "boolean") return false;
+  if (value.mode !== "stored_lead" && value.mode !== "synthetic") return false;
+
+  if (value.ok) {
+    if (value.ntfy_status !== "sent" && value.ntfy_status !== "skipped") {
+      return false;
+    }
+    if (
+      value.reason !== undefined &&
+      value.reason !== "missing_config"
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  return typeof value.error === "string";
+};
 
 export default function AppShell({
   initialView = "home",
@@ -242,7 +287,7 @@ export default function AppShell({
         setLeadSendsEnabledForDebug(true);
         if (IS_LOCAL_DEV) {
           console.info(
-            "[sshDebug] External lead sends enabled (EmailJS + Formspree)."
+            "[sshDebug] External lead sends enabled (EmailJS)."
           );
         }
       },
@@ -250,7 +295,7 @@ export default function AppShell({
         setLeadSendsEnabledForDebug(false);
         if (IS_LOCAL_DEV) {
           console.info(
-            "[sshDebug] External lead sends disabled (EmailJS + Formspree)."
+            "[sshDebug] External lead sends disabled (EmailJS)."
           );
         }
       },
@@ -258,6 +303,71 @@ export default function AppShell({
         const status = getLeadSendsStatus();
         console.info("[sshDebug] Lead send status:", status);
         return status;
+      },
+      ntfyTest: async () => {
+        const latestLead = readStoredLead();
+        const hasStoredLead = Boolean(latestLead?.formData?.email?.trim());
+        const mode: NtfyTestMode = hasStoredLead ? "stored_lead" : "synthetic";
+
+        const requestBody: NtfyTestRequestBody = hasStoredLead
+          ? {
+              mode,
+              payload: {
+                name: latestLead?.formData.first_name ?? "",
+                email: latestLead?.formData.email ?? "",
+                mobile: latestLead?.formData.mobile ?? "",
+                tier: latestLead?.result.leadTier ?? "Nurture",
+                score: latestLead?.result.leadScore ?? 0,
+                source: formSource ?? "ssh_debug_stored",
+              },
+            }
+          : { mode };
+
+        try {
+          const response = await fetch("/api/leads/ntfy-test", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
+          });
+
+          const responseData: unknown = await response.json().catch(() => null);
+
+          if (isNtfyTestResult(responseData)) {
+            if (response.ok && responseData.ok) {
+              if (responseData.ntfy_status === "sent") {
+                console.info("[sshDebug] ntfy test succeeded:", responseData);
+              } else {
+                console.warn("[sshDebug] ntfy test skipped:", responseData);
+              }
+            } else {
+              console.error("[sshDebug] ntfy test failed:", responseData);
+            }
+
+            return responseData;
+          }
+
+          const fallbackError = isRecord(responseData)
+            ? normalizeError(responseData.error)
+            : `Unexpected response from /api/leads/ntfy-test (status ${response.status})`;
+
+          const fallbackResult: NtfyTestResult = {
+            ok: false,
+            mode,
+            error: fallbackError,
+          };
+          console.error("[sshDebug] ntfy test failed:", fallbackResult);
+          return fallbackResult;
+        } catch (error) {
+          const failedResult: NtfyTestResult = {
+            ok: false,
+            mode,
+            error: normalizeError(error),
+          };
+          console.error("[sshDebug] ntfy test failed:", failedResult);
+          return failedResult;
+        }
       },
       posthogOn: () => {
         setPostHogEnabledForDebug(true);
@@ -287,7 +397,12 @@ export default function AppShell({
     return () => {
       unregister();
     };
-  }, [getLeadSendsStatus, getPostHogStatus, setLeadSendsEnabledForDebug]);
+  }, [
+    formSource,
+    getLeadSendsStatus,
+    getPostHogStatus,
+    setLeadSendsEnabledForDebug,
+  ]);
 
   useEffect(() => {
     const sourceFromUrl = readSearchParam("source");
@@ -351,13 +466,6 @@ export default function AppShell({
           return;
         }
         redirectToForm();
-        return;
-      }
-
-      // First try URL payload tokens (current schema only).
-      const tokenData = parseResultsToken(key);
-      if (tokenData) {
-        showResults(tokenData);
         return;
       }
 
@@ -608,16 +716,12 @@ export default function AppShell({
     ];
 
     if (shouldSendExternalLeads) {
-      submissions.push(
-        submitToFormspree(normalizedData, calcResult, submissionSource)
-      );
-
       if (effectiveFormMode !== "newsletter") {
         submissions.push(submitToEmail(normalizedData, calcResult, submissionSource));
       }
     } else {
       console.info(
-        "[sshDebug] Skipping EmailJS and Formspree submissions in local dev. Run window.sshDebug.leadSendsOn() to enable."
+        "[sshDebug] Skipping EmailJS submissions in local dev. Run window.sshDebug.leadSendsOn() to enable."
       );
     }
 

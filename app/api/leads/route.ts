@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { LEAD_SCORE_MAX } from "../../lib/leadScoring";
 import { clampSafetyScore } from "../../lib/safetyScale.js";
+import { sendLeadNtfyNotification } from "../../lib/ntfy";
 import type {
   LeadScoreBreakdownAnswer,
   LeadScoreBreakdownItem,
@@ -29,11 +30,15 @@ type LeadPayloadBase = {
   location?: LeadLocation;
   property: {
     type: string;
-    size: string;
-    floors: string;
-    current_setup: string;
   };
-  priorities: string[];
+  priorities: {
+    household_stage: string;
+    desired_outcome: string;
+    goal_obstacle: string;
+    has_additional_notes: boolean | null;
+    goal_obstacle_other: string;
+    solution: string;
+  };
   safety: {
     home_entrance: number;
     neighborhood_safety_check: number;
@@ -41,18 +46,6 @@ type LeadPayloadBase = {
     emergency_readiness_home: number;
   };
   preferences: {
-    security_features: string[];
-    budget_band: string;
-    timeline: string;
-    diy_security_plan: boolean;
-    smart_home_interest: boolean;
-    smart_home_features: string[];
-    household_stage: string;
-    desired_outcome: string;
-    goal_obstacle: string;
-    has_additional_notes: boolean | null;
-    goal_obstacle_other: string;
-    solution: string;
     safety_habits: {
       has_spare_key: boolean | null;
       changed_wifi_default_password: boolean | null;
@@ -62,6 +55,15 @@ type LeadPayloadBase = {
       has_smoke_alarm_or_fire_extinguisher: boolean | null;
       has_first_aid_or_medicine_ready: boolean | null;
       knows_local_emergency_contacts: boolean | null;
+    };
+    safety_sliders: {
+      safety_gate_entry: number | null;
+      safety_blindspots: number | null;
+      safety_side_back_entry: number | null;
+      safety_windows_terrace: number | null;
+      safety_driveway_garage: number | null;
+      safety_indoor_choke_points: number | null;
+      safety_emergency_readiness: number | null;
     };
   };
   panatag_home_rating: number;
@@ -110,8 +112,6 @@ const toStringArray = (value: unknown): string[] => {
     .filter((item) => item.length > 0);
 };
 
-const toBoolean = (value: unknown): boolean => typeof value === "boolean" && value;
-
 const toNullableBoolean = (value: unknown): boolean | null =>
   typeof value === "boolean" ? value : null;
 
@@ -127,6 +127,11 @@ const toScore100 = (value: unknown): number =>
 const toSafetyScore = (value: unknown): number =>
   clampSafetyScore(toFiniteNumber(value));
 
+const toNullableSafetyScore = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value)
+    ? clampSafetyScore(value)
+    : null;
+
 const toPanatagHomeRating = (value: unknown): number => toScore100(value);
 
 const toLeadTier = (value: unknown): LeadTier =>
@@ -136,10 +141,14 @@ const toLeadTier = (value: unknown): LeadTier =>
 
 const sanitizeLeadPayloadBase = (payload: Record<string, unknown>): LeadPayloadBase => {
   const property = isRecord(payload.property) ? payload.property : {};
+  const priorities = isRecord(payload.priorities) ? payload.priorities : {};
   const safety = isRecord(payload.safety) ? payload.safety : {};
   const preferences = isRecord(payload.preferences) ? payload.preferences : {};
   const safetyHabits = isRecord(preferences.safety_habits)
     ? preferences.safety_habits
+    : {};
+  const safetySliders = isRecord(preferences.safety_sliders)
+    ? preferences.safety_sliders
     : {};
   const source = toSafeString(payload.source) || "website";
 
@@ -148,11 +157,15 @@ const sanitizeLeadPayloadBase = (payload: Record<string, unknown>): LeadPayloadB
     mobile: toSafeString(payload.mobile),
     property: {
       type: toSafeString(property.type),
-      size: toSafeString(property.size),
-      floors: toSafeString(property.floors),
-      current_setup: toSafeString(property.current_setup),
     },
-    priorities: toStringArray(payload.priorities),
+    priorities: {
+      household_stage: toSafeString(priorities.household_stage),
+      desired_outcome: toSafeString(priorities.desired_outcome),
+      goal_obstacle: toSafeString(priorities.goal_obstacle),
+      has_additional_notes: toNullableBoolean(priorities.has_additional_notes),
+      goal_obstacle_other: toSafeString(priorities.goal_obstacle_other),
+      solution: toSafeString(priorities.solution),
+    },
     safety: {
       home_entrance: toSafetyScore(safety.home_entrance),
       neighborhood_safety_check: toSafetyScore(safety.neighborhood_safety_check),
@@ -160,18 +173,6 @@ const sanitizeLeadPayloadBase = (payload: Record<string, unknown>): LeadPayloadB
       emergency_readiness_home: toSafetyScore(safety.emergency_readiness_home),
     },
     preferences: {
-      security_features: toStringArray(preferences.security_features),
-      budget_band: toSafeString(preferences.budget_band),
-      timeline: toSafeString(preferences.timeline),
-      diy_security_plan: toBoolean(preferences.diy_security_plan),
-      smart_home_interest: toBoolean(preferences.smart_home_interest),
-      smart_home_features: toStringArray(preferences.smart_home_features),
-      household_stage: toSafeString(preferences.household_stage),
-      desired_outcome: toSafeString(preferences.desired_outcome),
-      goal_obstacle: toSafeString(preferences.goal_obstacle),
-      has_additional_notes: toNullableBoolean(preferences.has_additional_notes),
-      goal_obstacle_other: toSafeString(preferences.goal_obstacle_other),
-      solution: toSafeString(preferences.solution),
       safety_habits: {
         has_spare_key: toNullableBoolean(safetyHabits.has_spare_key),
         changed_wifi_default_password: toNullableBoolean(
@@ -192,9 +193,28 @@ const sanitizeLeadPayloadBase = (payload: Record<string, unknown>): LeadPayloadB
           safetyHabits.knows_local_emergency_contacts
         ),
       },
+      safety_sliders: {
+        safety_gate_entry: toNullableSafetyScore(safetySliders.safety_gate_entry),
+        safety_blindspots: toNullableSafetyScore(safetySliders.safety_blindspots),
+        safety_side_back_entry: toNullableSafetyScore(
+          safetySliders.safety_side_back_entry
+        ),
+        safety_windows_terrace: toNullableSafetyScore(
+          safetySliders.safety_windows_terrace
+        ),
+        safety_driveway_garage: toNullableSafetyScore(
+          safetySliders.safety_driveway_garage
+        ),
+        safety_indoor_choke_points: toNullableSafetyScore(
+          safetySliders.safety_indoor_choke_points
+        ),
+        safety_emergency_readiness: toNullableSafetyScore(
+          safetySliders.safety_emergency_readiness
+        ),
+      },
     },
     panatag_home_rating: toPanatagHomeRating(payload.panatag_home_rating),
-    recommendations: toStringArray(payload.recommendations),
+    recommendations: [],
   };
 };
 
@@ -331,5 +351,20 @@ export async function POST(req: Request) {
 
   const { error } = await supabase.from("leads").insert(leadInsertBody);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  try {
+    await sendLeadNtfyNotification({
+      name: leadInsertBody.name,
+      email: leadInsertBody.email,
+      mobile: leadInsertBody.payload.mobile,
+      tier: leadInsertBody.payload.scoring.lead_tier,
+      score: leadInsertBody.payload.scoring.lead_score,
+      source: leadInsertBody.payload.source,
+      location: leadInsertBody.payload.location,
+    });
+  } catch (notificationError) {
+    console.error("Lead ntfy notification failed:", notificationError);
+  }
+
   return NextResponse.json({ ok: true });
 }

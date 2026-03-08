@@ -44,21 +44,6 @@ export const useWizardController = ({
     }
   };
 
-  const getArrayFieldValues = (field: keyof typeof formData): string[] => {
-    const value = formData[field];
-    if (!Array.isArray(value)) return [];
-    return value.filter((item): item is string => typeof item === "string");
-  };
-
-  const toggleArrayField = (field: keyof typeof formData, value: string) => {
-    const current = getArrayFieldValues(field);
-    const updated = current.includes(value)
-      ? current.filter((item) => item !== value)
-      : [...current, value];
-
-    setFormData((prev) => ({ ...prev, [field]: updated }));
-  };
-
   const nextStep = () => {
     trackFormStepCompleted(step, analyticsContext);
     setStep((current) => current + 1);
@@ -150,8 +135,6 @@ export const useWizardController = ({
     safetySliderDrafts,
     isSafetyComplete,
     updateField,
-    getArrayFieldValues,
-    toggleArrayField,
     nextStep,
     prevStep,
     goToStep,

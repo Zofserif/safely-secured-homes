@@ -17,6 +17,9 @@ const leadScoringModule = (await import(
 const leadScoringConfigModule = (await import(
   new URL("../app/lib/leadScoringConfig.ts", import.meta.url).href
 )) as typeof import("../app/lib/leadScoringConfig");
+const calculationsModule = (await import(
+  new URL("../app/lib/calculations.ts", import.meta.url).href
+)) as typeof import("../app/lib/calculations");
 
 const { getSafetyCategoryScores, getSafetySummary } = safetyScoresModule;
 const {
@@ -34,6 +37,7 @@ const {
 } = leadScoringModule;
 const { LEAD_SCORING_SECTIONS, LEAD_SCORING_WEIGHT_TOTAL } =
   leadScoringConfigModule;
+const { estimateCameraPlan } = calculationsModule;
 
 // Mirrors app/lib/calculations.ts getResultsSummary orchestration (without camera-plan concerns).
 const getResultsSummaryForVerification = (
@@ -157,6 +161,144 @@ const withRiskyYesNoHabits = (data: FormData): FormData => ({
   has_first_aid_or_medicine_ready: false,
   knows_local_emergency_contacts: false,
 });
+
+const minimumCameraCountPlan = estimateCameraPlan({
+  ...createBaseFormData(),
+  has_security_cameras: true,
+  household_stage: "Just me",
+});
+assertEqual(
+  "Camera scoring floor: total points <= 0 still returns 1 camera",
+  minimumCameraCountPlan.cameraCount,
+  1
+);
+assertEqual(
+  "Camera scoring floor: minimum camera recommendation still uses 4-channel NVR",
+  minimumCameraCountPlan.nvrChannel,
+  4
+);
+
+const securityCameraNoPlan = estimateCameraPlan({
+  ...createBaseFormData(),
+  property_type: "Vacation Home / Beach House",
+  has_security_cameras: false,
+});
+const securityCameraYesPlan = estimateCameraPlan({
+  ...createBaseFormData(),
+  property_type: "Vacation Home / Beach House",
+  has_security_cameras: true,
+});
+assertEqual(
+  "Camera scoring: has_security_cameras=No contributes +1",
+  securityCameraNoPlan.cameraCount,
+  4
+);
+assertEqual(
+  "Camera scoring: has_security_cameras=Yes contributes -1",
+  securityCameraYesPlan.cameraCount,
+  2
+);
+assertEqual(
+  "Camera scoring: has_security_cameras No outranks Yes by 2 points",
+  securityCameraNoPlan.cameraCount - securityCameraYesPlan.cameraCount,
+  2
+);
+
+const createHomeEntranceBoundaryData = (score: number): FormData => ({
+  ...createBaseFormData(),
+  property_type: "Condo / Apartment",
+  safety_gate_entry: score,
+  safety_side_back_entry: score,
+  safety_windows_terrace: score,
+});
+assertEqual(
+  "Camera scoring home entrance boundary: 10 => +2",
+  estimateCameraPlan(createHomeEntranceBoundaryData(10)).cameraCount,
+  3
+);
+assertEqual(
+  "Camera scoring home entrance boundary: 11 => +1",
+  estimateCameraPlan(createHomeEntranceBoundaryData(11)).cameraCount,
+  2
+);
+assertEqual(
+  "Camera scoring home entrance boundary: 60 => +1",
+  estimateCameraPlan(createHomeEntranceBoundaryData(60)).cameraCount,
+  2
+);
+assertEqual(
+  "Camera scoring home entrance boundary: 61 => +0",
+  estimateCameraPlan(createHomeEntranceBoundaryData(61)).cameraCount,
+  1
+);
+
+assertEqual(
+  "Camera scoring neighborhood boundary: 10 => +1",
+  estimateCameraPlan({
+    ...createBaseFormData(),
+    property_type: "Condo / Apartment",
+    safety_driveway_garage: 10,
+  }).cameraCount,
+  2
+);
+assertEqual(
+  "Camera scoring neighborhood boundary: 11 => +0",
+  estimateCameraPlan({
+    ...createBaseFormData(),
+    property_type: "Condo / Apartment",
+    safety_driveway_garage: 11,
+  }).cameraCount,
+  1
+);
+
+assertEqual(
+  "Camera scoring windows+terrace boundary: 10 => +1",
+  estimateCameraPlan({
+    ...createBaseFormData(),
+    property_type: "Condo / Apartment",
+    safety_blindspots: 10,
+    safety_indoor_choke_points: 10,
+  }).cameraCount,
+  2
+);
+assertEqual(
+  "Camera scoring windows+terrace boundary: 11 => +0",
+  estimateCameraPlan({
+    ...createBaseFormData(),
+    property_type: "Condo / Apartment",
+    safety_blindspots: 11,
+    safety_indoor_choke_points: 11,
+  }).cameraCount,
+  1
+);
+
+const fullCameraScenarioPlan = estimateCameraPlan({
+  ...createBaseFormData(),
+  property_type: "Vacation Home / Beach House",
+  locks_windows_gate_at_night: false,
+  has_security_cameras: false,
+  safety_gate_entry: 5,
+  safety_side_back_entry: 5,
+  safety_windows_terrace: 5,
+  safety_driveway_garage: 5,
+  safety_blindspots: 5,
+  safety_indoor_choke_points: 5,
+  safety_emergency_readiness: 5,
+  household_stage: "Family with kids at home",
+  desired_outcome: "Protect my home and valuables from break-ins/theft",
+  goal_obstacle: "I'm not sure what's right for my home",
+  solution: "Done for you Setup",
+});
+assertEqual(
+  "Camera scoring full scenario returns expected camera count",
+  fullCameraScenarioPlan.cameraCount,
+  14
+);
+assertEqual(
+  "Camera scoring full scenario returns expected NVR channel tier",
+  fullCameraScenarioPlan.nvrChannel,
+  16
+);
 
 // Safety level boundaries.
 assertEqual("Safety level 70 => Protected", getSafetyLevelFromTotalRiskScore(70), {

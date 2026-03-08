@@ -3,14 +3,21 @@ import type {
   CalculationResult,
   ResultsSummary,
 } from "./types";
-import { calculateLeadScore, getLeadTierFromScore } from "./leadScoring";
-import { getSafetySummary } from "./safetyScores";
+import { calculateLeadScore, getLeadTierFromScore } from "./leadScoring.js";
+import { getSafetySummary } from "./safetyScores.js";
+import {
+  DESIRED_OUTCOME_OPTIONS,
+  GOAL_OBSTACLE_OPTIONS,
+  HOUSEHOLD_STAGE_OPTIONS,
+  PROPERTY_TYPES,
+  SOLUTION_OPTIONS,
+} from "./formOptions.js";
 import {
   getEmergencyReadinessFromRiskScore,
   getPanatagRatingFromScores,
   getPriorityActionFromLeadTier,
   getSafetyLevelFromTotalRiskScore,
-} from "./resultsScoring";
+} from "./resultsScoring.js";
 
 const getNvrChannelTier = (cameraCount: number): number => {
   let tier = 4;
@@ -22,59 +29,132 @@ const getNvrChannelTier = (cameraCount: number): number => {
   return tier;
 };
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const isNonEmpty = (value: string): boolean => value.trim().length > 0;
 const isNumeric = (value: number | null): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
-const getCompletedStepCameraCount = (data: FormData): number => {
-  let count = 0;
+const clampSafetySliderScore = (value: number): number =>
+  Math.min(100, Math.max(0, Math.round(value)));
 
-  if (isNonEmpty(data.first_name)) count += 1;
-  if (isNonEmpty(data.property_type)) count += 1;
+const averageSafetySliderScore = (values: readonly (number | null)[]): number | null => {
+  const numericValues = values.filter((value): value is number => isNumeric(value));
+  if (numericValues.length === 0) return null;
 
-  const safetyHabits = [
-    data.has_spare_key,
-    data.changed_wifi_default_password,
-    data.sleeps_with_earphones,
-    data.locks_windows_gate_at_night,
-    data.has_security_cameras,
-    data.has_smoke_alarm_or_fire_extinguisher,
-    data.has_first_aid_or_medicine_ready,
-    data.knows_local_emergency_contacts,
-  ];
-  count += safetyHabits.filter((value) => value !== null).length;
+  const total = numericValues.reduce((sum, value) => sum + value, 0);
+  return clampSafetySliderScore(total / numericValues.length);
+};
 
-  if (
-    isNumeric(data.safety_gate_entry) &&
-    isNumeric(data.safety_side_back_entry) &&
-    isNumeric(data.safety_windows_terrace)
-  ) {
-    count += 1;
-  }
+const getHomeEntrancePoints = (value: number | null): number => {
+  if (value === null) return 0;
+  if (value <= 10) return 2;
+  if (value <= 60) return 1;
+  return 0;
+};
 
-  if (isNumeric(data.safety_driveway_garage)) count += 1;
+const getNeighborhoodPoints = (value: number | null): number => {
+  if (value === null) return 0;
+  if (value <= 10) return 1;
+  return 0;
+};
 
-  if (
-    isNumeric(data.safety_blindspots) &&
-    isNumeric(data.safety_indoor_choke_points)
-  ) {
-    count += 1;
-  }
+const getWindowsTerracePoints = (value: number | null): number => {
+  if (value === null) return 0;
+  if (value <= 10) return 1;
+  return 0;
+};
 
-  if (isNumeric(data.safety_emergency_readiness)) count += 1;
+const getBooleanPoints = (
+  value: boolean | null,
+  points: Readonly<{ yes: number; no: number }>
+): number => {
+  if (value === true) return points.yes;
+  if (value === false) return points.no;
+  return 0;
+};
 
-  if (isNonEmpty(data.household_stage)) count += 1;
-  if (isNonEmpty(data.desired_outcome)) count += 1;
-  if (isNonEmpty(data.goal_obstacle)) count += 1;
-  if (isNonEmpty(data.solution)) count += 1;
+const getMappedPoints = (
+  pointsMap: Readonly<Record<string, number>>,
+  value: string
+): number => {
+  const normalizedValue = value.trim();
+  if (!normalizedValue) return 0;
+  return pointsMap[normalizedValue] ?? 0;
+};
 
-  if (data.has_additional_notes !== null) count += 1;
+const PROPERTY_TYPE_POINTS: Readonly<Record<string, number>> = {
+  [PROPERTY_TYPES[0].value]: 2,
+  [PROPERTY_TYPES[1].value]: 1,
+  [PROPERTY_TYPES[2].value]: 2,
+  [PROPERTY_TYPES[3].value]: 3,
+};
 
-  if (EMAIL_REGEX.test(data.email.trim())) count += 1;
+const HOUSEHOLD_STAGE_POINTS: Readonly<Record<string, number>> = {
+  [HOUSEHOLD_STAGE_OPTIONS[0]]: -2,
+  [HOUSEHOLD_STAGE_OPTIONS[1]]: 0,
+  [HOUSEHOLD_STAGE_OPTIONS[2]]: 1,
+  [HOUSEHOLD_STAGE_OPTIONS[3]]: 1,
+  [HOUSEHOLD_STAGE_OPTIONS[4]]: 1,
+};
 
-  return count;
+const DESIRED_OUTCOME_POINTS: Readonly<Record<string, number>> = {
+  [DESIRED_OUTCOME_OPTIONS[0]]: 1,
+  [DESIRED_OUTCOME_OPTIONS[1]]: 1,
+  [DESIRED_OUTCOME_OPTIONS[2]]: 1,
+  [DESIRED_OUTCOME_OPTIONS[3]]: 2,
+  [DESIRED_OUTCOME_OPTIONS[4]]: 1,
+  [DESIRED_OUTCOME_OPTIONS[5]]: 2,
+};
+
+const GOAL_OBSTACLE_POINTS: Readonly<Record<string, number>> = {
+  [GOAL_OBSTACLE_OPTIONS[0]]: 1,
+  [GOAL_OBSTACLE_OPTIONS[1]]: 0,
+  [GOAL_OBSTACLE_OPTIONS[2]]: 0,
+  [GOAL_OBSTACLE_OPTIONS[3]]: 1,
+};
+
+const SOLUTION_POINTS: Readonly<Record<string, number>> = {
+  [SOLUTION_OPTIONS.DIY_HOME_SAFETY_PLAN]: 0,
+  [SOLUTION_OPTIONS.ONE_ON_ONE_HOME_SECURITY_CONSULTATION]: 1,
+  [SOLUTION_OPTIONS.DONE_FOR_YOU_SETUP]: 1,
+};
+
+const getRuleBasedCameraCount = (data: FormData): number => {
+  let totalPoints = 0;
+
+  totalPoints += getMappedPoints(PROPERTY_TYPE_POINTS, data.property_type);
+
+  totalPoints += getBooleanPoints(data.locks_windows_gate_at_night, {
+    yes: 0,
+    no: 1,
+  });
+  totalPoints += getBooleanPoints(data.has_security_cameras, {
+    yes: -1,
+    no: 1,
+  });
+
+  const homeEntranceScore = averageSafetySliderScore([
+    data.safety_gate_entry,
+    data.safety_side_back_entry,
+    data.safety_windows_terrace,
+  ]);
+  totalPoints += getHomeEntrancePoints(homeEntranceScore);
+
+  const neighborhoodScore = isNumeric(data.safety_driveway_garage)
+    ? clampSafetySliderScore(data.safety_driveway_garage)
+    : null;
+  totalPoints += getNeighborhoodPoints(neighborhoodScore);
+
+  const windowsTerraceScore = averageSafetySliderScore([
+    data.safety_blindspots,
+    data.safety_indoor_choke_points,
+  ]);
+  totalPoints += getWindowsTerracePoints(windowsTerraceScore);
+
+  totalPoints += getMappedPoints(HOUSEHOLD_STAGE_POINTS, data.household_stage);
+  totalPoints += getMappedPoints(DESIRED_OUTCOME_POINTS, data.desired_outcome);
+  totalPoints += getMappedPoints(GOAL_OBSTACLE_POINTS, data.goal_obstacle);
+  totalPoints += getMappedPoints(SOLUTION_POINTS, data.solution);
+
+  return Math.max(1, totalPoints);
 };
 
 export const getResultsSummary = (data: FormData, result: CalculationResult): ResultsSummary => {
@@ -104,7 +184,7 @@ export const getResultsSummary = (data: FormData, result: CalculationResult): Re
   };
 };
 export const estimateCameraPlan = (data: FormData): CalculationResult => {
-  const cameraCount = getCompletedStepCameraCount(data);
+  const cameraCount = getRuleBasedCameraCount(data);
   const nvrChannel = getNvrChannelTier(cameraCount);
 
   const { leadScore, leadScoreBreakdown, leadScoringModelVersion } =

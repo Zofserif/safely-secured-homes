@@ -7,6 +7,80 @@ import {
   SAFETY_SCORE_STEP,
 } from "../../../lib/safetyScale.js";
 
+type RatedSafetyState = {
+  min: number;
+  max: number;
+  label: string;
+  className: string;
+  fillColor: string;
+};
+
+const UNRATED_SAFETY_STATE = {
+  label: "Not rated",
+  className: "border-slate-200 bg-slate-100 text-slate-600",
+} as const;
+
+const RATED_SAFETY_STATES: readonly RatedSafetyState[] = [
+  {
+    min: 0,
+    max: 10,
+    label: "Not safe at all",
+    className: "border-rose-300 bg-rose-100 text-rose-800",
+    fillColor: "#dc2626",
+  },
+  {
+    min: 11,
+    max: 20,
+    label: "Very unsafe",
+    className: "border-red-200 bg-red-50 text-red-700",
+    fillColor: "#ef4444",
+  },
+  {
+    min: 21,
+    max: 40,
+    label: "Somewhat unsafe",
+    className: "border-orange-200 bg-orange-50 text-orange-700",
+    fillColor: "#f97316",
+  },
+  {
+    min: 41,
+    max: 60,
+    label: "Fairly safe",
+    className: "border-amber-200 bg-amber-50 text-amber-700",
+    fillColor: "#f59e0b",
+  },
+  {
+    min: 61,
+    max: 80,
+    label: "Safe",
+    className: "border-lime-200 bg-lime-50 text-lime-700",
+    fillColor: "#84cc16",
+  },
+  {
+    min: 81,
+    max: 90,
+    label: "Very safe",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    fillColor: "#22c55e",
+  },
+  {
+    min: 91,
+    max: 100,
+    label: "As safe as possible",
+    className: "border-green-300 bg-green-100 text-green-800",
+    fillColor: "#16a34a",
+  },
+];
+
+const getRatedSafetyState = (value: number): RatedSafetyState => {
+  const boundedValue = Math.min(SAFETY_SCORE_MAX, Math.max(SAFETY_SCORE_MIN, value));
+  const matchedState = RATED_SAFETY_STATES.find(
+    (state) => boundedValue >= state.min && boundedValue <= state.max
+  );
+
+  return matchedState ?? RATED_SAFETY_STATES[0];
+};
+
 export default function SafetyCheckStep({
   categoryId,
   isLastSafetyAreaStep,
@@ -48,37 +122,15 @@ export default function SafetyCheckStep({
     (field) => typeof formData[field] === "number"
   );
   const isSliderUnrated = !isCurrentAreaRated;
+  const ratedSafetyState = getRatedSafetyState(sliderValue);
 
-  const safetyState = !isCurrentAreaRated
-    ? {
-        label: "Not rated",
-        className: "border-slate-200 bg-slate-100 text-slate-600",
-      }
-    : sliderValue <= 39
-      ? {
-          label: "I feel Unsafe",
-          className: "border-rose-200 bg-rose-50 text-rose-700",
-        }
-      : sliderValue <= 79
-        ? {
-            label: "Needs work",
-            className: "border-amber-200 bg-amber-50 text-amber-700",
-          }
-        : {
-            label: "I feel Safer",
-            className: "border-emerald-200 bg-emerald-50 text-emerald-700",
-          };
+  const safetyState = isSliderUnrated ? UNRATED_SAFETY_STATE : ratedSafetyState;
 
   const fillPercent =
     ((sliderValue - SAFETY_SCORE_MIN) / (SAFETY_SCORE_MAX - SAFETY_SCORE_MIN)) *
     100;
 
-  const fillColor =
-    sliderValue <= 39
-      ? "#ef4444"
-      : sliderValue <= 79
-        ? "#f59e0b"
-        : "#22c55e";
+  const fillColor = ratedSafetyState.fillColor;
 
   const sliderStyle = {
     "--slider-track": "#e2e8f0",

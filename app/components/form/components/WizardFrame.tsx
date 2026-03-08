@@ -8,6 +8,7 @@ export default function WizardFrame({
   onBack,
   children,
 }: WizardFrameProps) {
+  const hasBackButton = step > 0;
   const progressPercent =
     stepCount <= 1 ? 0 : Math.min(100, Math.max(0, (step / (stepCount - 1)) * 100));
 
@@ -29,7 +30,7 @@ export default function WizardFrame({
           className="relative flex w-full min-w-0 flex-col gap-4 rounded-4xl border border-[#E3DDCA] bg-[#FBF9F2]/95 p-4 shadow-[0_24px_70px_-40px_rgba(35,35,35,0.55)] backdrop-blur sm:p-6"
         >
           <div className="flex items-center gap-3 sm:gap-4">
-            {step > 0 ? (
+            {hasBackButton ? (
               <button
                 onClick={onBack}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#E1D9C4] bg-white text-slate-500 transition-colors hover:text-slate-700"
@@ -37,11 +38,11 @@ export default function WizardFrame({
               >
                 <ChevronLeft />
               </button>
-            ) : (
-              <div className="h-10 w-10" aria-hidden="true" />
-            )}
-            <div className="flex-1 space-y-1.5">
-              <div className="flex items-center justify-between pr-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:pr-0">
+            ) : null}
+            <div className={`${hasBackButton ? "flex-1" : "w-full"} space-y-1.5`}>
+              <div
+                className={`flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 ${hasBackButton ? "pr-2 sm:pr-0" : ""}`}
+              >
                 <span>Security Quiz</span>
                 <span>
                   Step {step + 1} of {stepCount}

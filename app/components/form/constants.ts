@@ -44,7 +44,7 @@ export const HOUSEHOLD_STAGE_CARD_OPTIONS: readonly SingleSelectCardOption<House
   [
     {
       value: HOUSEHOLD_STAGE_OPTIONS[0],
-      title: "Living solo",
+      title: "Living on your own",
       helper: "You're mainly securing the home for yourself.",
       Icon: UserRound,
     },
@@ -56,7 +56,7 @@ export const HOUSEHOLD_STAGE_CARD_OPTIONS: readonly SingleSelectCardOption<House
     },
     {
       value: HOUSEHOLD_STAGE_OPTIONS[2],
-      title: "Preparing for baby",
+      title: "Expecting a baby",
       helper: "Safety and quick alerts are becoming more urgent.",
       Icon: Baby,
     },
@@ -68,7 +68,7 @@ export const HOUSEHOLD_STAGE_CARD_OPTIONS: readonly SingleSelectCardOption<House
     },
     {
       value: HOUSEHOLD_STAGE_OPTIONS[4],
-      title: "Older adults at home",
+      title: "Adults and seniors at home",
       helper: "Prioritize emergency response and easy daily use.",
       Icon: Heart,
     },

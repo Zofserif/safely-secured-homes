@@ -19,7 +19,6 @@ export default function SolutionStep({
   onUpdateField,
 }: SolutionStepProps) {
   const firstName = resolveFirstName(formData.first_name);
-  const hasSelection = Boolean(formData.solution);
 
   return (
     <div className="space-y-6">
@@ -30,26 +29,14 @@ export default function SolutionStep({
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-1">
         {SOLUTION_OPTION_CARDS.map((option) => {
           const isSelected = formData.solution === option.value;
-          const isMobileDefaultOption =
-            !hasSelection && option.value === SOLUTION_OPTIONS.DONE_FOR_YOU_SETUP;
-          const isDesktopDefaultOption =
-            !hasSelection &&
-            option.value === SOLUTION_OPTIONS.ONE_ON_ONE_HOME_SECURITY_CONSULTATION;
           const cardOrderClassName = solutionCardOrderClasses[option.value];
           const highlightedButtonClass =
             "border-[#0E79B2] bg-[#0E79B2] text-white group-hover:bg-[#0C6798]";
           const neutralButtonClass =
-            "border-slate-300 bg-white text-slate-900 group-hover:border-slate-400 group-hover:bg-slate-50";
-
-          let buttonToneClassName = neutralButtonClass;
-
-          if (isSelected) {
-            buttonToneClassName = highlightedButtonClass;
-          } else if (isMobileDefaultOption) {
-            buttonToneClassName = `${highlightedButtonClass} md:border-slate-300 md:bg-white md:text-slate-900 md:group-hover:border-slate-400 md:group-hover:bg-slate-50`;
-          } else if (isDesktopDefaultOption) {
-            buttonToneClassName = `${neutralButtonClass} md:border-[#0E79B2] md:bg-[#0E79B2] md:text-white md:group-hover:border-[#0E79B2] md:group-hover:bg-[#0C6798]`;
-          }
+            "border-slate-300 bg-white text-slate-900 group-hover:border-[#0E79B2] group-hover:bg-[#0E79B2] group-hover:text-white";
+          const buttonToneClassName = isSelected
+            ? highlightedButtonClass
+            : neutralButtonClass;
 
           return (
             <button

@@ -25,7 +25,7 @@ export default function WizardFrame({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative mx-auto flex w-full max-w-4xl flex-col gap-4 rounded-[2rem] border border-[#E3DDCA] bg-[#FBF9F2]/95 p-4 shadow-[0_24px_70px_-40px_rgba(35,35,35,0.55)] backdrop-blur sm:p-6"
+        className="relative mx-auto flex w-full max-w-4xl flex-col gap-4 rounded-4xl border border-[#E3DDCA] bg-[#FBF9F2]/95 p-4 shadow-[0_24px_70px_-40px_rgba(35,35,35,0.55)] backdrop-blur sm:p-6"
       >
         <div className="flex items-center gap-3 sm:gap-4">
           {step > 0 ? (
@@ -40,7 +40,7 @@ export default function WizardFrame({
             <div className="h-10 w-10" aria-hidden="true" />
           )}
           <div className="flex-1 space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+            <div className="flex items-center justify-between pr-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:pr-0">
               <span>Security Quiz</span>
               <span>
                 Step {step + 1} of {stepCount}
@@ -54,14 +54,14 @@ export default function WizardFrame({
               aria-valuenow={Math.round(progressPercent)}
             >
               <div
-                className="h-full bg-gradient-to-r from-[#0E79B2] via-[#1E95D6] to-[#4AB7F4] transition-all duration-500 ease-out"
+                className="h-full bg-linear-to-r from-[#0E79B2] via-[#1E95D6] to-[#4AB7F4] transition-all duration-500 ease-out"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
           </div>
         </div>
 
-        <div className="rounded-[1.5rem] border border-[#EAE4D3] bg-white p-4 sm:p-6 md:p-6">
+        <div className="rounded-3xl border border-[#EAE4D3] bg-white p-4 sm:p-6 md:p-6">
           <div className="wizard-questionnaire-shell">
             <div className="wizard-questionnaire-viewport">
               <AnimatePresence mode="wait">

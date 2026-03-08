@@ -33,10 +33,10 @@ export default function ObstacleStep({
               aria-pressed={isSelected}
             >
               <div
-                className={`mx-auto mb-0 inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors sm:h-11 sm:w-11 ${isSelected ? "bg-[#0E79B2] text-white" : "bg-slate-100 text-slate-600 group-hover:bg-[#0E79B2]/15 group-hover:text-[#0E79B2]"}`}
+                className={`mx-auto mb-0 inline-flex h-14 w-14 items-center justify-center rounded-xl transition-colors sm:h-16 sm:w-16 ${isSelected ? "bg-[#0E79B2] text-white" : "bg-slate-100 text-slate-600 group-hover:bg-[#0E79B2]/15 group-hover:text-[#0E79B2]"}`}
                 aria-hidden="true"
               >
-                <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+                <Icon className="h-7 w-7 sm:h-8 sm:w-8" />
               </div>
               <p
                 className={`mx-auto flex max-w-[16ch] min-h-[3.1rem] items-center justify-center text-sm font-semibold leading-snug sm:min-h-[3.4rem] sm:text-[15px] ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}

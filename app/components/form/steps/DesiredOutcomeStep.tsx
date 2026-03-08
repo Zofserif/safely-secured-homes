@@ -33,10 +33,10 @@ export default function DesiredOutcomeStep({
               aria-pressed={isSelected}
             >
               <div
-                className={`mx-auto mb-0 inline-flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${isSelected ? "bg-[#0E79B2] text-white" : "bg-slate-100 text-slate-600 group-hover:bg-[#0E79B2]/15 group-hover:text-[#0E79B2]"}`}
+                className={`mx-auto mb-0 inline-flex h-14 w-14 items-center justify-center rounded-xl transition-colors sm:h-16 sm:w-16 ${isSelected ? "bg-[#0E79B2] text-white" : "bg-slate-100 text-slate-600 group-hover:bg-[#0E79B2]/15 group-hover:text-[#0E79B2]"}`}
                 aria-hidden="true"
               >
-                <Icon className="h-6 w-6" />
+                <Icon className="h-7 w-7 sm:h-8 sm:w-8" />
               </div>
               <p
                 className={`mx-auto flex max-w-[18ch] min-h-[2.9rem] items-center justify-center text-sm font-semibold leading-tight sm:min-h-[3.2rem] sm:text-base ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}

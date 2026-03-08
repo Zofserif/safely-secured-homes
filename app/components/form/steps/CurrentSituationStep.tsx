@@ -18,7 +18,7 @@ export default function CurrentSituationStep({
         Choose the option that best describes your home right now.
       </p> */}
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
         {HOUSEHOLD_STAGE_CARD_OPTIONS.map((option) => {
           const isSelected = formData.household_stage === option.value;
           const Icon = option.Icon;
@@ -31,20 +31,24 @@ export default function CurrentSituationStep({
                 onUpdateField("household_stage", option.value);
                 onNext();
               }}
-              className={`group flex h-full min-h-[168px] w-full flex-col items-center justify-center gap-3 rounded-2xl border p-3 text-center transition-all sm:min-h-[180px] sm:gap-3.5 sm:p-4 lg:min-h-[188px] ${isSelected ? "border-[#0E79B2] bg-[#F2FAFF] ring-1 ring-[#0E79B2]/30 shadow-sm" : "border-[#E2E8F0] bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
+              className={`group grid aspect-square w-full grid-rows-[7fr_3fr] items-stretch rounded-lg border p-2.5 text-center transition-all sm:p-3 ${isSelected ? "border-[#0E79B2] bg-[#F2FAFF] ring-1 ring-[#0E79B2]/30 shadow-sm" : "border-[#E2E8F0] bg-white hover:border-[#0E79B2]/60 hover:bg-slate-50"}`}
               aria-pressed={isSelected}
             >
-              <div
-                className={`mx-auto mb-0 inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors sm:h-12 sm:w-12 ${isSelected ? "bg-[#0E79B2] text-white" : "bg-slate-100 text-slate-600 group-hover:bg-[#0E79B2]/15 group-hover:text-[#0E79B2]"}`}
-                aria-hidden="true"
-              >
-                <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+              <div className="flex items-center justify-center">
+                <div
+                  className={`inline-flex h-14 w-14 items-center justify-center rounded-lg transition-colors sm:h-16 sm:w-16 ${isSelected ? "bg-[#0E79B2] text-white" : "bg-slate-100 text-slate-600 group-hover:bg-[#0E79B2]/15 group-hover:text-[#0E79B2]"}`}
+                  aria-hidden="true"
+                >
+                  <Icon className="h-7 w-7 sm:h-8 sm:w-8" />
+                </div>
               </div>
-              <p
-                className={`mx-auto flex max-w-[14ch] min-h-[3.1rem] items-center justify-center text-[12px] font-semibold leading-snug sm:min-h-[3.4rem] sm:text-sm lg:text-[15px] ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}
-              >
-                {option.title}
-              </p>
+              <div className="flex w-full items-center justify-center px-1 text-center">
+                <p
+                  className={`text-[13px] font-semibold leading-snug sm:text-[14px] lg:text-[14px] ${isSelected ? "text-[#0E79B2]" : "text-slate-800"}`}
+                >
+                  {option.title}
+                </p>
+              </div>
             </button>
           );
         })}

@@ -408,7 +408,8 @@ export const trackLeadGenerated = (
     lead_score: result.leadScore,
     camera_count: result.cameraCount,
     nvr_channel: result.nvrChannel,
-    storage_1tb: result.storage1TB,
+    storage_recommended_tb: result.storageRecommendedTB,
+    storage_estimated_tb_7d: result.storageEstimatedTB7d,
     recommendations_count: result.recommendations.length,
   };
 
@@ -430,7 +431,8 @@ export const trackLeadGenerated = (
     lead_score: result.leadScore,
     camera_count: result.cameraCount,
     nvr_channel: result.nvrChannel,
-    storage_1tb: result.storage1TB,
+    storage_recommended_tb: result.storageRecommendedTB,
+    storage_estimated_tb_7d: result.storageEstimatedTB7d,
     recommendations_count: result.recommendations.length,
   });
 };

@@ -18,16 +18,21 @@ export default function DIYView({
 }){
   const [openStep, setOpenStep] = useState<number | null>(0);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const storageLabel = result.storage1TB ? "1TB+" : "500GB";
+  const formatStorageEstimateTB = (value: number): string => {
+    const rounded = Math.round(value * 10) / 10;
+    return Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1);
+  };
+  const storageLabel = `${result.storageRecommendedTB} TB recommended (~${formatStorageEstimateTB(result.storageEstimatedTB7d)} TB for 7 days)`;
+  const storageSummaryLabel = `${result.storageRecommendedTB} TB (~${formatStorageEstimateTB(result.storageEstimatedTB7d)} TB/7d)`;
   const firstName =
     data.first_name?.trim() || deriveFirstNameFromEmail(data.email) || "there";
   const storageRows = [
-    { cams: 4, bitrate: "1 Mbps", days14: "~0.61 TB", days30: "~1.30 TB" },
-    { cams: 4, bitrate: "2.5 Mbps", days14: "~1.51 TB", days30: "~3.24 TB" },
-    { cams: 6, bitrate: "1 Mbps", days14: "~0.91 TB", days30: "~1.94 TB" },
-    { cams: 6, bitrate: "2.5 Mbps", days14: "~2.27 TB", days30: "~4.86 TB" },
-    { cams: 8, bitrate: "1 Mbps", days14: "~1.21 TB", days30: "~2.59 TB" },
-    { cams: 8, bitrate: "2.5 Mbps", days14: "~3.02 TB", days30: "~6.48 TB" },
+    { cams: 4, bitrate: "1 Mbps", days7: "~0.30 TB", days14: "~0.61 TB", days30: "~1.30 TB" },
+    { cams: 4, bitrate: "2.5 Mbps", days7: "~0.76 TB", days14: "~1.51 TB", days30: "~3.24 TB" },
+    { cams: 6, bitrate: "1 Mbps", days7: "~0.45 TB", days14: "~0.91 TB", days30: "~1.94 TB" },
+    { cams: 6, bitrate: "2.5 Mbps", days7: "~1.13 TB", days14: "~2.27 TB", days30: "~4.86 TB" },
+    { cams: 8, bitrate: "1 Mbps", days7: "~0.61 TB", days14: "~1.21 TB", days30: "~2.59 TB" },
+    { cams: 8, bitrate: "2.5 Mbps", days7: "~1.51 TB", days14: "~3.02 TB", days30: "~6.48 TB" },
   ];
   const steps = [
     // Step 1
@@ -210,6 +215,7 @@ export default function DIYView({
                   <tr className="text-[10px] uppercase tracking-wider text-slate-500">
                     <th className="py-2">Cams</th>
                     <th className="py-2">Bitrate</th>
+                    <th className="py-2">7 days</th>
                     <th className="py-2">14 days</th>
                     <th className="py-2">30 days</th>
                   </tr>
@@ -219,6 +225,7 @@ export default function DIYView({
                     <tr key={`${row.cams}-${row.bitrate}`} className="border-t border-slate-200">
                       <td className="py-2">{row.cams}</td>
                       <td className="py-2">{row.bitrate}</td>
+                      <td className="py-2">{row.days7}</td>
                       <td className="py-2">{row.days14}</td>
                       <td className="py-2">{row.days30}</td>
                     </tr>
@@ -323,6 +330,7 @@ export default function DIYView({
         <tr>
           <td>${row.cams}</td>
           <td>${row.bitrate}</td>
+          <td>${row.days7}</td>
           <td>${row.days14}</td>
           <td>${row.days30}</td>
         </tr>
@@ -495,6 +503,7 @@ export default function DIYView({
                     <tr>
                       <th>Cams</th>
                       <th>Bitrate</th>
+                      <th>7 days</th>
                       <th>14 days</th>
                       <th>30 days</th>
                     </tr>
@@ -748,7 +757,7 @@ export default function DIYView({
               <div class="summary-label">Ch. NVR</div>
             </div>
             <div class="summary-card">
-              <div class="summary-value">${storageLabel}</div>
+              <div class="summary-value">${storageSummaryLabel}</div>
               <div class="summary-label">Storage</div>
             </div>
           </div>
@@ -835,7 +844,7 @@ export default function DIYView({
             </div>
             <div className="bg-[#F7FAFC] p-3 rounded-xl border border-slate-100 text-center">
               <HardDrive className="w-5 h-5 mx-auto text-[#2E8B57] mb-1" />
-              <div className="text-lg font-bold text-[#2D3748]">{storageLabel}</div>
+              <div className="text-lg font-bold text-[#2D3748]">{storageSummaryLabel}</div>
               <div className="text-[10px] text-slate-500 uppercase tracking-wider">Storage</div>
             </div>
           </div>

@@ -8,15 +8,22 @@ import {
 type AwarenessBlueprintProps = {
   cameraCount: number;
   nvrChannel: number;
-  storage1TB: boolean;
+  storageEstimatedTB7d: number;
+  storageRecommendedTB: number;
+};
+
+const formatStorageEstimateTB = (value: number): string => {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1);
 };
 
 export default function AwarenessBlueprint({
   cameraCount,
   nvrChannel,
-  storage1TB,
+  storageEstimatedTB7d,
+  storageRecommendedTB,
 }: AwarenessBlueprintProps) {
-  const storageRecommendation = storage1TB ? "1TB+" : "500GB";
+  const storageRecommendation = `${storageRecommendedTB} TB recommended (~${formatStorageEstimateTB(storageEstimatedTB7d)} TB for 7 days)`;
 
   return (
     <>

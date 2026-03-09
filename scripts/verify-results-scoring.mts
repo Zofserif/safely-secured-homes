@@ -84,6 +84,19 @@ const assertEqual = (label: string, actual: unknown, expected: unknown): void =>
   );
 };
 
+const assertApprox = (
+  label: string,
+  actual: number,
+  expected: number,
+  tolerance = 0.0001
+): void => {
+  totalChecks += 1;
+  if (Math.abs(actual - expected) <= tolerance) return;
+  failures.push(
+    `${label}\nExpected approximately: ${expected}\nActual: ${actual}\nTolerance: ${tolerance}`
+  );
+};
+
 const createBaseFormData = (): FormData => ({
   property_type: "",
   has_spare_key: null,
@@ -112,7 +125,8 @@ const createBaseFormData = (): FormData => ({
 const createResult = (leadTier: LeadTier): CalculationResult => ({
   cameraCount: 4,
   nvrChannel: 4,
-  storage1TB: true,
+  storageEstimatedTB7d: 0.9072,
+  storageRecommendedTB: 1,
   leadScore: 0,
   leadTier,
   leadScoringModelVersion: "verification",
@@ -170,6 +184,16 @@ assertEqual(
   "Camera scoring floor: minimum camera recommendation still uses 4-channel NVR",
   minimumCameraCountPlan.nvrChannel,
   4
+);
+assertApprox(
+  "Storage recommendation: 1 camera => ~0.227 TB estimated for 7 days",
+  minimumCameraCountPlan.storageEstimatedTB7d,
+  0.2268
+);
+assertEqual(
+  "Storage recommendation: 1 camera => 1 TB recommended",
+  minimumCameraCountPlan.storageRecommendedTB,
+  1
 );
 
 const securityCameraNoPlan = estimateCameraPlan({
@@ -285,6 +309,37 @@ assertEqual(
   "Camera scoring full scenario returns expected NVR channel tier",
   fullCameraScenarioPlan.nvrChannel,
   16
+);
+assertApprox(
+  "Storage recommendation: 14 cameras => ~3.175 TB estimated for 7 days",
+  fullCameraScenarioPlan.storageEstimatedTB7d,
+  3.1752
+);
+assertEqual(
+  "Storage recommendation: 14 cameras => 4 TB recommended",
+  fullCameraScenarioPlan.storageRecommendedTB,
+  4
+);
+
+const fourCameraPlan = estimateCameraPlan({
+  ...createBaseFormData(),
+  property_type: "Vacation Home / Beach House",
+  has_security_cameras: false,
+});
+assertEqual(
+  "Storage recommendation: 4 cameras fixture returns expected camera count",
+  fourCameraPlan.cameraCount,
+  4
+);
+assertApprox(
+  "Storage recommendation: 4 cameras => ~0.907 TB estimated for 7 days",
+  fourCameraPlan.storageEstimatedTB7d,
+  0.9072
+);
+assertEqual(
+  "Storage recommendation: 4 cameras => 1 TB recommended",
+  fourCameraPlan.storageRecommendedTB,
+  1
 );
 
 // Safety level boundaries.

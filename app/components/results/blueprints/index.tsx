@@ -6,20 +6,21 @@ import PreventionBlueprint from "./PreventionBlueprint";
 
 type BlueprintCardInput = Pick<
   CalculationResult,
-  "cameraCount" | "nvrChannel" | "storage1TB"
+  "cameraCount" | "nvrChannel" | "storageEstimatedTB7d" | "storageRecommendedTB"
 >;
 
 export const createBlueprintCards = ({
   cameraCount,
   nvrChannel,
-  storage1TB,
+  storageEstimatedTB7d,
+  storageRecommendedTB,
 }: BlueprintCardInput): BlueprintCard[] => [
   {
     id: "prevention",
     title: "Entry Risks",
     goal: "Make your home harder to enter unnoticed.",
     summary: "Complete to get 10% of the remaining Panatag Home Rating.",
-    ratingGainShare: 0.1,
+    ratingGainShare: 0.2,
     content: <PreventionBlueprint />,
   },
   {
@@ -27,13 +28,14 @@ export const createBlueprintCards = ({
     title: "Daily Protection",
     goal: "Spot problems early, capture clear evidence, and respond faster.",
     summary: "Complete to get 80% of the remaining Panatag Home Rating.",
-    ratingGainShare: 0.8,
+    ratingGainShare: 0.7,
     featured: true,
     content: (
       <AwarenessBlueprint
         cameraCount={cameraCount}
         nvrChannel={nvrChannel}
-        storage1TB={storage1TB}
+        storageEstimatedTB7d={storageEstimatedTB7d}
+        storageRecommendedTB={storageRecommendedTB}
       />
     ),
   },

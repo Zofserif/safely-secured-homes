@@ -72,7 +72,8 @@ export type ResultsSummary = {
 export type CalculationResult = {
   cameraCount: number;
   nvrChannel: number;
-  storage1TB: boolean;
+  storageEstimatedTB7d: number;
+  storageRecommendedTB: number;
   // Lead score normalized to 0..100.
   leadScore: number;
   leadTier: LeadTier;

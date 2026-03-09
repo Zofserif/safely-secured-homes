@@ -29,6 +29,30 @@ const getNvrChannelTier = (cameraCount: number): number => {
   return tier;
 };
 
+const STORAGE_ESTIMATION_BASELINE_MBPS = 2.5;
+const STORAGE_ESTIMATION_RETENTION_DAYS = 7;
+const STORAGE_ESTIMATION_HEADROOM_FACTOR = 1.2;
+const STORAGE_GB_PER_DAY_PER_MBPS = 10.8;
+const STORAGE_RECOMMENDED_TB_TIERS = [1, 2, 4, 6, 8, 10, 12, 16] as const;
+
+const estimateStorageTBFor7Days = (cameraCount: number): number =>
+  (cameraCount *
+    STORAGE_ESTIMATION_BASELINE_MBPS *
+    STORAGE_GB_PER_DAY_PER_MBPS *
+    STORAGE_ESTIMATION_RETENTION_DAYS *
+    STORAGE_ESTIMATION_HEADROOM_FACTOR) /
+  1000;
+
+const getRecommendedStorageTB = (estimatedTB: number): number => {
+  for (const tier of STORAGE_RECOMMENDED_TB_TIERS) {
+    if (estimatedTB <= tier) {
+      return tier;
+    }
+  }
+
+  return Math.max(1, Math.ceil(estimatedTB));
+};
+
 const isNumeric = (value: number | null): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
@@ -175,6 +199,8 @@ export const getResultsSummary = (data: FormData, result: CalculationResult): Re
 export const estimateCameraPlan = (data: FormData): CalculationResult => {
   const cameraCount = getRuleBasedCameraCount(data);
   const nvrChannel = getNvrChannelTier(cameraCount);
+  const storageEstimatedTB7d = estimateStorageTBFor7Days(cameraCount);
+  const storageRecommendedTB = getRecommendedStorageTB(storageEstimatedTB7d);
 
   const { leadScore, leadScoreBreakdown, leadScoringModelVersion } =
     calculateLeadScore(data);
@@ -183,7 +209,8 @@ export const estimateCameraPlan = (data: FormData): CalculationResult => {
   return {
     cameraCount,
     nvrChannel,
-    storage1TB: true, // simplified
+    storageEstimatedTB7d,
+    storageRecommendedTB,
     leadScore,
     leadTier: tier,
     leadScoringModelVersion,

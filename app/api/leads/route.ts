@@ -66,7 +66,8 @@ type LeadPayload = {
     camera_plan: {
       camera_count: number;
       nvr_channel: number;
-      storage_1tb: boolean;
+      storage_recommended_tb: number;
+      storage_estimated_tb_7d: number;
     };
   };
 };
@@ -254,7 +255,12 @@ const buildLeadPayload = (
       camera_plan: {
         camera_count: Math.max(0, Math.round(toFiniteNumber(result.cameraCount))),
         nvr_channel: Math.max(0, Math.round(toFiniteNumber(result.nvrChannel))),
-        storage_1tb: result.storage1TB === true,
+        storage_recommended_tb: Math.max(
+          1,
+          Math.round(toFiniteNumber(result.storageRecommendedTB))
+        ),
+        storage_estimated_tb_7d:
+          Math.round(toFiniteNumber(result.storageEstimatedTB7d) * 1000) / 1000,
       },
     },
   };

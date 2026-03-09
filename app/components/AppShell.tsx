@@ -155,6 +155,18 @@ const normalizeError = (error: unknown): string => {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+const hasStorageRecommendationFields = (
+  value: unknown
+): value is Pick<CalculationResult, "storageEstimatedTB7d" | "storageRecommendedTB"> => {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.storageEstimatedTB7d === "number" &&
+    Number.isFinite(value.storageEstimatedTB7d) &&
+    typeof value.storageRecommendedTB === "number" &&
+    Number.isFinite(value.storageRecommendedTB)
+  );
+};
+
 const isNtfyTestResult = (value: unknown): value is NtfyTestResult => {
   if (!isRecord(value) || typeof value.ok !== "boolean") return false;
   if (value.mode !== "stored_lead" && value.mode !== "synthetic") return false;
@@ -433,8 +445,14 @@ export default function AppShell({
 
     if (initialView !== "results") {
       if (storedLead) {
-        setFormData(normalizeFormDataForApp(storedLead.formData));
-        setResult(storedLead.result);
+        const normalizedData = normalizeFormDataForApp(storedLead.formData);
+        const resolvedResult = hasStorageRecommendationFields(storedLead.result)
+          ? storedLead.result
+          : estimateCameraPlan(normalizedData);
+
+        writeStoredLead(normalizedData, resolvedResult);
+        setFormData(normalizedData);
+        setResult(resolvedResult);
       }
       return;
     }
@@ -443,7 +461,10 @@ export default function AppShell({
     const showResults = (data: FormData, calculated?: CalculationResult) => {
       if (!isMounted) return;
       const normalizedData = normalizeFormDataForApp(data);
-      const resolvedResult = calculated ?? estimateCameraPlan(normalizedData);
+      const resolvedResult =
+        calculated && hasStorageRecommendationFields(calculated)
+          ? calculated
+          : estimateCameraPlan(normalizedData);
       writeStoredLead(normalizedData, resolvedResult);
       setFormData(normalizedData);
       setResult(resolvedResult);

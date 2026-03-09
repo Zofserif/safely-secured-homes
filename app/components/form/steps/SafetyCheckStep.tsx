@@ -98,17 +98,10 @@ export default function SafetyCheckStep({
   );
   const areaCount = SAFETY_CATEGORIES.length;
 
-  const storedValues = activeCategory.legacyFields
-    .map((field) => formData[field])
-    .filter((value): value is number => typeof value === "number");
-
-  const hasStoredValue = storedValues.length > 0;
-  const storedValue = hasStoredValue
-    ? Math.round(
-        storedValues.reduce<number>((sum, value) => sum + value, 0) /
-          storedValues.length
-      )
-    : null;
+  const storedValue =
+    typeof formData[activeCategory.field] === "number"
+      ? formData[activeCategory.field]
+      : null;
 
   const draftSliderValue = safetySliderDrafts[activeCategory.id];
   const hasDraft = typeof draftSliderValue === "number";
@@ -118,9 +111,7 @@ export default function SafetyCheckStep({
       ? 50
       : storedValue;
 
-  const isCurrentAreaRated = activeCategory.legacyFields.every(
-    (field) => typeof formData[field] === "number"
-  );
+  const isCurrentAreaRated = typeof formData[activeCategory.field] === "number";
   const isSliderUnrated = !isCurrentAreaRated;
   const ratedSafetyState = getRatedSafetyState(sliderValue);
 
@@ -157,9 +148,7 @@ export default function SafetyCheckStep({
           <div className="flex items-center justify-center gap-1.5">
             {SAFETY_CATEGORIES.map((category, categoryIndex) => {
               const isActive = category.id === activeCategory.id;
-              const isRated = category.legacyFields.every(
-                (field) => typeof formData[field] === "number"
-              );
+              const isRated = typeof formData[category.field] === "number";
               const isFuture = categoryIndex > activeCategoryIndex;
               const isCompletedPast = categoryIndex < activeCategoryIndex && isRated;
 

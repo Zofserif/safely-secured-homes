@@ -59,10 +59,7 @@ type LeadPayloadBase = {
     safety_sliders: {
       safety_gate_entry: number | null;
       safety_blindspots: number | null;
-      safety_side_back_entry: number | null;
-      safety_windows_terrace: number | null;
       safety_driveway_garage: number | null;
-      safety_indoor_choke_points: number | null;
       safety_emergency_readiness: number | null;
     };
   };
@@ -70,8 +67,8 @@ type LeadPayloadBase = {
   recommendations: string[];
 };
 
-type LeadPayloadV4 = LeadPayloadBase & {
-  v: 4;
+type LeadPayloadV5 = LeadPayloadBase & {
+  v: 5;
   scoring: {
     model_version: string;
     lead_score: number;
@@ -88,7 +85,7 @@ type LeadInsertBody = {
   score: number;
   camera_count: number;
   safety_score_total: number;
-  payload: LeadPayloadV4;
+  payload: LeadPayloadV5;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -196,17 +193,8 @@ const sanitizeLeadPayloadBase = (payload: Record<string, unknown>): LeadPayloadB
       safety_sliders: {
         safety_gate_entry: toNullableSafetyScore(safetySliders.safety_gate_entry),
         safety_blindspots: toNullableSafetyScore(safetySliders.safety_blindspots),
-        safety_side_back_entry: toNullableSafetyScore(
-          safetySliders.safety_side_back_entry
-        ),
-        safety_windows_terrace: toNullableSafetyScore(
-          safetySliders.safety_windows_terrace
-        ),
         safety_driveway_garage: toNullableSafetyScore(
           safetySliders.safety_driveway_garage
-        ),
-        safety_indoor_choke_points: toNullableSafetyScore(
-          safetySliders.safety_indoor_choke_points
         ),
         safety_emergency_readiness: toNullableSafetyScore(
           safetySliders.safety_emergency_readiness
@@ -258,8 +246,8 @@ const sanitizeLeadScoreBreakdownItem = (
   };
 };
 
-const sanitizeLeadPayloadV4 = (value: unknown): LeadPayloadV4 | null => {
-  if (!isRecord(value) || value.v !== 4) return null;
+const sanitizeLeadPayloadV5 = (value: unknown): LeadPayloadV5 | null => {
+  if (!isRecord(value) || value.v !== 5) return null;
 
   const scoring = isRecord(value.scoring) ? value.scoring : null;
   if (!scoring || !Array.isArray(scoring.breakdown)) return null;
@@ -272,7 +260,7 @@ const sanitizeLeadPayloadV4 = (value: unknown): LeadPayloadV4 | null => {
   }
 
   return {
-    v: 4,
+    v: 5,
     ...sanitizeLeadPayloadBase(value),
     scoring: {
       model_version: toSafeString(scoring.model_version),
@@ -284,9 +272,9 @@ const sanitizeLeadPayloadV4 = (value: unknown): LeadPayloadV4 | null => {
   };
 };
 
-const sanitizeLeadPayload = (value: unknown): LeadPayloadV4 | null => {
+const sanitizeLeadPayload = (value: unknown): LeadPayloadV5 | null => {
   if (!isRecord(value)) return null;
-  return sanitizeLeadPayloadV4(value);
+  return sanitizeLeadPayloadV5(value);
 };
 
 const sanitizeLeadInsertBody = (value: unknown): LeadInsertBody | null => {

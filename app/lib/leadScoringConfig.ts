@@ -32,11 +32,8 @@ type SingleSelectField =
 
 type SafetySliderField =
   | "safety_gate_entry"
-  | "safety_side_back_entry"
-  | "safety_windows_terrace"
   | "safety_driveway_garage"
   | "safety_blindspots"
-  | "safety_indoor_choke_points"
   | "safety_emergency_readiness";
 
 type TextPresenceField = "goal_obstacle_other" | "mobile";
@@ -262,7 +259,7 @@ export const LEAD_SCORING_SECTIONS: readonly LeadScoreSectionConfig[] = [
         id: "safety_home_entrance",
         label: "Home entrance safety",
         type: "safety_slider_inverse",
-        fields: ["safety_gate_entry", "safety_side_back_entry", "safety_windows_terrace"],
+        fields: ["safety_gate_entry"],
       },
     ],
   },
@@ -288,7 +285,7 @@ export const LEAD_SCORING_SECTIONS: readonly LeadScoreSectionConfig[] = [
         id: "safety_windows_terrace",
         label: "Windows and terrace safety",
         type: "safety_slider_inverse",
-        fields: ["safety_blindspots", "safety_indoor_choke_points"],
+        fields: ["safety_blindspots"],
       },
     ],
   },
@@ -414,11 +411,8 @@ export type LeadScoringFormData = Pick<
   | "has_first_aid_or_medicine_ready"
   | "knows_local_emergency_contacts"
   | "safety_gate_entry"
-  | "safety_side_back_entry"
-  | "safety_windows_terrace"
   | "safety_driveway_garage"
   | "safety_blindspots"
-  | "safety_indoor_choke_points"
   | "safety_emergency_readiness"
   | "household_stage"
   | "desired_outcome"

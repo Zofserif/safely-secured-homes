@@ -115,15 +115,13 @@ export const useWizardController = ({
 
     setFormData((prev) => {
       const updated = { ...prev };
-      for (const field of category.legacyFields) {
-        updated[field] = clamped;
-      }
+      updated[category.field] = clamped;
       return updated;
     });
   };
 
   const ratedSafetyCount = SAFETY_CATEGORIES.filter((category) =>
-    category.legacyFields.every((field) => typeof formData[field] === "number")
+    typeof formData[category.field] === "number"
   ).length;
   const isSafetyComplete = ratedSafetyCount === SAFETY_CATEGORIES.length;
 

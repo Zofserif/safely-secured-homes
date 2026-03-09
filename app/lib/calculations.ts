@@ -35,14 +35,6 @@ const isNumeric = (value: number | null): value is number =>
 const clampSafetySliderScore = (value: number): number =>
   Math.min(100, Math.max(0, Math.round(value)));
 
-const averageSafetySliderScore = (values: readonly (number | null)[]): number | null => {
-  const numericValues = values.filter((value): value is number => isNumeric(value));
-  if (numericValues.length === 0) return null;
-
-  const total = numericValues.reduce((sum, value) => sum + value, 0);
-  return clampSafetySliderScore(total / numericValues.length);
-};
-
 const getHomeEntrancePoints = (value: number | null): number => {
   if (value === null) return 0;
   if (value <= 10) return 2;
@@ -131,11 +123,9 @@ const getRuleBasedCameraCount = (data: FormData): number => {
     no: 1,
   });
 
-  const homeEntranceScore = averageSafetySliderScore([
-    data.safety_gate_entry,
-    data.safety_side_back_entry,
-    data.safety_windows_terrace,
-  ]);
+  const homeEntranceScore = isNumeric(data.safety_gate_entry)
+    ? clampSafetySliderScore(data.safety_gate_entry)
+    : null;
   totalPoints += getHomeEntrancePoints(homeEntranceScore);
 
   const neighborhoodScore = isNumeric(data.safety_driveway_garage)
@@ -143,10 +133,9 @@ const getRuleBasedCameraCount = (data: FormData): number => {
     : null;
   totalPoints += getNeighborhoodPoints(neighborhoodScore);
 
-  const windowsTerraceScore = averageSafetySliderScore([
-    data.safety_blindspots,
-    data.safety_indoor_choke_points,
-  ]);
+  const windowsTerraceScore = isNumeric(data.safety_blindspots)
+    ? clampSafetySliderScore(data.safety_blindspots)
+    : null;
   totalPoints += getWindowsTerracePoints(windowsTerraceScore);
 
   totalPoints += getMappedPoints(HOUSEHOLD_STAGE_POINTS, data.household_stage);

@@ -11,10 +11,7 @@ export type FormData = {
   // Stored on a safety-oriented 0..100 scale: 0 = riskiest, 100 = safest.
   safety_gate_entry: number | null;
   safety_blindspots: number | null;
-  safety_side_back_entry: number | null;
-  safety_windows_terrace: number | null;
   safety_driveway_garage: number | null;
-  safety_indoor_choke_points: number | null;
   safety_emergency_readiness: number | null;
   household_stage: string;
   desired_outcome: string;

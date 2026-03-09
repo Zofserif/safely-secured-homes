@@ -187,10 +187,7 @@ const legacyFormProps = (data: FormData): EventProps => ({
   knows_local_emergency_contacts: data.knows_local_emergency_contacts,
   safety_gate_entry: data.safety_gate_entry,
   safety_blindspots: data.safety_blindspots,
-  safety_side_back_entry: data.safety_side_back_entry,
-  safety_windows_terrace: data.safety_windows_terrace,
   safety_driveway_garage: data.safety_driveway_garage,
-  safety_indoor_choke_points: data.safety_indoor_choke_points,
   safety_emergency_readiness: data.safety_emergency_readiness,
   // Safety summary now uses a 0..100 safety-oriented field scale.
   safety_score_avg: getSafetySummary(data).average,

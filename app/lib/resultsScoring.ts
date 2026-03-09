@@ -27,26 +27,26 @@ type SafetyLevelThreshold = {
 const SAFETY_LEVEL_THRESHOLDS: readonly SafetyLevelThreshold[] = [
   {
     minSafetyScore: 70,
-    output: { label: "Protected", range: "70-100", severity: "low" },
-    legend: "totalSafetyScore 70..100 => Protected",
+    output: { label: "Almost", range: "70-100", severity: "low" },
+    legend: "totalSafetyScore 70..100 => Almost",
   },
   {
     minSafetyScore: 45,
-    output: { label: "Alert", range: "45-69", severity: "medium" },
-    legend: "totalSafetyScore 45..69 => Alert",
+    output: { label: "Improve", range: "45-69", severity: "medium" },
+    legend: "totalSafetyScore 45..69 => Improve",
   },
   {
     minSafetyScore: 0,
-    output: { label: "Urgent Action", range: "0-44", severity: "high" },
-    legend: "totalSafetyScore 0..44 => Urgent Action",
+    output: { label: "Urgent", range: "0-44", severity: "high" },
+    legend: "totalSafetyScore 0..44 => Urgent",
   },
 ] as const;
 
 // Lead tier -> Priority Action card label/severity.
 const PRIORITY_ACTION_BY_LEAD_TIER: Record<LeadTier, PriorityActionSummary> = {
-  Hot: { label: "Emergency Secure", severity: "high" },
-  Warm: { label: "Book & Secure", severity: "medium" },
-  Nurture: { label: "Plan & Assess", severity: "low" },
+  Hot: { label: "Urgent", severity: "high" },
+  Warm: { label: "Improve", severity: "medium" },
+  Nurture: { label: "Almost", severity: "low" },
 };
 
 // Emergency safety score -> Emergency Readiness card label/severity.
@@ -170,17 +170,17 @@ const getEmergencyReadinessLegend = (emergencyRiskScore: number): string => {
   );
 
   if (emergencySafetyScore >= EMERGENCY_READINESS_THRESHOLDS.GOOD_MIN_SAFETY) {
-    return "emergencySafetyScore 100 => Good";
+    return "emergencySafetyScore 100 => Almost";
   }
 
   if (
     emergencySafetyScore >=
     EMERGENCY_READINESS_THRESHOLDS.NOT_THERE_MIN_SAFETY
   ) {
-    return "emergencySafetyScore 40..99 => Not There";
+    return "emergencySafetyScore 40..99 => Improve";
   }
 
-  return "emergencySafetyScore 0..39 => Worse";
+  return "emergencySafetyScore 0..39 => Urgent";
 };
 
 export const getSafetyLevelFromTotalRiskScore = (
@@ -215,17 +215,17 @@ export const getEmergencyReadinessFromRiskScore = (
   );
 
   if (emergencySafetyScore >= EMERGENCY_READINESS_THRESHOLDS.GOOD_MIN_SAFETY) {
-    return { label: "Good", severity: "low" };
+    return { label: "Almost", severity: "low" };
   }
 
   if (
     emergencySafetyScore >=
     EMERGENCY_READINESS_THRESHOLDS.NOT_THERE_MIN_SAFETY
   ) {
-    return { label: "Not There", severity: "medium" };
+    return { label: "Improve", severity: "medium" };
   }
 
-  return { label: "Worse", severity: "high" };
+  return { label: "Urgent", severity: "high" };
 };
 
 export const getPanatagRatingFromScores = (

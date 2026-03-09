@@ -27,10 +27,7 @@ type ResultsSharePayloadBase = {
   knows_local_emergency_contacts: boolean | null;
   safety_gate_entry: number;
   safety_blindspots: number;
-  safety_side_back_entry: number;
-  safety_windows_terrace: number;
   safety_driveway_garage: number;
-  safety_indoor_choke_points: number;
   safety_emergency_readiness: number;
   household_stage: string;
   desired_outcome: string;
@@ -40,8 +37,8 @@ type ResultsSharePayloadBase = {
   solution: string;
 };
 
-export type ResultsSharePayloadV5 = ResultsSharePayloadBase & {
-  v: 5;
+export type ResultsSharePayloadV6 = ResultsSharePayloadBase & {
+  v: 6;
 };
 
 type InvalidField = {
@@ -88,7 +85,7 @@ const normalizeText = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
 
 const collectInvalidFields = (
-  payload: Partial<ResultsSharePayloadV5>
+  payload: Partial<ResultsSharePayloadV6>
 ): InvalidField[] => {
   const invalid: InvalidField[] = [];
 
@@ -123,11 +120,11 @@ const collectInvalidFields = (
 };
 
 const toPayload = (formData: FormData): {
-  payload: ResultsSharePayloadV5 | null;
+  payload: ResultsSharePayloadV6 | null;
   invalidFields: InvalidField[];
 } => {
-  const payload: Partial<ResultsSharePayloadV5> = {
-    v: 5,
+  const payload: Partial<ResultsSharePayloadV6> = {
+    v: 6,
     property_type: normalizeOption(PROPERTY_TYPE_VALUES, formData.property_type),
     has_spare_key: normalizeNullableBoolean(formData.has_spare_key),
     changed_wifi_default_password: normalizeNullableBoolean(
@@ -149,12 +146,7 @@ const toPayload = (formData: FormData): {
     ),
     safety_gate_entry: normalizeStoredSafetyScore(formData.safety_gate_entry),
     safety_blindspots: normalizeStoredSafetyScore(formData.safety_blindspots),
-    safety_side_back_entry: normalizeStoredSafetyScore(formData.safety_side_back_entry),
-    safety_windows_terrace: normalizeStoredSafetyScore(formData.safety_windows_terrace),
     safety_driveway_garage: normalizeStoredSafetyScore(formData.safety_driveway_garage),
-    safety_indoor_choke_points: normalizeStoredSafetyScore(
-      formData.safety_indoor_choke_points
-    ),
     safety_emergency_readiness: normalizeStoredSafetyScore(
       formData.safety_emergency_readiness
     ),
@@ -171,13 +163,10 @@ const toPayload = (formData: FormData): {
 
   const invalidFields = collectInvalidFields(payload);
 
-  const safetyFields: Array<keyof ResultsSharePayloadV5> = [
+  const safetyFields: Array<keyof ResultsSharePayloadV6> = [
     "safety_gate_entry",
     "safety_blindspots",
-    "safety_side_back_entry",
-    "safety_windows_terrace",
     "safety_driveway_garage",
-    "safety_indoor_choke_points",
     "safety_emergency_readiness",
   ];
 
@@ -191,12 +180,12 @@ const toPayload = (formData: FormData): {
     return { payload: null, invalidFields };
   }
 
-  return { payload: payload as ResultsSharePayloadV5, invalidFields: [] };
+  return { payload: payload as ResultsSharePayloadV6, invalidFields: [] };
 };
 
 export const createShareableResultsPayload = (
   formData: FormData
-): ResultsSharePayloadV5 | null => {
+): ResultsSharePayloadV6 | null => {
   const { payload, invalidFields } = toPayload(formData);
 
   if (!payload) {
@@ -216,17 +205,12 @@ export const parseShareableResultsPayload = (
   value: unknown
 ): FormData | null => {
   if (!isRecord(value)) return null;
-  if (value.v !== 5) return null;
+  if (value.v !== 6) return null;
 
   const propertyType = normalizeOption(PROPERTY_TYPE_VALUES, value.property_type);
   const safetyGateEntry = normalizeStoredSafetyScore(value.safety_gate_entry);
   const safetyBlindspots = normalizeStoredSafetyScore(value.safety_blindspots);
-  const safetySideBackEntry = normalizeStoredSafetyScore(value.safety_side_back_entry);
-  const safetyWindowsTerrace = normalizeStoredSafetyScore(value.safety_windows_terrace);
   const safetyDrivewayGarage = normalizeStoredSafetyScore(value.safety_driveway_garage);
-  const safetyIndoorChokePoints = normalizeStoredSafetyScore(
-    value.safety_indoor_choke_points
-  );
   const safetyEmergencyReadiness = normalizeStoredSafetyScore(
     value.safety_emergency_readiness
   );
@@ -243,10 +227,7 @@ export const parseShareableResultsPayload = (
     !propertyType ||
     typeof safetyGateEntry !== "number" ||
     typeof safetyBlindspots !== "number" ||
-    typeof safetySideBackEntry !== "number" ||
-    typeof safetyWindowsTerrace !== "number" ||
     typeof safetyDrivewayGarage !== "number" ||
-    typeof safetyIndoorChokePoints !== "number" ||
     typeof safetyEmergencyReadiness !== "number" ||
     !householdStage ||
     !desiredOutcome ||
@@ -279,10 +260,7 @@ export const parseShareableResultsPayload = (
     ),
     safety_gate_entry: safetyGateEntry,
     safety_blindspots: safetyBlindspots,
-    safety_side_back_entry: safetySideBackEntry,
-    safety_windows_terrace: safetyWindowsTerrace,
     safety_driveway_garage: safetyDrivewayGarage,
-    safety_indoor_choke_points: safetyIndoorChokePoints,
     safety_emergency_readiness: safetyEmergencyReadiness,
     household_stage: householdStage,
     desired_outcome: desiredOutcome,

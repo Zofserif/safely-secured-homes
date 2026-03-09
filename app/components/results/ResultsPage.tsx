@@ -191,12 +191,6 @@ const PANATAG_FALLBACK_SLICE_SHARES = {
   emergency: 0.3,
 } as const;
 
-const getReadableStatusLabel = (severity: "low" | "medium" | "high"): string => {
-  if (severity === "low") return "Good";
-  if (severity === "medium") return "Improve";
-  return "Urgent";
-};
-
 const toSafeNonNegativeNumber = (value: number): number =>
   Number.isFinite(value) ? Math.max(0, value) : 0;
 
@@ -277,7 +271,7 @@ const buildPanatagHeroSlices = ({
     },
     {
       id: "home_readiness",
-      label: "Home Ready",
+      label: "Home Action",
       rawScore100: homeReadinessScore100,
       baseContribution: sanitizedHomeReadinessContribution,
       shareRatio: homeReadinessShare,
@@ -345,17 +339,11 @@ export default function ResultsPage({
     homeReadinessContribution: panatagScoringBreakdown.panatag.leadContribution,
     safetyContribution: panatagScoringBreakdown.panatag.safetyContribution,
     emergencyContribution: panatagScoringBreakdown.panatag.emergencyContribution,
-    homeReadinessStatusLabel: getReadableStatusLabel(
-      panatagScoringBreakdown.outputs.priority.severity,
-    ),
+    homeReadinessStatusLabel: panatagScoringBreakdown.outputs.priority.label,
     homeReadinessSeverity: panatagScoringBreakdown.outputs.priority.severity,
-    safetyStatusLabel: getReadableStatusLabel(
-      panatagScoringBreakdown.outputs.safetyLevel.severity,
-    ),
+    safetyStatusLabel: panatagScoringBreakdown.outputs.safetyLevel.label,
     safetySeverity: panatagScoringBreakdown.outputs.safetyLevel.severity,
-    emergencyStatusLabel: getReadableStatusLabel(
-      panatagScoringBreakdown.outputs.emergency.severity,
-    ),
+    emergencyStatusLabel: panatagScoringBreakdown.outputs.emergency.label,
     emergencySeverity: panatagScoringBreakdown.outputs.emergency.severity,
   });
   const basePanatagRating100 = panatagRating;

@@ -96,10 +96,7 @@ const createBaseFormData = (): FormData => ({
   knows_local_emergency_contacts: null,
   safety_gate_entry: null,
   safety_blindspots: null,
-  safety_side_back_entry: null,
-  safety_windows_terrace: null,
   safety_driveway_garage: null,
-  safety_indoor_choke_points: null,
   safety_emergency_readiness: null,
   household_stage: "",
   desired_outcome: "",
@@ -129,11 +126,8 @@ const createSafetyFormData = (fixture: SafetyFixture): FormData => {
   return {
     ...data,
     safety_gate_entry: fixture.homeSafety,
-    safety_side_back_entry: fixture.homeSafety,
-    safety_windows_terrace: fixture.homeSafety,
     safety_driveway_garage: fixture.neighborhoodSafety,
     safety_blindspots: fixture.blindspotsSafety,
-    safety_indoor_choke_points: fixture.blindspotsSafety,
     safety_emergency_readiness: fixture.emergencySafety,
   };
 };
@@ -208,8 +202,6 @@ const createHomeEntranceBoundaryData = (score: number): FormData => ({
   ...createBaseFormData(),
   property_type: "Condo / Apartment",
   safety_gate_entry: score,
-  safety_side_back_entry: score,
-  safety_windows_terrace: score,
 });
 assertEqual(
   "Camera scoring home entrance boundary: 10 => +2",
@@ -257,7 +249,6 @@ assertEqual(
     ...createBaseFormData(),
     property_type: "Condo / Apartment",
     safety_blindspots: 10,
-    safety_indoor_choke_points: 10,
   }).cameraCount,
   2
 );
@@ -267,7 +258,6 @@ assertEqual(
     ...createBaseFormData(),
     property_type: "Condo / Apartment",
     safety_blindspots: 11,
-    safety_indoor_choke_points: 11,
   }).cameraCount,
   1
 );
@@ -278,11 +268,8 @@ const fullCameraScenarioPlan = estimateCameraPlan({
   locks_windows_gate_at_night: false,
   has_security_cameras: false,
   safety_gate_entry: 5,
-  safety_side_back_entry: 5,
-  safety_windows_terrace: 5,
   safety_driveway_garage: 5,
   safety_blindspots: 5,
-  safety_indoor_choke_points: 5,
   safety_emergency_readiness: 5,
   household_stage: "Family with kids at home",
   desired_outcome: "Protect my home and valuables from break-ins/theft",
@@ -301,79 +288,79 @@ assertEqual(
 );
 
 // Safety level boundaries.
-assertEqual("Safety level 70 => Protected", getSafetyLevelFromTotalRiskScore(70), {
-  label: "Protected",
+assertEqual("Safety level 70 => Almost", getSafetyLevelFromTotalRiskScore(70), {
+  label: "Almost",
   range: "70-100",
   severity: "low",
 });
-assertEqual("Safety level 100 => Protected", getSafetyLevelFromTotalRiskScore(100), {
-  label: "Protected",
+assertEqual("Safety level 100 => Almost", getSafetyLevelFromTotalRiskScore(100), {
+  label: "Almost",
   range: "70-100",
   severity: "low",
 });
-assertEqual("Safety level 45 => Alert", getSafetyLevelFromTotalRiskScore(45), {
-  label: "Alert",
+assertEqual("Safety level 45 => Improve", getSafetyLevelFromTotalRiskScore(45), {
+  label: "Improve",
   range: "45-69",
   severity: "medium",
 });
-assertEqual("Safety level 69 => Alert", getSafetyLevelFromTotalRiskScore(69), {
-  label: "Alert",
+assertEqual("Safety level 69 => Improve", getSafetyLevelFromTotalRiskScore(69), {
+  label: "Improve",
   range: "45-69",
   severity: "medium",
 });
-assertEqual("Safety level 0 => Urgent Action", getSafetyLevelFromTotalRiskScore(0), {
-  label: "Urgent Action",
+assertEqual("Safety level 0 => Urgent", getSafetyLevelFromTotalRiskScore(0), {
+  label: "Urgent",
   range: "0-44",
   severity: "high",
 });
-assertEqual("Safety level 44 => Urgent Action", getSafetyLevelFromTotalRiskScore(44), {
-  label: "Urgent Action",
+assertEqual("Safety level 44 => Urgent", getSafetyLevelFromTotalRiskScore(44), {
+  label: "Urgent",
   range: "0-44",
   severity: "high",
 });
 
 // Priority action mapping.
 assertEqual(
-  "Priority Hot => Emergency Secure",
+  "Priority Hot => Urgent",
   getPriorityActionFromLeadTier("Hot"),
-  { label: "Emergency Secure", severity: "high" }
+  { label: "Urgent", severity: "high" }
 );
 assertEqual(
-  "Priority Warm => Book & Secure",
+  "Priority Warm => Improve",
   getPriorityActionFromLeadTier("Warm"),
-  { label: "Book & Secure", severity: "medium" }
+  { label: "Improve", severity: "medium" }
 );
 assertEqual(
-  "Priority Nurture => Plan & Assess",
+  "Priority Nurture => Almost",
   getPriorityActionFromLeadTier("Nurture"),
-  { label: "Plan & Assess", severity: "low" }
+  { label: "Almost", severity: "low" }
 );
 
 // Emergency readiness boundaries.
 assertEqual(
-  "Emergency safety 100 => Good",
+  "Emergency safety 100 => Almost",
   getEmergencyReadinessFromRiskScore(100),
-  { label: "Good", severity: "low" }
+  { label: "Almost", severity: "low" }
 );
 assertEqual(
-  "Emergency safety 99 => Not There",
+  "Emergency safety 99 => Improve",
   getEmergencyReadinessFromRiskScore(99),
-  { label: "Not There", severity: "medium" }
+  { label: "Improve", severity: "medium" }
 );
 assertEqual(
-  "Emergency safety 40 => Not There",
+  "Emergency safety 40 => Improve",
   getEmergencyReadinessFromRiskScore(40),
-  { label: "Not There", severity: "medium" }
+  { label: "Improve", severity: "medium" }
 );
 assertEqual(
-  "Emergency safety 39 => Worse",
+  "Emergency safety 39 => Urgent",
   getEmergencyReadinessFromRiskScore(39),
-  { label: "Worse", severity: "high" }
+  { label: "Urgent", severity: "high" }
 );
 assertEqual(
-  "Emergency safety 0 => Worse",
+  "Emergency safety 0 => Urgent",
   getEmergencyReadinessFromRiskScore(0),
-  { label: "Worse", severity: "high" }
+  { label: "Urgent", severity: "high" }
 );
 
 // Floor-based safety normalization from decimal safety values.
@@ -650,9 +637,9 @@ const summaryFixtures: Array<{
     expected: {
       safetyTotal: 100,
       safetyMax: 100,
-      safetyLevel: { label: "Protected", range: "70-100", severity: "low" },
-      priority: { label: "Plan & Assess", severity: "low" },
-      emergency: { label: "Good", severity: "low" },
+      safetyLevel: { label: "Almost", range: "70-100", severity: "low" },
+      priority: { label: "Almost", severity: "low" },
+      emergency: { label: "Almost", severity: "low" },
       emergencyReadinessScore: 100,
       panatagRating: 100,
     },
@@ -669,9 +656,9 @@ const summaryFixtures: Array<{
     expected: {
       safetyTotal: 55,
       safetyMax: 100,
-      safetyLevel: { label: "Alert", range: "45-69", severity: "medium" },
-      priority: { label: "Book & Secure", severity: "medium" },
-      emergency: { label: "Not There", severity: "medium" },
+      safetyLevel: { label: "Improve", range: "45-69", severity: "medium" },
+      priority: { label: "Improve", severity: "medium" },
+      emergency: { label: "Improve", severity: "medium" },
       emergencyReadinessScore: 43,
       panatagRating: 56,
     },
@@ -688,9 +675,9 @@ const summaryFixtures: Array<{
     expected: {
       safetyTotal: 7,
       safetyMax: 100,
-      safetyLevel: { label: "Urgent Action", range: "0-44", severity: "high" },
-      priority: { label: "Emergency Secure", severity: "high" },
-      emergency: { label: "Worse", severity: "high" },
+      safetyLevel: { label: "Urgent", range: "0-44", severity: "high" },
+      priority: { label: "Urgent", severity: "high" },
+      emergency: { label: "Urgent", severity: "high" },
       emergencyReadinessScore: 9,
       panatagRating: 17,
     },
@@ -702,9 +689,9 @@ const summaryFixtures: Array<{
     expected: {
       safetyTotal: 34,
       safetyMax: 100,
-      safetyLevel: { label: "Urgent Action", range: "0-44", severity: "high" },
-      priority: { label: "Book & Secure", severity: "medium" },
-      emergency: { label: "Worse", severity: "high" },
+      safetyLevel: { label: "Urgent", range: "0-44", severity: "high" },
+      priority: { label: "Improve", severity: "medium" },
+      emergency: { label: "Urgent", severity: "high" },
       emergencyReadinessScore: 38,
       panatagRating: 42,
     },
@@ -733,16 +720,16 @@ const breakdown = buildResultsScoringBreakdown({
 });
 
 assertEqual("Breakdown includes expected safety output", breakdown.outputs.safetyLevel, {
-  label: "Alert",
+  label: "Improve",
   range: "45-69",
   severity: "medium",
 });
 assertEqual("Breakdown includes expected priority output", breakdown.outputs.priority, {
-  label: "Book & Secure",
+  label: "Improve",
   severity: "medium",
 });
 assertEqual("Breakdown includes expected emergency output", breakdown.outputs.emergency, {
-  label: "Not There",
+  label: "Improve",
   severity: "medium",
 });
 assertEqual("Breakdown includes expected panatag output", breakdown.outputs.panatagRating, 52);
@@ -958,16 +945,12 @@ const safetyLowSliderLead = withNodeEnv("production", () =>
   calculateLeadScore({
     ...createBaseFormData(),
     safety_gate_entry: 20,
-    safety_side_back_entry: 20,
-    safety_windows_terrace: 20,
   })
 );
 const safetyHighSliderLead = withNodeEnv("production", () =>
   calculateLeadScore({
     ...createBaseFormData(),
     safety_gate_entry: 90,
-    safety_side_back_entry: 90,
-    safety_windows_terrace: 90,
   })
 );
 assertEqual(

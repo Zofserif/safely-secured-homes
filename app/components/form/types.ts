@@ -18,10 +18,7 @@ export type FieldErrors = Record<string, string>;
 export type SafetyField =
   | "safety_gate_entry"
   | "safety_blindspots"
-  | "safety_side_back_entry"
-  | "safety_windows_terrace"
   | "safety_driveway_garage"
-  | "safety_indoor_choke_points"
   | "safety_emergency_readiness";
 
 export type SafetyCategoryId =
@@ -44,7 +41,7 @@ export type SafetyCategory = {
   id: SafetyCategoryId;
   title: string;
   subtitle: string;
-  legacyFields: SafetyField[];
+  field: SafetyField;
 };
 
 export type SafetyHabitQuestion = {

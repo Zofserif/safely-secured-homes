@@ -55,10 +55,7 @@ type LeadPayloadBase = {
     safety_sliders: {
       safety_gate_entry: number | null;
       safety_blindspots: number | null;
-      safety_side_back_entry: number | null;
-      safety_windows_terrace: number | null;
       safety_driveway_garage: number | null;
-      safety_indoor_choke_points: number | null;
       safety_emergency_readiness: number | null;
     };
   };
@@ -66,8 +63,8 @@ type LeadPayloadBase = {
   recommendations: string[];
 };
 
-type LeadPayloadV4 = LeadPayloadBase & {
-  v: 4;
+type LeadPayloadV5 = LeadPayloadBase & {
+  v: 5;
   scoring: {
     model_version: string;
     lead_score: number;
@@ -84,7 +81,7 @@ type LeadInsertBody = {
   score: number;
   camera_count: number;
   safety_score_total: number;
-  payload: LeadPayloadV4;
+  payload: LeadPayloadV5;
 };
 
 const toSafeString = (value: unknown): string =>
@@ -143,12 +140,7 @@ const buildLeadPayloadBase = (
     safety_sliders: {
       safety_gate_entry: toNullableFiniteNumber(data.safety_gate_entry),
       safety_blindspots: toNullableFiniteNumber(data.safety_blindspots),
-      safety_side_back_entry: toNullableFiniteNumber(data.safety_side_back_entry),
-      safety_windows_terrace: toNullableFiniteNumber(data.safety_windows_terrace),
       safety_driveway_garage: toNullableFiniteNumber(data.safety_driveway_garage),
-      safety_indoor_choke_points: toNullableFiniteNumber(
-        data.safety_indoor_choke_points
-      ),
       safety_emergency_readiness: toNullableFiniteNumber(
         data.safety_emergency_readiness
       ),
@@ -166,14 +158,14 @@ const toLeadScoreBreakdown = (value: unknown): LeadScoreBreakdownItem[] => {
   );
 };
 
-const buildLeadPayloadV4 = (
+const buildLeadPayloadV5 = (
   data: FormData,
   result: CalculationResult,
   safetyCategories: SafetyCategoryScores,
   panatagHomeRating: number,
   source?: string
-): LeadPayloadV4 => ({
-  v: 4,
+): LeadPayloadV5 => ({
+  v: 5,
   ...buildLeadPayloadBase(data, safetyCategories, panatagHomeRating, source),
   recommendations: [],
   scoring: {
@@ -227,7 +219,7 @@ export async function submitLeadToSupabase(
     score: result.leadScore,
     camera_count: result.cameraCount,
     safety_score_total: safetySummary.total,
-    payload: buildLeadPayloadV4(
+    payload: buildLeadPayloadV5(
       data,
       result,
       safetyCategories,

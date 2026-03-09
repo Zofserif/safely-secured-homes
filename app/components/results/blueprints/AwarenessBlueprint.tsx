@@ -1,96 +1,153 @@
 import {
-  BlueprintLead,
   BulletList,
   ChecklistCard,
   InfoCallout,
   Section,
 } from "./shared";
 
-export default function AwarenessBlueprint() {
+type AwarenessBlueprintProps = {
+  cameraCount: number;
+  nvrChannel: number;
+  storage1TB: boolean;
+};
+
+export default function AwarenessBlueprint({
+  cameraCount,
+  nvrChannel,
+  storage1TB,
+}: AwarenessBlueprintProps) {
+  const storageRecommendation = storage1TB ? "1TB+" : "500GB";
+
   return (
     <>
-      <BlueprintLead>
-        If it ain&apos;t broke don&apos;t fix it -- Bert Lance
-        <br />
-        <br /> 
-        <div className="text-sm text-slate-500 not-italic">
-        A famous expression that is often used to justify inaction, but when it comes to home safety, waiting for something to go wrong can have serious consequences.
-        A saying for our family should be different in this case: &quot;If it ain&apos;t broke, don&apos;t risk it.&quot; We don&apos;t want to wait for something to break before we take an action.
-        </div>
-      </BlueprintLead>
+      <div className="rounded-2xl border border-[#0E79B2]/20 bg-[#F3F9FD] px-5 py-4 text-sm leading-relaxed text-slate-700">
+        <p>Most homes do not need more gadgets.</p>
+        <p className="mt-1 font-semibold text-slate-800">
+          They need the right daily protection in the right places.
+        </p>
+        <p className="mt-2">
+          If you cannot clearly see what is happening, record what happened,
+          and respond quickly when something feels off, your home may still
+          have protection gaps even if you already have some devices installed.
+        </p>
+      </div>
 
-      <InfoCallout title="Where most homes are weakest" tone="warning">
+      <InfoCallout title="Why this matters every day" tone="info">
+        <p>A home feels more secure when three things work together:</p>
+        <BulletList
+          items={[
+            "you notice activity early",
+            "you capture footage clearly",
+            "you can respond without panic or guesswork",
+          ]}
+        />
         <p>
-          When an incident happens, families are often unsure what they saw and
-          do not have usable evidence.
-          Huwag hintayin na may mangyari bago kumilos. Build your system before
-          you need it.
+          That is what a properly planned security system is meant to do.
         </p>
       </InfoCallout>
 
       <Section
-        title="3 Layers of Protection to Stay Ahead in Most Filipino Homes"
+        title="Your 3 Layers of Daily Protection"
         titleClassName="text-lg md:text-xl font-bold text-slate-900"
       >
         <div className="grid gap-3">
           <ChecklistCard
             icon="👀"
-            badge="Layer 1"
             accent="blue"
             title="Awareness"
-            description="Know what is happening in real time."
+            description="Know what is happening as it starts."
             items={[
-              "Enable motion alerts for key entry points.",
-              "Keep clear camera visibility on gate, front area, garage, and side paths.",
+              "Cover key entry points and blind spots.",
+              "Keep front areas, gates, garage access, and side paths visible.",
+              "Set motion alerts where they help, not where they create noise.",
             ]}
           />
           <ChecklistCard
             icon="🧾"
-            badge="Layer 2"
             accent="green"
             title="Evidence"
-            description="If something happens, you are covered."
+            description="Capture footage you can actually use."
             items={[
-              "Capture footage that clearly shows faces or plates when possible.",
-              "Use reliable storage, not guesswork recording.",
+              "Place cameras where movement and approach paths are clearly seen.",
+              "Make sure night visibility is usable, not just there.",
+              "Use proper recording and storage so footage is there when you need it.",
             ]}
           />
           <ChecklistCard
             icon="⚡"
-            badge="Layer 3"
             accent="amber"
             title="Response"
-            description="Act faster with less panic."
+            description="Act faster with less guesswork."
             items={[
-              "Set up notifications correctly so alerts stay useful, not spammy.",
-              "Make sure the family knows what to do when an alert triggers.",
+              "Make sure alerts reach the right person.",
+              "Check that live view and playback are easy to access.",
+              "Agree on what your family should do when an alert comes in.",
             ]}
           />
         </div>
       </Section>
 
       <Section
-        title="Why a Smart Safety System is Your Best Next Step"
+        title="Your Recommended Protection Setup"
         titleClassName="text-lg md:text-xl font-bold text-slate-900"
       >
-        <div className="rounded-2xl border border-[#0E79B2]/20 bg-[#EAF4FB] p-4">
-          <p className="text-base font-semibold text-slate-800">
-            A properly planned CCTV system gives you:
+        <div className="rounded-2xl border border-[#0E79B2]/20 bg-[#F7FBFF] p-4">
+          <p className="text-sm text-slate-700">
+            Based on your answers, your home may need:
           </p>
-          <BulletList
-            items={[
-              "Early warning before a situation happens (Awareness)",
-              "Proof for authorities, barangay reports, or disputes (Evidence)",
-              "Confidence when you are away from home (Response)",
-            ]}
-          />
-        </div>
-        <div className="rounded-3xl border border-[#0E79B2]/40 bg-linear-to-r from-[#0E79B2] to-[#146E9E] p-5 text-center text-white shadow-xl shadow-[#0E79B2]/35">
-          <p className="text-lg font-black leading-tight text-white md:text-2xl">
-            Want to reach a 100 Panatag Rating? A complete on-site safety check is you best next step.
+          <ul className="mt-3 space-y-2">
+            <li className="rounded-lg border border-[#D9EAF8] bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+              {cameraCount} cameras
+            </li>
+            <li className="rounded-lg border border-[#D9EAF8] bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+              {nvrChannel}-Channel NVR
+            </li>
+            <li className="rounded-lg border border-[#D9EAF8] bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+              {storageRecommendation} storage
+            </li>
+          </ul>
+          <p className="mt-3 text-sm text-slate-700">
+            This is your recommended starting point based on your home layout,
+            risk areas, and daily routine.
+          </p>
+          <p className="mt-2 text-sm text-slate-700">
+            A better setup is not about adding everything. It is about putting
+            the right coverage where it matters most, with enough recording and
+            storage to make the system useful.
           </p>
         </div>
       </Section>
+
+      <Section
+        title="Why a Consultation Is the Smart Next Step"
+        titleClassName="text-lg md:text-xl font-bold text-slate-900"
+      >
+        <div className="rounded-2xl border border-[#0E79B2]/20 bg-[#EAF4FB] p-4 text-sm leading-relaxed text-slate-700">
+          <p>
+            A camera system only works well when the placement, recorder,
+            storage, and viewing setup match the actual home.
+          </p>
+          <p className="mt-2">
+            If camera angles are wrong, blind spots stay open.
+            If recording is weak, footage may not help when you need it.
+            If alerts are messy, people start ignoring them.
+          </p>
+          <p className="mt-2">
+            A professional security consultation helps you plan the right
+            system before you spend on the wrong one.
+          </p>
+        </div>
+      </Section>
+
+      <div className="rounded-3xl border border-[#0E79B2]/35 bg-linear-to-r from-[#0E79B2] to-[#146E9E] p-5 text-center text-white shadow-xl shadow-[#0E79B2]/30">
+        <p className="text-base font-extrabold leading-tight md:text-lg">
+          Want a system that actually fits your home?
+        </p>
+        <p className="mt-2 text-sm text-white/90">
+          A proper consultation helps you confirm the right camera count,
+          recorder, storage, and placement for your layout.
+        </p>
+      </div>
     </>
   );
 }

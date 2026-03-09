@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { Eye, ShieldCheck, Siren, X } from "lucide-react";
 import { RESULTS_BOOK_VISIT_URL } from "../constants";
 import type { BlueprintCard } from "../types";
 
@@ -11,10 +11,47 @@ type BlueprintModalProps = {
   onAwarenessBookAudit: () => void;
 };
 
-const hasReachedBottom = (container: HTMLDivElement) => {
-  const remainingDistance =
-    container.scrollHeight - container.scrollTop - container.clientHeight;
-  return remainingDistance <= 20;
+const UNLOCK_PROGRESS_THRESHOLD = 0.98;
+const SHORT_CONTENT_SCROLLABLE_HEIGHT_PX = 24;
+
+const clampToProgress = (value: number): number => Math.max(0, Math.min(1, value));
+
+const getScrollProgress = (container: HTMLDivElement): number => {
+  const scrollableHeight = container.scrollHeight - container.clientHeight;
+  if (scrollableHeight <= SHORT_CONTENT_SCROLLABLE_HEIGHT_PX) {
+    return 1;
+  }
+
+  return clampToProgress(container.scrollTop / scrollableHeight);
+};
+
+const BLUEPRINT_TONE_BY_ID: Record<
+  BlueprintCard["id"],
+  {
+    icon: typeof ShieldCheck;
+    iconWrapClassName: string;
+    iconClassName: string;
+    goalClassName: string;
+  }
+> = {
+  prevention: {
+    icon: ShieldCheck,
+    iconWrapClassName: "border-[#2E8B57]/30 bg-[#EAF7F0]",
+    iconClassName: "text-[#2E8B57]",
+    goalClassName: "border-[#2E8B57]/25 bg-[#F2FBF6] text-[#23563B]",
+  },
+  awareness: {
+    icon: Eye,
+    iconWrapClassName: "border-[#0E79B2]/30 bg-[#EAF4FB]",
+    iconClassName: "text-[#0E79B2]",
+    goalClassName: "border-[#0E79B2]/20 bg-[#F2F8FD] text-[#1D4F6E]",
+  },
+  emergency: {
+    icon: Siren,
+    iconWrapClassName: "border-[#E4572E]/30 bg-[#FFF1EC]",
+    iconClassName: "text-[#C4451D]",
+    goalClassName: "border-[#E4572E]/25 bg-[#FFF4F0] text-[#7F3D28]",
+  },
 };
 
 export default function BlueprintModal({
@@ -27,13 +64,20 @@ export default function BlueprintModal({
   const isAwarenessBlueprint = activeBlueprint?.id === "awareness";
   const contentRef = useRef<HTMLDivElement | null>(null);
   const [showFooterAction, setShowFooterAction] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  const activeBlueprintTone = activeBlueprint
+    ? BLUEPRINT_TONE_BY_ID[activeBlueprint.id]
+    : null;
+  const titleId = activeBlueprint ? `blueprint-modal-title-${activeBlueprint.id}` : "";
+  const goalId = activeBlueprint ? `blueprint-modal-goal-${activeBlueprint.id}` : "";
 
   const handleContentScroll = (
     event: React.UIEvent<HTMLDivElement>,
   ) => {
-    if (showFooterAction) return;
-
-    if (hasReachedBottom(event.currentTarget)) {
+    const progress = getScrollProgress(event.currentTarget);
+    setScrollProgress(progress);
+    if (!showFooterAction && progress >= UNLOCK_PROGRESS_THRESHOLD) {
       setShowFooterAction(true);
     }
   };
@@ -45,7 +89,10 @@ export default function BlueprintModal({
       const container = contentRef.current;
       if (!container) return;
 
-      if (hasReachedBottom(container)) {
+      const progress = getScrollProgress(container);
+      setScrollProgress(progress);
+
+      if (progress >= UNLOCK_PROGRESS_THRESHOLD) {
         setShowFooterAction(true);
       }
     });
@@ -53,55 +100,127 @@ export default function BlueprintModal({
     return () => window.cancelAnimationFrame(frame);
   }, [activeBlueprint]);
 
-  if (!activeBlueprint) return null;
+  useEffect(() => {
+    if (!activeBlueprint || typeof document === "undefined") return;
+
+    const { body, documentElement } = document;
+    const previousOverflow = body.style.overflow;
+    const previousPaddingRight = body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - documentElement.clientWidth;
+
+    body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPaddingRight;
+    };
+  }, [activeBlueprint]);
+
+  if (!activeBlueprint || !activeBlueprintTone) return null;
+
+  const BlueprintIcon = activeBlueprintTone.icon;
+  const progressPercent = showFooterAction
+    ? 100
+    : Math.min(99, Math.round(scrollProgress * 100));
+  const lockedInstruction = isAwarenessBlueprint
+    ? "Review to the end to unlock booking."
+    : "Review to the end to unlock completion.";
+  const lockedActionLabel = isAwarenessBlueprint
+    ? "Book My Free Security System Consultation"
+    : isCompleted
+      ? "Mark as Incomplete"
+      : "Mark as Complete";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-50 flex items-start justify-center px-4 py-5 sm:items-center sm:py-8">
       <button
         type="button"
         onClick={onClose}
-        className="absolute inset-0 bg-slate-900/70 backdrop-blur-md"
+        className="absolute inset-0 bg-[#0B4B70]/45 backdrop-blur-[3px]"
         aria-label="Close blueprint details"
       />
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-[0_30px_80px_-40px_rgba(15,23,42,0.6)] ring-1 ring-slate-200"
+        aria-labelledby={titleId}
+        aria-describedby={goalId}
+        className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-[1.75rem] border border-[#D1E4F2] bg-linear-to-b from-[#F9FCFF] via-white to-[#F2F8FF] shadow-[0_35px_90px_-50px_rgba(4,48,79,0.6)] ring-1 ring-[#DCEBF7] max-h-[calc(100dvh-2.5rem)] sm:max-h-[86vh]"
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 rounded-full bg-white/20 p-2 text-white shadow-sm backdrop-blur hover:bg-white/30"
+          className="absolute right-4 top-4 z-20 rounded-full border border-[#D1E4F2] bg-white/95 p-2 text-[#145276] shadow-sm transition-colors hover:bg-[#F3F9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/35"
           aria-label="Close"
         >
           <X className="h-4 w-4" />
         </button>
-        <div className="bg-linear-to-r from-[#0E79B2] via-[#1B8CCB] to-[#0E79B2] px-5 py-5 text-white sm:px-6">
-          <h4 className=" text-2xl font-bold">{activeBlueprint.title}</h4>
-          <p className="mt-1 text-sm text-white/90">
-            <span className="font-semibold text-white">Goal:</span>{" "}
-            {activeBlueprint.goal}
-          </p>
+        <div className="border-b border-[#DCEBF7] bg-linear-to-r from-[#EAF4FB] via-[#F7FBFF] to-[#EAF4FB] px-5 py-5 sm:px-6">
+          <span className="inline-flex items-center rounded-full border border-[#0E79B2]/30 bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0E79B2]">
+            Safety Insight
+          </span>
+          <div className="mt-3 flex items-start gap-3">
+            <span
+              className={[
+                "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border",
+                activeBlueprintTone.iconWrapClassName,
+              ].join(" ")}
+            >
+              <BlueprintIcon
+                aria-hidden="true"
+                className={`h-5 w-5 ${activeBlueprintTone.iconClassName}`}
+              />
+            </span>
+            <div className="min-w-0">
+              <h4
+                id={titleId}
+                className="text-2xl font-bold tracking-tight text-[#102A3D]"
+              >
+                {activeBlueprint.title}
+              </h4>
+              <p
+                id={goalId}
+                className={[
+                  "mt-2 rounded-xl border px-3 py-2 text-sm leading-relaxed",
+                  activeBlueprintTone.goalClassName,
+                ].join(" ")}
+              >
+                <span className="font-semibold">Goal:</span>{" "}
+                {activeBlueprint.goal}
+              </p>
+            </div>
+          </div>
         </div>
         <div
           ref={contentRef}
           onScroll={handleContentScroll}
-          className="max-h-[72vh] overflow-y-auto bg-white px-4 py-5 sm:px-6"
+          className="flex-1 overflow-y-auto bg-white px-4 py-5 sm:px-6 sm:py-6"
         >
-          {activeBlueprint.content}
+          <div className="rounded-2xl border border-[#E1EDF8] bg-[#FCFEFF] p-4 sm:p-5">
+            {activeBlueprint.content}
+          </div>
         </div>
-        <div className="border-t border-slate-200 bg-white px-4 py-4 sm:px-6">
+        <div className="border-t border-[#DCEBF7] bg-white/95 px-4 py-4 sm:px-6">
           {showFooterAction ? (
             isAwarenessBlueprint ? (
-              <a
-                href={RESULTS_BOOK_VISIT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={onAwarenessBookAudit}
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-linear-to-r from-[#0E79B2] to-[#146E9E] px-5 py-4 text-base font-extrabold tracking-wide text-white shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0b5e8b] hover:to-[#0b5e8b] md:text-lg"
-              >
-                Book an On-site Safety Check (FREE) Now
-              </a>
+              <div className="space-y-2">
+                <a
+                  href={RESULTS_BOOK_VISIT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={onAwarenessBookAudit}
+                  className="inline-flex w-full items-center justify-center rounded-2xl bg-linear-to-r from-[#0E79B2] to-[#146E9E] px-5 py-4 text-base font-extrabold tracking-wide text-white shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0b5e8b] hover:to-[#0b5e8b] md:text-lg"
+                >
+                  Book My Free Security System Consultation
+                </a>
+                <p className="text-center text-xs font-medium leading-relaxed text-slate-500">
+                  No pressure. No generic package.
+                  <br />
+                  Just a clearer recommendation for your home.
+                </p>
+              </div>
             ) : (
               <button
                 type="button"
@@ -117,11 +236,30 @@ export default function BlueprintModal({
               </button>
             )
           ) : (
-            <p className="text-center text-xs font-semibold text-slate-500">
-              {isAwarenessBlueprint
-                ? "Scroll to the end of this blueprint to unlock booking."
-                : "Scroll to the end of this blueprint to unlock completion."}
-            </p>
+            <div className="space-y-3">
+              <div className="rounded-xl border border-[#D1E4F2] bg-[#F7FBFF] px-3.5 py-3">
+                <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] text-[#51718A]">
+                  <span>Review Progress</span>
+                  <span>{progressPercent}%</span>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#D9EAF8]">
+                  <div
+                    className="h-full rounded-full bg-linear-to-r from-[#0E79B2] to-[#1B8CCB] transition-[width] duration-200 ease-out"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs font-medium text-slate-600">
+                  {lockedInstruction}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled
+                className="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-bold text-slate-400"
+              >
+                {lockedActionLabel}
+              </button>
+            </div>
           )}
         </div>
       </div>

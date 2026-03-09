@@ -11,7 +11,7 @@ import { deriveFirstNameFromEmail } from "../../lib/contactName";
 import { SOLUTION_OPTIONS } from "../../lib/formOptions";
 import type { CalculationResult, FormData, SeverityLevel } from "../../lib/types";
 import { RESULTS_BOOK_VISIT_URL, RESULTS_CALL_HREF } from "./constants";
-import { BLUEPRINT_CARDS } from "./blueprints";
+import { createBlueprintCards } from "./blueprints";
 import BlueprintCardsGrid from "./components/BlueprintCardsGrid";
 import BlueprintModal from "./components/BlueprintModal";
 import NextStepPanel from "./components/NextStepPanel";
@@ -20,6 +20,7 @@ import PanatagResultsHero, {
 } from "./components/PanatagResultsHero";
 import ResultActionButtons from "./components/ResultActionButtons";
 import type {
+  BlueprintCard,
   BlueprintCardId,
   BlueprintCompletionState,
   BlueprintModalState,
@@ -112,6 +113,7 @@ const createDefaultGainPointsByBlueprint = (): Record<BlueprintCardId, number> =
 
 const computeBlueprintGainPoints = (
   remainingGap: number,
+  blueprintCards: readonly Pick<BlueprintCard, "id" | "ratingGainShare">[],
 ): Record<BlueprintCardId, number> => {
   const safeRemainingGap = Math.max(0, Math.floor(remainingGap));
   const gainPointsByBlueprint = createDefaultGainPointsByBlueprint();
@@ -120,7 +122,7 @@ const computeBlueprintGainPoints = (
     return gainPointsByBlueprint;
   }
 
-  const weightedCards = BLUEPRINT_CARDS.map((card, index) => {
+  const weightedCards = blueprintCards.map((card, index) => {
     const rawGain = safeRemainingGap * card.ratingGainShare;
     const basePoints = Math.floor(rawGain);
     const remainder = rawGain - basePoints;
@@ -317,6 +319,7 @@ export default function ResultsPage({
   const firstName =
     data.first_name.trim() || deriveFirstNameFromEmail(data.email);
   const heroGreeting = firstName ? `Hi ${firstName}!` : "Hi there!";
+  const blueprintCards = createBlueprintCards(result);
 
   const { safetyTotal, emergencyReadinessScore, panatagRating } = getResultsSummary(
     data,
@@ -348,8 +351,11 @@ export default function ResultsPage({
   });
   const basePanatagRating100 = panatagRating;
   const remainingPanatagGap = Math.max(0, 100 - basePanatagRating100);
-  const gainPointsByBlueprint = computeBlueprintGainPoints(remainingPanatagGap);
-  const appliedGain = BLUEPRINT_CARDS.reduce<number>(
+  const gainPointsByBlueprint = computeBlueprintGainPoints(
+    remainingPanatagGap,
+    blueprintCards,
+  );
+  const appliedGain = blueprintCards.reduce<number>(
     (sum, card) =>
       sum + (blueprintCompletion[card.id] ? gainPointsByBlueprint[card.id] : 0),
     0,
@@ -361,7 +367,7 @@ export default function ResultsPage({
       basePanatagRating100 + appliedGain,
     ),
   );
-  const displayBlueprintCards = BLUEPRINT_CARDS.map((card) => {
+  const displayBlueprintCards = blueprintCards.map((card) => {
     const gain = gainPointsByBlueprint[card.id];
     const isCompleted = blueprintCompletion[card.id];
     const summary = isCompleted
@@ -375,7 +381,7 @@ export default function ResultsPage({
   });
 
   const activeBlueprint =
-    BLUEPRINT_CARDS.find((card) => card.id === activeBlueprintId) ?? null;
+    blueprintCards.find((card) => card.id === activeBlueprintId) ?? null;
   const isActiveBlueprintCompleted = activeBlueprint
     ? blueprintCompletion[activeBlueprint.id]
     : false;

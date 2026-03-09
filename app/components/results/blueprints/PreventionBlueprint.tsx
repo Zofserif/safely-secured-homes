@@ -1,67 +1,53 @@
 import {
-  BlueprintLead,
   ChecklistCard,
   MiniCheck,
-  Section,
 } from "./shared";
 
 export default function PreventionBlueprint() {
   return (
     <>
-      <BlueprintLead>
-        An ounce of prevention is worth a pound of cure -- Benjamin Franklin
-        <br />
-        <br /> 
-        <div className="text-sm text-slate-500 not-italic">
-        A famous thousand years saying that we tend to use nowadays as &quot;Prevention is better than cure&quot; but still holds weight until to this day.
-        As Filipinos we believe heavily in superstitions, and while some of them are harmless, others can lead to a false sense of security.
-        Let&apos;s take our culture as a guiding help to take actionable ways to prevent problems before they happen.
-        </div>
-      </BlueprintLead>
+      <div className="rounded-2xl border border-[#0E79B2]/20 bg-[#F3F9FD] px-5 py-4 text-sm leading-relaxed text-slate-700">
+        Start with the basics: better lighting, better lock habits, and better
+        front-door awareness. These are some of the simplest ways to reduce
+        entry risk.
+      </div>
 
-      <Section title="Make This Your Tonight Checklist">
-        <div className="grid gap-4 md:grid-cols-3">
-          <ChecklistCard
-            icon="💡"
-            badge="Fast Win"
-            accent="green"
-            title="Light + Visibility"
-            description="Most blind spots show up at night."
-            items={[
-              "Add mini motion lights near your entrance.",
-              "Turn on indoor lights before going to bed (i.e. Kitchen/Living Room).",
-            ]}
-          />
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <ChecklistCard
+          icon="💡"
+          accent="green"
+          title="Light + Visibility"
+          items={[
+            "Turn on your porch light",
+            "Add a motion light",
+            "Clear blocked sightlines",
+          ]}
+        />
 
-          <ChecklistCard
-            icon="🔒"
-            badge="Preventive"
-            accent="blue"
-            title="Locks + Openings"
-            description="Do one quick lock check before sleep."
-            items={[
-              "Keep keys in a safe and consistent spot.",
-              "Confirm gate and front door are locked.",
-              "Check windows and sliding doors.",
-            ]}
-          />
+        <ChecklistCard
+          icon="🔒"
+          accent="blue"
+          title="Locks + Openings"
+          items={[
+            "Lock doors and windows",
+            "Check sliding doors",
+            "Don’t hide spare keys outside",
+          ]}
+        />
 
-          <ChecklistCard
-            icon="🧰"
-            badge="Be Ready"
-            accent="amber"
-            title="Emergency Ready"
-            description="Keep essentials ready to grab."
-            items={[
-              "Prepare a grab kit: flashlight, power bank, and whistle.",
-              "Keep smoke alarms and a fire extinguisher ready.",
-              "Place first aid where everyone can access it quickly.",
-            ]}
-          />
-        </div>
-      </Section>
+        <ChecklistCard
+          icon="🧰"
+          accent="amber"
+          title="Smart Entry Upgrade"
+          items={[
+            "Add a video doorbell",
+            "Add a door sensor",
+            "Secure apps with 2FA",
+          ]}
+        />
+      </div>
 
-      <MiniCheck text="If there is a power outage, strange noise, or fire risk tonight, can your family respond in the first 60 seconds without panic?" />
+      <MiniCheck text="Would you know right away if someone approached your door tonight?" />
     </>
   );
 }

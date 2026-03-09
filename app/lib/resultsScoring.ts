@@ -9,6 +9,7 @@ import {
  * Results scoring legend:
  * - Stored safety scale (database/form state): 0..100 where higher = safer.
  * - Safety level + emergency readiness classify severity from safety scores.
+ * - Lead score (0..100) represents need/risk and is inverted for Panatag quality.
  * - Panatag rating uses weighted lead/safety/emergency scores on a 0..100 scale.
  */
 
@@ -108,10 +109,17 @@ const toPanatagScoreInput = (value: number): number => {
   return clampNumber(value, SAFETY_SCORE_MIN, SAFETY_SCORE_MAX);
 };
 
+const toInvertedPanatagLeadScore = (value: number): number => {
+  if (!Number.isFinite(value)) return SAFETY_SCORE_MIN;
+  const normalizedLead = clampNumber(value, SAFETY_SCORE_MIN, SAFETY_SCORE_MAX);
+  return SAFETY_SCORE_MAX - normalizedLead;
+};
+
 const computePanatagComputation = (
   inputs: PanatagScoreInputs
 ): PanatagComputation => {
-  const leadScore = toPanatagScoreInput(inputs.leadScore);
+  // Higher lead score means higher need/risk, so invert it for quality rating.
+  const leadScore = toInvertedPanatagLeadScore(inputs.leadScore);
   const safetyTotal = toPanatagScoreInput(inputs.safetyTotal);
   const emergencyReadinessScore = toPanatagScoreInput(
     inputs.emergencyReadinessScore
@@ -239,7 +247,7 @@ export const buildResultsScoringBreakdown = (
       priorityAction: `leadTier ${args.leadTier} => ${priority.label}`,
       emergencyReadiness: getEmergencyReadinessLegend(args.emergencyRiskScore),
       panatagFormula:
-        "round((leadScore * 0.10) + (safetyTotal * 0.60) + (emergencyReadinessScore * 0.30))",
+        "round(((isFinite(leadScore) ? (100 - clamp(leadScore, 0, 100)) : 0) * 0.10) + (safetyTotal * 0.60) + (emergencyReadinessScore * 0.30))",
       panatagWeights: "lead 10% + safety 60% + emergency 30%",
     },
     outputs: {

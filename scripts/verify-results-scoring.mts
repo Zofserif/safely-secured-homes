@@ -563,40 +563,40 @@ assertEqual(
 
 // Panatag deterministic scenarios using weighted lead/safety/emergency inputs.
 assertEqual(
-  "Panatag lead=100 safety=100 emergency=100 => 100",
+  "Panatag lead=100 safety=100 emergency=100 => 90",
   getPanatagRatingFromScores({
     leadScore: 100,
     safetyTotal: 100,
     emergencyReadinessScore: 100,
   }),
-  100
+  90
 );
 assertEqual(
-  "Panatag lead=0 safety=0 emergency=0 => 0",
+  "Panatag lead=0 safety=0 emergency=0 => 10",
   getPanatagRatingFromScores({
     leadScore: 0,
     safetyTotal: 0,
     emergencyReadinessScore: 0,
   }),
-  0
+  10
 );
 assertEqual(
-  "Panatag lead=30 safety=30 emergency=29 => 30",
+  "Panatag lead=30 safety=30 emergency=29 => 34",
   getPanatagRatingFromScores({
     leadScore: 30,
     safetyTotal: 30,
     emergencyReadinessScore: 29,
   }),
-  30
+  34
 );
 assertEqual(
-  "Panatag lead=20 safety=40 emergency=45 => 40",
+  "Panatag lead=20 safety=40 emergency=45 => 46",
   getPanatagRatingFromScores({
     leadScore: 20,
     safetyTotal: 40,
     emergencyReadinessScore: 45,
   }),
-  40
+  46
 );
 assertEqual(
   "Panatag non-finite inputs are normalized to 0",
@@ -614,7 +614,21 @@ assertEqual(
     safetyTotal: 66.5,
     emergencyReadinessScore: 44.5,
   }),
-  63
+  53
+);
+assertEqual(
+  "Panatag lead inversion: lower lead score yields higher Panatag for same safety/emergency",
+  getPanatagRatingFromScores({
+    leadScore: 0,
+    safetyTotal: 60,
+    emergencyReadinessScore: 40,
+  }) >
+    getPanatagRatingFromScores({
+      leadScore: 100,
+      safetyTotal: 60,
+      emergencyReadinessScore: 40,
+    }),
+  true
 );
 
 // Non-regression matrix for getResultsSummary orchestration output.
@@ -640,7 +654,7 @@ const summaryFixtures: Array<{
       priority: { label: "Plan & Assess", severity: "low" },
       emergency: { label: "Good", severity: "low" },
       emergencyReadinessScore: 100,
-      panatagRating: 90,
+      panatagRating: 100,
     },
   },
   {
@@ -659,7 +673,7 @@ const summaryFixtures: Array<{
       priority: { label: "Book & Secure", severity: "medium" },
       emergency: { label: "Not There", severity: "medium" },
       emergencyReadinessScore: 43,
-      panatagRating: 46,
+      panatagRating: 56,
     },
   },
   {
@@ -678,7 +692,7 @@ const summaryFixtures: Array<{
       priority: { label: "Emergency Secure", severity: "high" },
       emergency: { label: "Worse", severity: "high" },
       emergencyReadinessScore: 9,
-      panatagRating: 7,
+      panatagRating: 17,
     },
   },
   {
@@ -692,7 +706,7 @@ const summaryFixtures: Array<{
       priority: { label: "Book & Secure", severity: "medium" },
       emergency: { label: "Worse", severity: "high" },
       emergencyReadinessScore: 38,
-      panatagRating: 32,
+      panatagRating: 42,
     },
   },
 ];
@@ -731,7 +745,7 @@ assertEqual("Breakdown includes expected emergency output", breakdown.outputs.em
   label: "Not There",
   severity: "medium",
 });
-assertEqual("Breakdown includes expected panatag output", breakdown.outputs.panatagRating, 54);
+assertEqual("Breakdown includes expected panatag output", breakdown.outputs.panatagRating, 52);
 assertEqual(
   "Breakdown panatag output matches helper",
   breakdown.outputs.panatagRating,

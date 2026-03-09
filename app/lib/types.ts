@@ -9,15 +9,15 @@ export type FormData = {
   has_first_aid_or_medicine_ready: boolean | null;
   knows_local_emergency_contacts: boolean | null;
   // Stored on a safety-oriented 0..100 scale: 0 = riskiest, 100 = safest.
-  safety_gate_entry: number | null;
-  safety_blindspots: number | null;
-  safety_driveway_garage: number | null;
-  safety_emergency_readiness: number | null;
+  home_entrance: number | null;
+  windows_terrace: number | null;
+  neighborhood_safety_check: number | null;
+  emergency_readiness_home: number | null;
   household_stage: string;
   desired_outcome: string;
   goal_obstacle: string;
   has_additional_notes: boolean | null;
-  goal_obstacle_other: string;
+  additional_notes: string;
   solution: string;
   first_name: string;
   email: string;

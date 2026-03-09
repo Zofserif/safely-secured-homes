@@ -31,12 +31,12 @@ type SingleSelectField =
   | "solution";
 
 type SafetySliderField =
-  | "safety_gate_entry"
-  | "safety_driveway_garage"
-  | "safety_blindspots"
-  | "safety_emergency_readiness";
+  | "home_entrance"
+  | "neighborhood_safety_check"
+  | "windows_terrace"
+  | "emergency_readiness_home";
 
-type TextPresenceField = "goal_obstacle_other" | "mobile";
+type TextPresenceField = "additional_notes" | "mobile";
 
 type AnswerPointsMap = Readonly<Record<string, LeadScorePointValue>>;
 
@@ -259,7 +259,7 @@ export const LEAD_SCORING_SECTIONS: readonly LeadScoreSectionConfig[] = [
         id: "safety_home_entrance",
         label: "Home entrance safety",
         type: "safety_slider_inverse",
-        fields: ["safety_gate_entry"],
+        fields: ["home_entrance"],
       },
     ],
   },
@@ -272,7 +272,7 @@ export const LEAD_SCORING_SECTIONS: readonly LeadScoreSectionConfig[] = [
         id: "safety_neighborhood",
         label: "Neighborhood safety",
         type: "safety_slider_inverse",
-        fields: ["safety_driveway_garage"],
+        fields: ["neighborhood_safety_check"],
       },
     ],
   },
@@ -285,7 +285,7 @@ export const LEAD_SCORING_SECTIONS: readonly LeadScoreSectionConfig[] = [
         id: "safety_windows_terrace",
         label: "Windows and terrace safety",
         type: "safety_slider_inverse",
-        fields: ["safety_blindspots"],
+        fields: ["windows_terrace"],
       },
     ],
   },
@@ -298,7 +298,7 @@ export const LEAD_SCORING_SECTIONS: readonly LeadScoreSectionConfig[] = [
         id: "safety_emergency_readiness",
         label: "Emergency readiness safety",
         type: "safety_slider_inverse",
-        fields: ["safety_emergency_readiness"],
+        fields: ["emergency_readiness_home"],
       },
     ],
   },
@@ -364,10 +364,10 @@ export const LEAD_SCORING_SECTIONS: readonly LeadScoreSectionConfig[] = [
     weightPercent: 3,
     questions: [
       {
-        id: "goal_obstacle_other",
+        id: "additional_notes",
         label: "Anything else comment",
         type: "text_presence",
-        field: "goal_obstacle_other",
+        field: "additional_notes",
         points: {
           filled: 1,
           empty: 0,
@@ -410,14 +410,14 @@ export type LeadScoringFormData = Pick<
   | "has_smoke_alarm_or_fire_extinguisher"
   | "has_first_aid_or_medicine_ready"
   | "knows_local_emergency_contacts"
-  | "safety_gate_entry"
-  | "safety_driveway_garage"
-  | "safety_blindspots"
-  | "safety_emergency_readiness"
+  | "home_entrance"
+  | "neighborhood_safety_check"
+  | "windows_terrace"
+  | "emergency_readiness_home"
   | "household_stage"
   | "desired_outcome"
   | "goal_obstacle"
   | "solution"
-  | "goal_obstacle_other"
+  | "additional_notes"
   | "mobile"
 >;

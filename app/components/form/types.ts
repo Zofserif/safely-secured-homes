@@ -16,10 +16,10 @@ export type WizardFormProps = {
 export type FieldErrors = Record<string, string>;
 
 export type SafetyField =
-  | "safety_gate_entry"
-  | "safety_blindspots"
-  | "safety_driveway_garage"
-  | "safety_emergency_readiness";
+  | "home_entrance"
+  | "windows_terrace"
+  | "neighborhood_safety_check"
+  | "emergency_readiness_home";
 
 export type SafetyCategoryId =
   | "home_entrance"

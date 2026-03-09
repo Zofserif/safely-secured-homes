@@ -314,10 +314,10 @@ const getEmergencyReadinessWeightedScore = (data: FormData): number => {
 
 // These are normalized category safety scores used by resultsScoring/getResultsSummary.
 export const getSafetyCategoryScores = (data: FormData): SafetyCategoryScores => ({
-  home_entrance: toSafetyScore(data.safety_gate_entry),
-  neighborhood_safety_check: toSafetyScore(data.safety_driveway_garage),
-  windows_terrace: toSafetyScore(data.safety_blindspots),
-  emergency_readiness_home: toSafetyScore(data.safety_emergency_readiness),
+  home_entrance: toSafetyScore(data.home_entrance),
+  neighborhood_safety_check: toSafetyScore(data.neighborhood_safety_check),
+  windows_terrace: toSafetyScore(data.windows_terrace),
+  emergency_readiness_home: toSafetyScore(data.emergency_readiness_home),
 });
 
 // Aggregate safety summary that drives Safety Score and Emergency Readiness classifications.

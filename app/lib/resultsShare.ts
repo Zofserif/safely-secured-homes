@@ -25,20 +25,20 @@ type ResultsSharePayloadBase = {
   has_smoke_alarm_or_fire_extinguisher: boolean | null;
   has_first_aid_or_medicine_ready: boolean | null;
   knows_local_emergency_contacts: boolean | null;
-  safety_gate_entry: number;
-  safety_blindspots: number;
-  safety_driveway_garage: number;
-  safety_emergency_readiness: number;
+  home_entrance: number;
+  windows_terrace: number;
+  neighborhood_safety_check: number;
+  emergency_readiness_home: number;
   household_stage: string;
   desired_outcome: string;
   goal_obstacle: string;
   has_additional_notes: boolean;
-  goal_obstacle_other: string;
+  additional_notes: string;
   solution: string;
 };
 
-export type ResultsSharePayloadV6 = ResultsSharePayloadBase & {
-  v: 6;
+export type ResultsSharePayloadV8 = ResultsSharePayloadBase & {
+  v: 8;
 };
 
 type InvalidField = {
@@ -85,7 +85,7 @@ const normalizeText = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
 
 const collectInvalidFields = (
-  payload: Partial<ResultsSharePayloadV6>
+  payload: Partial<ResultsSharePayloadV8>
 ): InvalidField[] => {
   const invalid: InvalidField[] = [];
 
@@ -120,11 +120,11 @@ const collectInvalidFields = (
 };
 
 const toPayload = (formData: FormData): {
-  payload: ResultsSharePayloadV6 | null;
+  payload: ResultsSharePayloadV8 | null;
   invalidFields: InvalidField[];
 } => {
-  const payload: Partial<ResultsSharePayloadV6> = {
-    v: 6,
+  const payload: Partial<ResultsSharePayloadV8> = {
+    v: 8,
     property_type: normalizeOption(PROPERTY_TYPE_VALUES, formData.property_type),
     has_spare_key: normalizeNullableBoolean(formData.has_spare_key),
     changed_wifi_default_password: normalizeNullableBoolean(
@@ -144,11 +144,11 @@ const toPayload = (formData: FormData): {
     knows_local_emergency_contacts: normalizeNullableBoolean(
       formData.knows_local_emergency_contacts
     ),
-    safety_gate_entry: normalizeStoredSafetyScore(formData.safety_gate_entry),
-    safety_blindspots: normalizeStoredSafetyScore(formData.safety_blindspots),
-    safety_driveway_garage: normalizeStoredSafetyScore(formData.safety_driveway_garage),
-    safety_emergency_readiness: normalizeStoredSafetyScore(
-      formData.safety_emergency_readiness
+    home_entrance: normalizeStoredSafetyScore(formData.home_entrance),
+    windows_terrace: normalizeStoredSafetyScore(formData.windows_terrace),
+    neighborhood_safety_check: normalizeStoredSafetyScore(formData.neighborhood_safety_check),
+    emergency_readiness_home: normalizeStoredSafetyScore(
+      formData.emergency_readiness_home
     ),
     household_stage: normalizeOption(HOUSEHOLD_STAGE_OPTIONS, formData.household_stage),
     desired_outcome: normalizeOption(
@@ -157,17 +157,17 @@ const toPayload = (formData: FormData): {
     ),
     goal_obstacle: normalizeOption(GOAL_OBSTACLE_OPTIONS, formData.goal_obstacle),
     has_additional_notes: normalizeRequiredBoolean(formData.has_additional_notes),
-    goal_obstacle_other: normalizeText(formData.goal_obstacle_other),
+    additional_notes: normalizeText(formData.additional_notes),
     solution: normalizeOption(SOLUTION_VALUES, formData.solution),
   };
 
   const invalidFields = collectInvalidFields(payload);
 
-  const safetyFields: Array<keyof ResultsSharePayloadV6> = [
-    "safety_gate_entry",
-    "safety_blindspots",
-    "safety_driveway_garage",
-    "safety_emergency_readiness",
+  const safetyFields: Array<keyof ResultsSharePayloadV8> = [
+    "home_entrance",
+    "windows_terrace",
+    "neighborhood_safety_check",
+    "emergency_readiness_home",
   ];
 
   for (const field of safetyFields) {
@@ -180,12 +180,12 @@ const toPayload = (formData: FormData): {
     return { payload: null, invalidFields };
   }
 
-  return { payload: payload as ResultsSharePayloadV6, invalidFields: [] };
+  return { payload: payload as ResultsSharePayloadV8, invalidFields: [] };
 };
 
 export const createShareableResultsPayload = (
   formData: FormData
-): ResultsSharePayloadV6 | null => {
+): ResultsSharePayloadV8 | null => {
   const { payload, invalidFields } = toPayload(formData);
 
   if (!payload) {
@@ -205,14 +205,19 @@ export const parseShareableResultsPayload = (
   value: unknown
 ): FormData | null => {
   if (!isRecord(value)) return null;
-  if (value.v !== 6) return null;
+  if (value.v !== 8) return null;
+  if (Object.prototype.hasOwnProperty.call(value, "goal_obstacle_other")) {
+    return null;
+  }
 
   const propertyType = normalizeOption(PROPERTY_TYPE_VALUES, value.property_type);
-  const safetyGateEntry = normalizeStoredSafetyScore(value.safety_gate_entry);
-  const safetyBlindspots = normalizeStoredSafetyScore(value.safety_blindspots);
-  const safetyDrivewayGarage = normalizeStoredSafetyScore(value.safety_driveway_garage);
-  const safetyEmergencyReadiness = normalizeStoredSafetyScore(
-    value.safety_emergency_readiness
+  const homeEntrance = normalizeStoredSafetyScore(value.home_entrance);
+  const windowsTerrace = normalizeStoredSafetyScore(value.windows_terrace);
+  const neighborhoodSafetyCheck = normalizeStoredSafetyScore(
+    value.neighborhood_safety_check
+  );
+  const emergencyReadinessHome = normalizeStoredSafetyScore(
+    value.emergency_readiness_home
   );
   const householdStage = normalizeOption(HOUSEHOLD_STAGE_OPTIONS, value.household_stage);
   const desiredOutcome = normalizeOption(
@@ -225,10 +230,10 @@ export const parseShareableResultsPayload = (
 
   if (
     !propertyType ||
-    typeof safetyGateEntry !== "number" ||
-    typeof safetyBlindspots !== "number" ||
-    typeof safetyDrivewayGarage !== "number" ||
-    typeof safetyEmergencyReadiness !== "number" ||
+    typeof homeEntrance !== "number" ||
+    typeof windowsTerrace !== "number" ||
+    typeof neighborhoodSafetyCheck !== "number" ||
+    typeof emergencyReadinessHome !== "number" ||
     !householdStage ||
     !desiredOutcome ||
     !goalObstacle ||
@@ -258,15 +263,15 @@ export const parseShareableResultsPayload = (
     knows_local_emergency_contacts: normalizeNullableBoolean(
       value.knows_local_emergency_contacts
     ),
-    safety_gate_entry: safetyGateEntry,
-    safety_blindspots: safetyBlindspots,
-    safety_driveway_garage: safetyDrivewayGarage,
-    safety_emergency_readiness: safetyEmergencyReadiness,
+    home_entrance: homeEntrance,
+    windows_terrace: windowsTerrace,
+    neighborhood_safety_check: neighborhoodSafetyCheck,
+    emergency_readiness_home: emergencyReadinessHome,
     household_stage: householdStage,
     desired_outcome: desiredOutcome,
     goal_obstacle: goalObstacle,
     has_additional_notes: hasAdditionalNotes,
-    goal_obstacle_other: normalizeText(value.goal_obstacle_other),
+    additional_notes: normalizeText(value.additional_notes),
     solution,
     first_name: "",
     email: "",

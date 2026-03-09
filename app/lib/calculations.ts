@@ -123,18 +123,18 @@ const getRuleBasedCameraCount = (data: FormData): number => {
     no: 1,
   });
 
-  const homeEntranceScore = isNumeric(data.safety_gate_entry)
-    ? clampSafetySliderScore(data.safety_gate_entry)
+  const homeEntranceScore = isNumeric(data.home_entrance)
+    ? clampSafetySliderScore(data.home_entrance)
     : null;
   totalPoints += getHomeEntrancePoints(homeEntranceScore);
 
-  const neighborhoodScore = isNumeric(data.safety_driveway_garage)
-    ? clampSafetySliderScore(data.safety_driveway_garage)
+  const neighborhoodScore = isNumeric(data.neighborhood_safety_check)
+    ? clampSafetySliderScore(data.neighborhood_safety_check)
     : null;
   totalPoints += getNeighborhoodPoints(neighborhoodScore);
 
-  const windowsTerraceScore = isNumeric(data.safety_blindspots)
-    ? clampSafetySliderScore(data.safety_blindspots)
+  const windowsTerraceScore = isNumeric(data.windows_terrace)
+    ? clampSafetySliderScore(data.windows_terrace)
     : null;
   totalPoints += getWindowsTerracePoints(windowsTerraceScore);
 

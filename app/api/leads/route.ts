@@ -103,6 +103,14 @@ const toNullableSafetyScore = (value: unknown): number | null =>
     ? clampSafetyScore(value)
     : null;
 
+const LEGACY_SAFETY_ANSWER_KEYS = [
+  "safety_gate_entry",
+  "safety_blindspots",
+  "safety_driveway_garage",
+  "safety_emergency_readiness",
+] as const;
+const LEGACY_ADDITIONAL_NOTES_KEY = "goal_obstacle_other";
+
 const sanitizeLeadContact = (value: unknown): LeadContact | null => {
   if (!isRecord(value)) return null;
 
@@ -118,6 +126,12 @@ const sanitizeLeadContact = (value: unknown): LeadContact | null => {
 
 const sanitizeLeadAnswers = (value: unknown): LeadAnswers | null => {
   if (!isRecord(value)) return null;
+  if (Object.prototype.hasOwnProperty.call(value, LEGACY_ADDITIONAL_NOTES_KEY)) {
+    return null;
+  }
+  for (const key of LEGACY_SAFETY_ANSWER_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(value, key)) return null;
+  }
 
   return {
     property_type: toSafeString(value.property_type),
@@ -139,17 +153,17 @@ const sanitizeLeadAnswers = (value: unknown): LeadAnswers | null => {
     knows_local_emergency_contacts: toNullableBoolean(
       value.knows_local_emergency_contacts
     ),
-    safety_gate_entry: toNullableSafetyScore(value.safety_gate_entry),
-    safety_blindspots: toNullableSafetyScore(value.safety_blindspots),
-    safety_driveway_garage: toNullableSafetyScore(value.safety_driveway_garage),
-    safety_emergency_readiness: toNullableSafetyScore(
-      value.safety_emergency_readiness
+    home_entrance: toNullableSafetyScore(value.home_entrance),
+    windows_terrace: toNullableSafetyScore(value.windows_terrace),
+    neighborhood_safety_check: toNullableSafetyScore(value.neighborhood_safety_check),
+    emergency_readiness_home: toNullableSafetyScore(
+      value.emergency_readiness_home
     ),
     household_stage: toSafeString(value.household_stage),
     desired_outcome: toSafeString(value.desired_outcome),
     goal_obstacle: toSafeString(value.goal_obstacle),
     has_additional_notes: toNullableBoolean(value.has_additional_notes),
-    goal_obstacle_other: toSafeString(value.goal_obstacle_other),
+    additional_notes: toSafeString(value.additional_notes),
     solution: toSafeString(value.solution),
   };
 };

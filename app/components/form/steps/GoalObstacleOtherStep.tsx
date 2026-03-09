@@ -5,26 +5,26 @@ export default function GoalObstacleOtherStep({
   onNext,
   onUpdateField,
 }: GoalObstacleOtherStepProps) {
-  const trimmedOtherText = formData.goal_obstacle_other.trim();
+  const trimmedOtherText = formData.additional_notes.trim();
   const hasAdditionalNotes = formData.has_additional_notes;
   const showNotesInput = hasAdditionalNotes === true;
   const hasTypedNotes = trimmedOtherText.length > 0;
 
   const handleSkipForNow = () => {
     onUpdateField("has_additional_notes", false);
-    onUpdateField("goal_obstacle_other", "");
+    onUpdateField("additional_notes", "");
     onNext();
   };
 
   const handleContinue = () => {
     if (hasTypedNotes) {
-      onUpdateField("goal_obstacle_other", trimmedOtherText);
+      onUpdateField("additional_notes", trimmedOtherText);
       onUpdateField("has_additional_notes", true);
       onNext();
       return;
     }
 
-    onUpdateField("goal_obstacle_other", "");
+    onUpdateField("additional_notes", "");
     onUpdateField("has_additional_notes", false);
     onNext();
   };
@@ -65,16 +65,16 @@ export default function GoalObstacleOtherStep({
       {showNotesInput ? (
         <div className="space-y-3 rounded-2xl border border-[#D7E8F4] bg-[#F8FCFF] p-4">
           <label
-            htmlFor="goal-obstacle-other"
+            htmlFor="additional-notes"
             className="block text-sm font-semibold text-[#2D3748]"
           >
             Additional notes or questions (optional)
           </label>
           <textarea
-            id="goal-obstacle-other"
+            id="additional-notes"
             rows={4}
-            value={formData.goal_obstacle_other}
-            onChange={(event) => onUpdateField("goal_obstacle_other", event.target.value)}
+            value={formData.additional_notes}
+            onChange={(event) => onUpdateField("additional_notes", event.target.value)}
             placeholder="Type your answer here"
             className="w-full resize-y rounded-xl border border-[#D8DDE3] bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus-visible:border-[#0E79B2] focus-visible:ring-4 focus-visible:ring-[#0E79B2]/15"
           />

@@ -94,15 +94,15 @@ const createBaseFormData = (): FormData => ({
   has_smoke_alarm_or_fire_extinguisher: null,
   has_first_aid_or_medicine_ready: null,
   knows_local_emergency_contacts: null,
-  safety_gate_entry: null,
-  safety_blindspots: null,
-  safety_driveway_garage: null,
-  safety_emergency_readiness: null,
+  home_entrance: null,
+  windows_terrace: null,
+  neighborhood_safety_check: null,
+  emergency_readiness_home: null,
   household_stage: "",
   desired_outcome: "",
   goal_obstacle: "",
   has_additional_notes: null,
-  goal_obstacle_other: "",
+  additional_notes: "",
   solution: "",
   first_name: "",
   email: "",
@@ -125,10 +125,10 @@ const createSafetyFormData = (fixture: SafetyFixture): FormData => {
 
   return {
     ...data,
-    safety_gate_entry: fixture.homeSafety,
-    safety_driveway_garage: fixture.neighborhoodSafety,
-    safety_blindspots: fixture.blindspotsSafety,
-    safety_emergency_readiness: fixture.emergencySafety,
+    home_entrance: fixture.homeSafety,
+    neighborhood_safety_check: fixture.neighborhoodSafety,
+    windows_terrace: fixture.blindspotsSafety,
+    emergency_readiness_home: fixture.emergencySafety,
   };
 };
 
@@ -201,7 +201,7 @@ assertEqual(
 const createHomeEntranceBoundaryData = (score: number): FormData => ({
   ...createBaseFormData(),
   property_type: "Condo / Apartment",
-  safety_gate_entry: score,
+  home_entrance: score,
 });
 assertEqual(
   "Camera scoring home entrance boundary: 10 => +2",
@@ -229,7 +229,7 @@ assertEqual(
   estimateCameraPlan({
     ...createBaseFormData(),
     property_type: "Condo / Apartment",
-    safety_driveway_garage: 10,
+    neighborhood_safety_check: 10,
   }).cameraCount,
   2
 );
@@ -238,7 +238,7 @@ assertEqual(
   estimateCameraPlan({
     ...createBaseFormData(),
     property_type: "Condo / Apartment",
-    safety_driveway_garage: 11,
+    neighborhood_safety_check: 11,
   }).cameraCount,
   1
 );
@@ -248,7 +248,7 @@ assertEqual(
   estimateCameraPlan({
     ...createBaseFormData(),
     property_type: "Condo / Apartment",
-    safety_blindspots: 10,
+    windows_terrace: 10,
   }).cameraCount,
   2
 );
@@ -257,7 +257,7 @@ assertEqual(
   estimateCameraPlan({
     ...createBaseFormData(),
     property_type: "Condo / Apartment",
-    safety_blindspots: 11,
+    windows_terrace: 11,
   }).cameraCount,
   1
 );
@@ -267,10 +267,10 @@ const fullCameraScenarioPlan = estimateCameraPlan({
   property_type: "Vacation Home / Beach House",
   locks_windows_gate_at_night: false,
   has_security_cameras: false,
-  safety_gate_entry: 5,
-  safety_driveway_garage: 5,
-  safety_blindspots: 5,
-  safety_emergency_readiness: 5,
+  home_entrance: 5,
+  neighborhood_safety_check: 5,
+  windows_terrace: 5,
+  emergency_readiness_home: 5,
   household_stage: "Family with kids at home",
   desired_outcome: "Protect my home and valuables from break-ins/theft",
   goal_obstacle: "I'm not sure what's right for my home",
@@ -898,7 +898,7 @@ assertEqual(
 const additionalNotesCommentLead = withNodeEnv("production", () =>
   calculateLeadScore({
     ...createBaseFormData(),
-    goal_obstacle_other: "Need weekend install",
+    additional_notes: "Need weekend install",
   })
 );
 assertEqual(
@@ -918,7 +918,7 @@ assertEqual("Lead scoring non-empty mobile adds 2 points", mobileLead.leadScore,
 const commentAndMobileLead = withNodeEnv("production", () =>
   calculateLeadScore({
     ...createBaseFormData(),
-    goal_obstacle_other: "Need weekend install",
+    additional_notes: "Need weekend install",
     mobile: "09123456789",
   })
 );
@@ -931,7 +931,7 @@ assertEqual(
 const whitespaceCommentAndMobileLead = withNodeEnv("production", () =>
   calculateLeadScore({
     ...createBaseFormData(),
-    goal_obstacle_other: "   ",
+    additional_notes: "   ",
     mobile: "   ",
   })
 );
@@ -944,13 +944,13 @@ assertEqual(
 const safetyLowSliderLead = withNodeEnv("production", () =>
   calculateLeadScore({
     ...createBaseFormData(),
-    safety_gate_entry: 20,
+    home_entrance: 20,
   })
 );
 const safetyHighSliderLead = withNodeEnv("production", () =>
   calculateLeadScore({
     ...createBaseFormData(),
-    safety_gate_entry: 90,
+    home_entrance: 90,
   })
 );
 assertEqual(
@@ -964,7 +964,7 @@ const sectionSumLead = withNodeEnv("production", () =>
     ...createBaseFormData(),
     changed_wifi_default_password: false,
     locks_windows_gate_at_night: false,
-    safety_driveway_garage: 20,
+    neighborhood_safety_check: 20,
   })
 );
 assertEqual(

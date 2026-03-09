@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getResultsSummary } from "../../lib/calculations";
+import { buildResultsScoringBreakdown } from "../../lib/resultsScoring";
 import {
   trackBookConsultClick,
   trackChecklistDownloadClick,
@@ -14,8 +15,10 @@ import { BLUEPRINT_CARDS } from "./blueprints";
 import BlueprintCardsGrid from "./components/BlueprintCardsGrid";
 import BlueprintModal from "./components/BlueprintModal";
 import NextStepPanel from "./components/NextStepPanel";
+import PanatagResultsHero, {
+  type PanatagHeroSlice,
+} from "./components/PanatagResultsHero";
 import ResultActionButtons from "./components/ResultActionButtons";
-import ResultsStatsGrid from "./components/ResultsStatsGrid";
 import type {
   BlueprintCardId,
   BlueprintCompletionState,
@@ -182,6 +185,103 @@ const computeBlueprintGainPoints = (
   return gainPointsByBlueprint;
 };
 
+const PANATAG_FALLBACK_SLICE_SHARES = {
+  homeReadiness: 0.1,
+  safety: 0.6,
+  emergency: 0.3,
+} as const;
+
+const getReadableStatusLabel = (severity: "low" | "medium" | "high"): string => {
+  if (severity === "low") return "Good";
+  if (severity === "medium") return "Improve";
+  return "Urgent";
+};
+
+const toSafeNonNegativeNumber = (value: number): number =>
+  Number.isFinite(value) ? Math.max(0, value) : 0;
+
+const buildPanatagHeroSlices = ({
+  homeReadinessScore100,
+  safetyScore100,
+  emergencyScore100,
+  homeReadinessContribution,
+  safetyContribution,
+  emergencyContribution,
+  homeReadinessStatusLabel,
+  safetyStatusLabel,
+  emergencyStatusLabel,
+}: {
+  homeReadinessScore100: number;
+  safetyScore100: number;
+  emergencyScore100: number;
+  homeReadinessContribution: number;
+  safetyContribution: number;
+  emergencyContribution: number;
+  homeReadinessStatusLabel: string;
+  safetyStatusLabel: string;
+  emergencyStatusLabel: string;
+}): PanatagHeroSlice[] => {
+  const sanitizedHomeReadinessContribution = toSafeNonNegativeNumber(
+    homeReadinessContribution,
+  );
+  const sanitizedSafetyContribution = toSafeNonNegativeNumber(safetyContribution);
+  const sanitizedEmergencyContribution =
+    toSafeNonNegativeNumber(emergencyContribution);
+  const totalContribution =
+    sanitizedHomeReadinessContribution +
+    sanitizedSafetyContribution +
+    sanitizedEmergencyContribution;
+  const hasPositiveContribution = totalContribution > 0;
+  const homeReadinessShare = hasPositiveContribution
+    ? sanitizedHomeReadinessContribution / totalContribution
+    : PANATAG_FALLBACK_SLICE_SHARES.homeReadiness;
+  const safetyShare = hasPositiveContribution
+    ? sanitizedSafetyContribution / totalContribution
+    : PANATAG_FALLBACK_SLICE_SHARES.safety;
+  const emergencyShare = hasPositiveContribution
+    ? sanitizedEmergencyContribution / totalContribution
+    : PANATAG_FALLBACK_SLICE_SHARES.emergency;
+
+  return [
+    {
+      id: "safety",
+      label: "Safety",
+      rawScore100: safetyScore100,
+      baseContribution: sanitizedSafetyContribution,
+      shareRatio: safetyShare,
+      weightedValue: sanitizedSafetyContribution,
+      weightedMax: 60,
+      statusLabel: safetyStatusLabel,
+      color: "#2E8B57",
+      trackColor: "#E9F7EF",
+    },
+    {
+      id: "emergency",
+      label: "Emergency",
+      rawScore100: emergencyScore100,
+      baseContribution: sanitizedEmergencyContribution,
+      shareRatio: emergencyShare,
+      weightedValue: sanitizedEmergencyContribution,
+      weightedMax: 30,
+      statusLabel: emergencyStatusLabel,
+      color: "#E4572E",
+      trackColor: "#FFF1EC",
+    },
+    {
+      id: "home_readiness",
+      label: "Home Ready",
+      rawScore100: homeReadinessScore100,
+      baseContribution: sanitizedHomeReadinessContribution,
+      shareRatio: homeReadinessShare,
+      weightedValue: sanitizedHomeReadinessContribution,
+      weightedMax: 10,
+      statusLabel: homeReadinessStatusLabel,
+      color: "#0E79B2",
+      trackColor: "#EAF4FB",
+    },
+  ];
+};
+
 export default function ResultsPage({
   result,
   data,
@@ -215,10 +315,37 @@ export default function ResultsPage({
     data.first_name.trim() || deriveFirstNameFromEmail(data.email);
   const heroGreeting = firstName ? `Hi ${firstName}!` : "Hi there!";
 
-  const { safetyLevel, priority, emergency, panatagRating } = getResultsSummary(
+  const { safetyTotal, emergencyReadinessScore, panatagRating } = getResultsSummary(
     data,
     result,
   );
+  const panatagScoringBreakdown = buildResultsScoringBreakdown({
+    totalRiskScore: safetyTotal,
+    leadTier: result.leadTier,
+    emergencyRiskScore: emergencyReadinessScore,
+    panatagScoreInputs: {
+      leadScore: result.leadScore,
+      safetyTotal,
+      emergencyReadinessScore,
+    },
+  });
+  const panatagHeroSlices = buildPanatagHeroSlices({
+    homeReadinessScore100: panatagScoringBreakdown.panatag.leadScore,
+    safetyScore100: panatagScoringBreakdown.panatag.safetyTotal,
+    emergencyScore100: panatagScoringBreakdown.panatag.emergencyReadinessScore,
+    homeReadinessContribution: panatagScoringBreakdown.panatag.leadContribution,
+    safetyContribution: panatagScoringBreakdown.panatag.safetyContribution,
+    emergencyContribution: panatagScoringBreakdown.panatag.emergencyContribution,
+    homeReadinessStatusLabel: getReadableStatusLabel(
+      panatagScoringBreakdown.outputs.priority.severity,
+    ),
+    safetyStatusLabel: getReadableStatusLabel(
+      panatagScoringBreakdown.outputs.safetyLevel.severity,
+    ),
+    emergencyStatusLabel: getReadableStatusLabel(
+      panatagScoringBreakdown.outputs.emergency.severity,
+    ),
+  });
   const basePanatagRating100 = panatagRating;
   const remainingPanatagGap = Math.max(0, 100 - basePanatagRating100);
   const gainPointsByBlueprint = computeBlueprintGainPoints(remainingPanatagGap);
@@ -407,7 +534,7 @@ export default function ResultsPage({
   };
 
   return (
-    <div className="min-h-screen bg-[#F7FAFC] px-4 py-14 sm:py-16">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#E8F3FB_0%,_#F7FAFC_50%,_#ECF6FF_100%)] px-4 py-14 sm:py-16">
       {showDIY && showDIYPlan && (
         <DIYView
           onBack={() => setShowDIY(false)}
@@ -417,35 +544,21 @@ export default function ResultsPage({
         />
       )}
 
-      <div className="container mx-auto max-w-3xl">
+      <div className="container mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl shadow-xl overflow-hidden"
+          className="overflow-hidden rounded-[2rem] border border-[#D1E4F2] bg-white/95 shadow-[0_35px_90px_-50px_rgba(4,48,79,0.6)]"
         >
-          <div className="bg-linear-to-r from-[#0E79B2] via-[#1B8CCB] to-[#0E79B2] px-5 py-5 text-center text-white sm:px-6">
-            <h1 className="text-2xl font-bold leading-tight sm:text-3xl">
-              <span className="block">{heroGreeting}</span>
-              <span className="mt-1 block text-xl font-semibold leading-tight text-white/95 sm:text-2xl">
-                Your panatag home plan is ready
-              </span>
-            </h1>
-          </div>
+          <div className="space-y-6 p-5 sm:p-6 lg:p-8">
+            <PanatagResultsHero
+              greeting={heroGreeting}
+              baselinePanatagRating100={basePanatagRating100}
+              projectedPanatagRating100={projectedPanatagRating100}
+              slices={panatagHeroSlices}
+            />
 
-          <div className="space-y-5 p-5 sm:p-6">
-            <section>
-              <div className="mt-3">
-                <ResultsStatsGrid
-                  safetyLevel={safetyLevel}
-                  priority={priority}
-                  emergency={emergency}
-                  panatagRating100={projectedPanatagRating100}
-                  cameraCount={result.cameraCount}
-                />
-              </div>
-            </section>
-
-            <div>
+            <section className="rounded-[1.75rem] border border-[#D1E4F2] bg-linear-to-br from-[#FBFDFF] via-white to-[#F1F8FF] p-5 sm:p-6">
               <div className="mb-5 text-center">
                 <span className="inline-flex items-center rounded-full border border-[#0E79B2]/30 bg-[#EAF4FB] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0E79B2]">
                   Step 1 of 2
@@ -454,7 +567,7 @@ export default function ResultsPage({
                   Open Your 3 Safety Insights
                 </h3>
                 <p className="mt-1.5 text-sm font-medium text-slate-700">
-                  Tap a card to see what to do next.
+                  Tap each card to unlock actions that can raise your Panatag score.
                 </p>
               </div>
 
@@ -471,14 +584,14 @@ export default function ResultsPage({
                 onToggleComplete={handleToggleComplete}
                 onAwarenessBookAudit={handleAwarenessBookAudit}
               />
-            </div>
+            </section>
 
             <NextStepPanel cameraCount={result.cameraCount}>
               <a
                 href={panatagChecklistPath}
                 download
                 onClick={handleChecklistDownload}
-                className="flex-1 rounded-xl border border-[#0E79B2]/25 bg-white px-4 py-3 font-bold text-[#0E79B2] shadow-sm transition-colors hover:bg-[#F3F9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/30 flex items-center justify-center gap-2"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#0E79B2]/25 bg-white px-4 py-3 font-bold text-[#0E79B2] shadow-sm transition-colors hover:bg-[#F3F9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/30"
               >
                 Download Panatag Home Checklist
               </a>

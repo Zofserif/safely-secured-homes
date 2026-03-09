@@ -20,9 +20,9 @@ export default function ResultActionButtons({
   onBookVisit,
 }: ResultActionButtonsProps) {
   const primaryButtonClass =
-    "flex-1 rounded-xl bg-linear-to-r from-[#0E79B2] to-[#0b5e8b] px-4 py-3 text-white font-extrabold shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0b5e8b] hover:to-[#09527b] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40 flex items-center justify-center gap-2";
+    "flex flex-1 items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#0E79B2] to-[#095F8E] px-4 py-3 font-extrabold text-white shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0B6C9F] hover:to-[#074E74] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40";
   const secondaryButtonClass =
-    "flex-1 rounded-xl border border-[#0E79B2]/25 bg-white px-4 py-3 font-bold text-[#0E79B2] shadow-sm transition-colors hover:bg-[#F3F9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/30 flex items-center justify-center gap-2";
+    "flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#0E79B2]/25 bg-white px-4 py-3 font-bold text-[#0E79B2] shadow-sm transition-colors hover:bg-[#F3F9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/30";
 
   const actionMap: Record<ResultActionKey, ReactElement | null> = {
     primary_book: (

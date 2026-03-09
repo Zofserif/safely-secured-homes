@@ -1,6 +1,7 @@
 import { animate, useReducedMotion } from "framer-motion";
 import { House, ShieldCheck, Siren } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { SeverityLevel } from "../../../lib/types";
 
 const CHART_SIZE = 320;
 const RING_STROKE_WIDTH = 34;
@@ -44,7 +45,12 @@ const createArcPath = (
   ].join(" ");
 };
 
-type PanatagTierTone = "critical" | "caution" | "strong";
+type PanatagTierTone =
+  | "needs_immediate_attention"
+  | "needs_strengthening"
+  | "on_the_right_track"
+  | "nearly_there"
+  | "strong_foundation";
 
 const getPanatagTierCopy = (
   score100: number,
@@ -54,32 +60,52 @@ const getPanatagTierCopy = (
   description: string;
   tone: PanatagTierTone;
 } => {
-  if (score100 <= 50) {
+  if (score100 <= 20) {
     return {
-      label: "Needs Attention",
-      headline: "Your home needs focused upgrades.",
+      label: "Needs Immediate Attention",
+      headline: "Your home has urgent safety gaps.",
       description:
-        "Address your highest-risk areas first to quickly lift your Panatag score.",
-      tone: "critical",
+        "Open your Insights and prioritize the highest-impact fixes to quickly improve your Panatag Home Rating.",
+      tone: "needs_immediate_attention",
+    };
+  }
+
+  if (score100 <= 40) {
+    return {
+      label: "Needs Strengthening",
+      headline: "Your home needs stronger protection.",
+      description:
+        "Check your Insights and complete the recommended actions to strengthen your Panatag Home Rating.",
+      tone: "needs_strengthening",
+    };
+  }
+
+  if (score100 <= 60) {
+    return {
+      label: "On the Right Track",
+      headline: "Your home has a good start.",
+      description:
+        "Review your Insights and follow the next recommended steps to steadily improve your Panatag Home Rating.",
+      tone: "on_the_right_track",
     };
   }
 
   if (score100 <= 80) {
     return {
-      label: "Improving",
-      headline: "Your home is improving and gaining protection.",
+      label: "Nearly There",
+      headline: "Your home is close to fully protected.",
       description:
-        "Keep building consistency across prevention and emergency readiness to move up.",
-      tone: "caution",
+        "Open your Insights and complete the remaining high-value actions to improve your Panatag Home Rating.",
+      tone: "nearly_there",
     };
   }
 
   return {
-    label: "Panatag Strong",
-    headline: "Your home is operating at a strong Panatag level.",
+    label: "Strong Foundation",
+    headline: "Your home has a strong safety base.",
     description:
-      "Maintain your current habits and continue refining remaining weak spots.",
-    tone: "strong",
+      "Check your Insights for refinement actions to maintain and further improve your Panatag Home Rating.",
+    tone: "strong_foundation",
   };
 };
 
@@ -87,21 +113,43 @@ const TIER_ACCENT_STYLES: Record<
   PanatagTierTone,
   { badge: string; heading: string; body: string }
 > = {
-  critical: {
+  needs_immediate_attention: {
     badge: "border-[#D14343]/40 bg-[#FCEBEC] text-[#B72F2F]",
     heading: "text-[#A22626]",
     body: "text-[#7A2C2C]",
   },
-  caution: {
-    badge: "border-[#F29E1F]/40 bg-[#FFF3E0] text-[#A76400]",
-    heading: "text-[#8A5400]",
-    body: "text-[#7A5D24]",
+  needs_strengthening: {
+    badge: "border-[#E4572E]/40 bg-[#FFF1EC] text-[#B44826]",
+    heading: "text-[#983A1E]",
+    body: "text-[#7F3D28]",
   },
-  strong: {
+  on_the_right_track: {
+    badge: "border-[#D4A017]/40 bg-[#FFF8DE] text-[#9A6A00]",
+    heading: "text-[#815600]",
+    body: "text-[#745B21]",
+  },
+  nearly_there: {
+    badge: "border-[#0E79B2]/35 bg-[#EAF4FB] text-[#0A5C88]",
+    heading: "text-[#0B4B70]",
+    body: "text-[#1D4F6E]",
+  },
+  strong_foundation: {
     badge: "border-[#2E8B57]/40 bg-[#E9F7EF] text-[#1E6F44]",
     heading: "text-[#1B5B37]",
     body: "text-[#2A5C3E]",
   },
+};
+
+const STATUS_PILL_STYLES: Record<SeverityLevel, string> = {
+  low: "border-[#2E8B57]/35 bg-[#E9F7EF] text-[#1F6A42]",
+  medium: "border-[#F29E1F]/40 bg-[#FFF3E0] text-[#A76400]",
+  high: "border-[#D14343]/40 bg-[#FCEBEC] text-[#B72F2F]",
+};
+
+const SEVERITY_PRIORITY_RANK: Record<SeverityLevel, number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
 };
 
 export type PanatagHeroSliceId = "safety" | "emergency" | "home_readiness";
@@ -115,6 +163,7 @@ export type PanatagHeroSlice = {
   weightedValue: number;
   weightedMax: number;
   statusLabel: string;
+  severity: SeverityLevel;
   color: string;
   trackColor: string;
 };
@@ -238,43 +287,48 @@ export default function PanatagResultsHero({
     });
   }, [drawableSweepDegrees, gapDegrees, normalizedSlices, visibleSweepDegrees]);
 
+  const orderedCardSlices = useMemo(
+    () =>
+      segmentedSlices
+        .map((slice, index) => ({ index, slice }))
+        .sort((a, b) => {
+          const severityDiff =
+            SEVERITY_PRIORITY_RANK[a.slice.severity] -
+            SEVERITY_PRIORITY_RANK[b.slice.severity];
+          if (severityDiff !== 0) return severityDiff;
+
+          if (a.slice.rawScore100 !== b.slice.rawScore100) {
+            return a.slice.rawScore100 - b.slice.rawScore100;
+          }
+
+          return a.index - b.index;
+        })
+        .map(({ slice }) => slice),
+    [segmentedSlices],
+  );
+
   return (
-    <section className="relative overflow-hidden rounded-[2rem] border border-[#D1E4F2] bg-linear-to-br from-[#F8FCFF] via-white to-[#EEF8FF] p-5 sm:p-8">
+    <section className="relative overflow-hidden rounded-4xl border border-[#D1E4F2] bg-linear-to-br from-[#F8FCFF] via-white to-[#EEF8FF] p-5 sm:p-8">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-16 -top-20 h-56 w-56 rounded-full bg-[#0E79B2]/12 blur-3xl" />
         <div className="absolute -right-12 bottom-0 h-52 w-52 rounded-full bg-[#2E8B57]/10 blur-3xl" />
       </div>
 
       <div className="relative space-y-5">
-        <div className="grid gap-8 lg:grid-cols-[1.06fr_0.94fr] lg:items-center">
-          <div>
-            <span className="inline-flex items-center rounded-full border border-[#0E79B2]/25 bg-white/90 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0E79B2]">
-              Panatag Home Rating
-            </span>
-
-            <h1 className="mt-3 text-3xl font-extrabold leading-tight text-[#0C2A3A] sm:text-4xl">
-              <span className="block">{greeting}</span>
-              <span className="mt-1 block">Your latest Panatag score is in.</span>
-            </h1>
-
-            <div className="mt-4 rounded-2xl border border-slate-200/80 bg-white/85 p-4 sm:p-5">
-              <span
-                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${tierStyles.badge}`}
-              >
-                {tier.label}
+        <div className="grid gap-6 lg:grid-cols-[1.06fr_0.94fr] lg:grid-rows-[1fr_auto_auto_1fr] lg:gap-x-8 lg:gap-y-3">
+          <div className="order-1 px-4 sm:px-5 lg:col-start-1 lg:row-start-2">
+            <h1 className="leading-tight text-[#0C2A3A]">
+              <span className="block text-5xl font-black tracking-[-0.01em] sm:text-6xl">
+                {greeting}
               </span>
-              <p className={`mt-2 text-xl font-bold sm:text-2xl ${tierStyles.heading}`}>
-                {tier.headline}
-              </p>
-              <p className={`mt-2 text-sm leading-relaxed sm:text-base ${tierStyles.body}`}>
-                {tier.description}
-              </p>
-            </div>
-
+              <span className="mt-2 block text-3xl font-extrabold sm:text-4xl">
+                Your Panatag score is...
+              </span>
+            </h1>
           </div>
 
-          <div className="mx-auto w-full max-w-[25rem]">
-            <div className="relative mx-auto aspect-square w-full max-w-[21rem]">
+          <div className="order-2 mx-auto w-full max-w-100 lg:col-start-2 lg:row-start-1 lg:row-span-4 lg:self-center">
+            <div className="relative mx-auto aspect-square w-full max-w-84">
               <svg
                 width={CHART_SIZE}
                 height={CHART_SIZE}
@@ -320,7 +374,7 @@ export default function PanatagResultsHero({
             </div>
 
             <div className="mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
-              {segmentedSlices.map((slice) => {
+              {orderedCardSlices.map((slice) => {
                 const Icon = ICON_BY_SLICE_ID[slice.id];
 
                 return (
@@ -339,9 +393,11 @@ export default function PanatagResultsHero({
                       <p className="text-[11px] font-bold leading-tight text-[#1A3244] sm:text-xs">
                         {slice.label}
                       </p>
-                      <p className="text-[10px] leading-tight text-slate-500 sm:text-[11px]">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] sm:text-[10px] ${STATUS_PILL_STYLES[slice.severity]}`}
+                      >
                         {slice.statusLabel}
-                      </p>
+                      </span>
                     </div>
 
                     <p className="mt-auto pt-2 text-right text-xs font-bold leading-none text-[#153A53] sm:text-sm">
@@ -351,6 +407,20 @@ export default function PanatagResultsHero({
                 );
               })}
             </div>
+          </div>
+
+          <div className="order-3 rounded-2xl bg-white/75 p-4 sm:p-5 lg:col-start-1 lg:row-start-3">
+            <span
+              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-widest ${tierStyles.badge}`}
+            >
+              {tier.label}
+            </span>
+            <p className={`mt-2 text-xl font-bold sm:text-2xl ${tierStyles.heading}`}>
+              {tier.headline}
+            </p>
+            <p className={`mt-2 text-sm leading-relaxed sm:text-base ${tierStyles.body}`}>
+              {tier.description}
+            </p>
           </div>
         </div>
       </div>

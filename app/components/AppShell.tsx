@@ -809,6 +809,7 @@ export default function AppShell({
           onPrimaryCtaClick={handleHomePrimaryCtaClick}
           hideCta={view === "results" || (reportsSoldOut && !hasExistingPlan)}
           hasExistingPlan={hasExistingPlan}
+          centerLogo={view === "results"}
           visibilityMode={view === "home" ? "home_hero_reveal" : "default"}
           heroSectionId="home-hero"
         />

@@ -9,7 +9,7 @@ import {
 import { panatagChecklistPath } from "../../lib/site";
 import { deriveFirstNameFromEmail } from "../../lib/contactName";
 import { SOLUTION_OPTIONS } from "../../lib/formOptions";
-import type { CalculationResult, FormData } from "../../lib/types";
+import type { CalculationResult, FormData, SeverityLevel } from "../../lib/types";
 import { RESULTS_BOOK_VISIT_URL, RESULTS_CALL_HREF } from "./constants";
 import { BLUEPRINT_CARDS } from "./blueprints";
 import BlueprintCardsGrid from "./components/BlueprintCardsGrid";
@@ -210,6 +210,9 @@ const buildPanatagHeroSlices = ({
   homeReadinessStatusLabel,
   safetyStatusLabel,
   emergencyStatusLabel,
+  homeReadinessSeverity,
+  safetySeverity,
+  emergencySeverity,
 }: {
   homeReadinessScore100: number;
   safetyScore100: number;
@@ -220,6 +223,9 @@ const buildPanatagHeroSlices = ({
   homeReadinessStatusLabel: string;
   safetyStatusLabel: string;
   emergencyStatusLabel: string;
+  homeReadinessSeverity: SeverityLevel;
+  safetySeverity: SeverityLevel;
+  emergencySeverity: SeverityLevel;
 }): PanatagHeroSlice[] => {
   const sanitizedHomeReadinessContribution = toSafeNonNegativeNumber(
     homeReadinessContribution,
@@ -252,6 +258,7 @@ const buildPanatagHeroSlices = ({
       weightedValue: sanitizedSafetyContribution,
       weightedMax: 60,
       statusLabel: safetyStatusLabel,
+      severity: safetySeverity,
       color: "#2E8B57",
       trackColor: "#E9F7EF",
     },
@@ -264,6 +271,7 @@ const buildPanatagHeroSlices = ({
       weightedValue: sanitizedEmergencyContribution,
       weightedMax: 30,
       statusLabel: emergencyStatusLabel,
+      severity: emergencySeverity,
       color: "#E4572E",
       trackColor: "#FFF1EC",
     },
@@ -276,6 +284,7 @@ const buildPanatagHeroSlices = ({
       weightedValue: sanitizedHomeReadinessContribution,
       weightedMax: 10,
       statusLabel: homeReadinessStatusLabel,
+      severity: homeReadinessSeverity,
       color: "#0E79B2",
       trackColor: "#EAF4FB",
     },
@@ -339,12 +348,15 @@ export default function ResultsPage({
     homeReadinessStatusLabel: getReadableStatusLabel(
       panatagScoringBreakdown.outputs.priority.severity,
     ),
+    homeReadinessSeverity: panatagScoringBreakdown.outputs.priority.severity,
     safetyStatusLabel: getReadableStatusLabel(
       panatagScoringBreakdown.outputs.safetyLevel.severity,
     ),
+    safetySeverity: panatagScoringBreakdown.outputs.safetyLevel.severity,
     emergencyStatusLabel: getReadableStatusLabel(
       panatagScoringBreakdown.outputs.emergency.severity,
     ),
+    emergencySeverity: panatagScoringBreakdown.outputs.emergency.severity,
   });
   const basePanatagRating100 = panatagRating;
   const remainingPanatagGap = Math.max(0, 100 - basePanatagRating100);
@@ -534,7 +546,7 @@ export default function ResultsPage({
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#E8F3FB_0%,_#F7FAFC_50%,_#ECF6FF_100%)] px-4 py-14 sm:py-16">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#E8F3FB_0%,#F7FAFC_50%,#ECF6FF_100%)] px-4 py-14 sm:py-16">
       {showDIY && showDIYPlan && (
         <DIYView
           onBack={() => setShowDIY(false)}
@@ -548,7 +560,7 @@ export default function ResultsPage({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="overflow-hidden rounded-[2rem] border border-[#D1E4F2] bg-white/95 shadow-[0_35px_90px_-50px_rgba(4,48,79,0.6)]"
+          className="overflow-hidden rounded-4xl border border-[#D1E4F2] bg-white/95 shadow-[0_35px_90px_-50px_rgba(4,48,79,0.6)]"
         >
           <div className="space-y-6 p-5 sm:p-6 lg:p-8">
             <PanatagResultsHero

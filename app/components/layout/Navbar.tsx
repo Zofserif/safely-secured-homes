@@ -11,6 +11,7 @@ export default function Navbar({
   onPrimaryCtaClick,
   hideCta = false,
   hasExistingPlan = false,
+  centerLogo = false,
   visibilityMode = "default",
   heroSectionId = "home-hero",
 }: {
@@ -21,6 +22,7 @@ export default function Navbar({
   ) => void;
   hideCta?: boolean;
   hasExistingPlan?: boolean;
+  centerLogo?: boolean;
   visibilityMode?: NavbarVisibilityMode;
   heroSectionId?: string;
 }){
@@ -28,10 +30,24 @@ export default function Navbar({
   const ctaLabel = hasExistingPlan ? "SEE MY PLAN" : "GET MY PANATAG RATING NOW";
   const ctaMobileLabel = hasExistingPlan ? "SEE MY PLAN" : "GET MY PANATAG RATING NOW";
   const [isOpen, setIsOpen] = useState(false);
+  const hasMobileMenuContent = !hideCta;
+  const isMobileMenuOpen = isOpen && hasMobileMenuContent;
   const [isVisible, setIsVisible] = useState(
     () => visibilityMode !== "home_hero_reveal"
   );
   const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    if (hasMobileMenuContent || !isOpen) return;
+
+    const closeFrame = window.requestAnimationFrame(() => {
+      setIsOpen(false);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(closeFrame);
+    };
+  }, [hasMobileMenuContent, isOpen]);
 
   useEffect(() => {
     if (visibilityMode === "home_hero_reveal") {
@@ -63,7 +79,7 @@ export default function Navbar({
       if (
         currentScrollY > lastScrollY.current &&
         currentScrollY > 100 &&
-        !isOpen
+        !isMobileMenuOpen
       ) {
         setIsVisible(false);
       } else {
@@ -75,17 +91,21 @@ export default function Navbar({
     lastScrollY.current = window.scrollY;
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [heroSectionId, isOpen, visibilityMode]);
+  }, [heroSectionId, isMobileMenuOpen, visibilityMode]);
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 block ${isVisible ? 'translate-y-0' : '-translate-y-full'} ${isOpen ? 'bg-white' : 'bg-white/90 backdrop-blur-xl border-b border-[#BEE9E8]/30 shadow-sm'}`}>
-      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 block ${isVisible ? 'translate-y-0' : '-translate-y-full'} ${isMobileMenuOpen ? 'bg-white' : 'bg-white/90 backdrop-blur-xl border-b border-[#BEE9E8]/30 shadow-sm'}`}>
+      <div
+        className={`container mx-auto flex items-center px-4 py-2.5 sm:px-6 md:py-4 ${
+          centerLogo ? "justify-center" : "justify-between"
+        }`}
+      >
         <div className="flex items-center gap-2 cursor-pointer group" onClick={() => onNavigate('home')}>
           {/* Logo */}
           <img 
             src="/assets/img/Logo/navbar banner.png"
             alt="Safely Secured Homes Logo" 
-            className="h-8 md:h-10 w-auto"
+            className="h-7 md:h-10 w-auto"
             onError={(e) => {
               // Fallback to text if image fails to load (e.g., in preview or without public folder setup)
               e.currentTarget.style.display = 'none';
@@ -118,36 +138,36 @@ export default function Navbar({
           )}
         </div>
 
-        <div className="md:hidden">
-          <button onClick={() => setIsOpen(!isOpen)} className="text-[#2D3748] p-2">
-            {isOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
-          </button>
-        </div>
+        {hasMobileMenuContent && (
+          <div className="md:hidden">
+            <button onClick={() => setIsOpen(!isOpen)} className="text-[#2D3748] p-2">
+              {isMobileMenuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
+            </button>
+          </div>
+        )}
       </div>
 
-      {isOpen && (
+      {isMobileMenuOpen && (
         <motion.div 
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           className="md:hidden bg-white border-b shadow-2xl"
         >
           <div className="p-6 flex flex-col gap-6">
-            {!hideCta && (
-              <button 
-                onClick={() => {
-                  if (onPrimaryCtaClick) {
-                    onPrimaryCtaClick(ctaTarget, "navbar_primary");
-                    setIsOpen(false);
-                    return;
-                  }
-                  onNavigate(ctaTarget);
+            <button 
+              onClick={() => {
+                if (onPrimaryCtaClick) {
+                  onPrimaryCtaClick(ctaTarget, "navbar_primary");
                   setIsOpen(false);
-                }}
-                className="w-full bg-[#0E79B2] text-white py-4 rounded-xl font-bold shadow-lg text-lg"
-              >
-                {ctaMobileLabel}
-              </button>
-            )}
+                  return;
+                }
+                onNavigate(ctaTarget);
+                setIsOpen(false);
+              }}
+              className="w-full bg-[#0E79B2] text-white py-4 rounded-xl font-bold shadow-lg text-lg"
+            >
+              {ctaMobileLabel}
+            </button>
           </div>
         </motion.div>
       )}

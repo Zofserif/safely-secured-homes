@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Eye, ShieldCheck, Siren, X } from "lucide-react";
-import { RESULTS_BOOK_VISIT_URL } from "../constants";
+import { RESULTS_CALL_HREF } from "../constants";
 import type { BlueprintCard } from "../types";
+import CallUsNowCta from "./CallUsNowCta";
 
 type BlueprintModalProps = {
   activeBlueprint: BlueprintCard | null;
   onClose: () => void;
   isCompleted: boolean;
   onToggleComplete: () => void;
-  onAwarenessBookAudit: () => void;
+  onAwarenessCallNow: () => void;
 };
 
 const UNLOCK_PROGRESS_THRESHOLD = 0.98;
@@ -59,7 +60,7 @@ export default function BlueprintModal({
   onClose,
   isCompleted,
   onToggleComplete,
-  onAwarenessBookAudit,
+  onAwarenessCallNow,
 }: BlueprintModalProps) {
   const isAwarenessBlueprint = activeBlueprint?.id === "awareness";
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -126,13 +127,11 @@ export default function BlueprintModal({
     ? 100
     : Math.min(99, Math.round(scrollProgress * 100));
   const lockedInstruction = isAwarenessBlueprint
-    ? "Review to the end to unlock booking."
+    ? "Review to the end to unlock calling."
     : "Review to the end to unlock completion.";
-  const lockedActionLabel = isAwarenessBlueprint
-    ? "Book My Free Security System Consultation"
-    : isCompleted
-      ? "Mark as Incomplete"
-      : "Mark as Complete";
+  const completionActionLabel = isCompleted
+    ? "Mark as Incomplete"
+    : "Mark as Complete";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center px-4 py-5 sm:items-center sm:py-8">
@@ -206,15 +205,11 @@ export default function BlueprintModal({
           {showFooterAction ? (
             isAwarenessBlueprint ? (
               <div className="space-y-2">
-                <a
-                  href={RESULTS_BOOK_VISIT_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={onAwarenessBookAudit}
-                  className="inline-flex w-full items-center justify-center rounded-2xl bg-linear-to-r from-[#0E79B2] to-[#146E9E] px-5 py-4 text-base font-extrabold tracking-wide text-white shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0b5e8b] hover:to-[#0b5e8b] md:text-lg"
-                >
-                  Book My Free Security System Consultation
-                </a>
+                <CallUsNowCta
+                  href={RESULTS_CALL_HREF}
+                  onClick={onAwarenessCallNow}
+                  className="px-5 py-4 md:text-lg"
+                />
                 <p className="text-center text-xs font-medium leading-relaxed text-slate-500">
                   No pressure. No generic package.
                   <br />
@@ -252,13 +247,19 @@ export default function BlueprintModal({
                   {lockedInstruction}
                 </p>
               </div>
-              <button
-                type="button"
-                disabled
-                className="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-bold text-slate-400"
-              >
-                {lockedActionLabel}
-              </button>
+              {isAwarenessBlueprint ? (
+                <CallUsNowCta
+                  disabled
+                />
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-bold text-slate-400"
+                >
+                  {completionActionLabel}
+                </button>
+              )}
             </div>
           )}
         </div>

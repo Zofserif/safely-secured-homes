@@ -42,7 +42,7 @@ export default function PreventionBlueprint() {
           items={[
             "Add a video doorbell",
             "Add a door sensor",
-            "Secure apps with 2FA",
+            "Upgrade to a smart lock",
           ]}
         />
       </div>

@@ -63,6 +63,7 @@ This project uses a hybrid media strategy:
 5. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
    This table also stores `first_name`, `email`, and `mobile` for each generated link.
 6. Run `supabase/leads.sql` to align `leads` with canonical payload storage and remove legacy summary columns.
+7. Run `supabase/newsletter_email_only.sql` to migrate `newsletter_subscribers` to name-only (`name` + `email`) storage.
 
 ### Environment variables
 

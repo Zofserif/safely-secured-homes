@@ -37,3 +37,8 @@ export const deriveFirstNameFromEmail = (email: string): string => {
 
   return normalizeFirstName(firstToken ?? "");
 };
+
+export const deriveNameFromEmail = (
+  email: string,
+  fallback = "there",
+): string => deriveFirstNameFromEmail(email) || fallback;

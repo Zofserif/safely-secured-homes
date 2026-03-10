@@ -1,9 +1,15 @@
 /* eslint-disable react/no-unescaped-entities */
-import { ChevronDown, Download, Hammer, HardDrive, Phone, Server, Video, Wrench, X } from "lucide-react";
+import { ChevronDown, Download, Hammer, HardDrive, Server, Video, Wrench, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { deriveFirstNameFromEmail } from "../../lib/contactName";
 import type { CalculationResult, FormData } from "../../lib/types";
+import {
+  RESULTS_CALL_CTA_IMAGE_ALT,
+  RESULTS_CALL_CTA_IMAGE_SRC,
+  RESULTS_CALL_CTA_LABEL,
+} from "./constants";
+import CallUsNowCta from "./components/CallUsNowCta";
 
 export default function DIYView({
   onBack,
@@ -324,6 +330,9 @@ export default function DIYView({
     const logoUrl = encodeURI("/assets/img/Logo/navbar banner.png");
     const coverageImageUrl = encodeURI("/assets/img/DIYView Assets/Camera Coverage and deadZones.png");
     const lightingImageUrl = encodeURI("/assets/img/DIYView Assets/solar light.png");
+    const callCtaImageUrl = encodeURI(RESULTS_CALL_CTA_IMAGE_SRC);
+    const callCtaImageAlt = escapeHtml(RESULTS_CALL_CTA_IMAGE_ALT);
+    const callCtaLabel = escapeHtml(RESULTS_CALL_CTA_LABEL);
     const safeFirstName = escapeHtml(firstName);
     const storageRowsMarkup = storageRows
       .map((row) => `
@@ -721,12 +730,31 @@ export default function DIYView({
             .callout {
               margin-top: 10px;
               padding: 10px 12px;
-              border-radius: 10px;
-              border: 1px solid #cbd5e0;
-              background: #f7fafc;
+              border-radius: 12px;
+              border: 1px solid #d1e4f2;
+              background: #f3f9fd;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            }
+            .callout-avatar {
+              width: 44px;
+              height: 44px;
+              border-radius: 999px;
+              overflow: hidden;
+              border: 1px solid #c6dded;
+              background: #fff;
+              flex-shrink: 0;
+            }
+            .callout-avatar img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+              object-position: 50% 18%;
+            }
+            .callout-text {
               font-weight: 700;
-              text-align: center;
-              color: #2d3748;
+              color: #0b4b70;
             }
             .note {
               font-size: 11px;
@@ -765,7 +793,12 @@ export default function DIYView({
           <div class="section">
             <div class="section-title">Done-For-You Option</div>
             <p>Need help? For us to design, install, and care for everything end-to-end.</p>
-            <div class="callout">Call Us Now 0995 995 9229</div>
+            <div class="callout">
+              <span class="callout-avatar">
+                <img src="${callCtaImageUrl}" alt="${callCtaImageAlt}" />
+              </span>
+              <span class="callout-text">${callCtaLabel}</span>
+            </div>
           </div>
           <div class="section">
             <div class="section-title">DIY Shopping Shortcuts</div>
@@ -815,44 +848,50 @@ export default function DIYView({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white w-full max-w-6xl rounded-2xl shadow-2xl relative overflow-hidden">
-        <button onClick={onBack} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B4B70]/55 p-4 backdrop-blur-[3px]">
+      <div className="relative w-full max-w-6xl overflow-hidden rounded-[1.75rem] border border-[#D1E4F2] bg-linear-to-b from-[#F9FCFF] via-white to-[#F2F8FF] shadow-[0_35px_90px_-50px_rgba(4,48,79,0.6)] ring-1 ring-[#DCEBF7]">
+        <button
+          onClick={onBack}
+          className="absolute right-4 top-4 z-20 rounded-full border border-[#D1E4F2] bg-white/95 p-2 text-[#145276] shadow-sm transition-colors hover:bg-[#F3F9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/35"
+        >
           <X className="w-6 h-6" />
         </button>
 
-        <div className="max-h-[85vh] overflow-y-auto p-6">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-[#BEE9E8] rounded-full flex items-center justify-center mx-auto mb-4">
-              <Hammer className="w-8 h-8 text-[#0E79B2]" />
+        <div className="max-h-[85vh] overflow-y-auto px-5 py-6 sm:px-6 sm:py-7">
+          <div className="mb-6 rounded-2xl border border-[#D1E4F2] bg-linear-to-r from-[#EAF4FB] via-[#F7FBFF] to-[#EAF4FB] px-5 py-5 text-center">
+            <span className="inline-flex items-center rounded-full border border-[#0E79B2]/30 bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0E79B2]">
+              DIY Security Plan
+            </span>
+            <div className="mx-auto mt-3 flex h-16 w-16 items-center justify-center rounded-full border border-[#0E79B2]/30 bg-white/85">
+              <Hammer className="h-8 w-8 text-[#0E79B2]" />
             </div>
-            <h2 className="text-2xl font-bold text-[#2D3748]">Hi {firstName}!</h2>
-            <p className="text-slate-600 text-sm mt-1">Your tailored home security plan</p>
-            <p className="text-slate-500 text-xs mt-2">DIY checklist, placements, and setup guidance.</p>
+            <h2 className="mt-3 text-2xl font-bold text-[#102A3D]">Hi {firstName}!</h2>
+            <p className="mt-1 text-sm text-slate-700">Your tailored home security plan</p>
+            <p className="mt-2 text-xs text-slate-500">DIY checklist, placements, and setup guidance.</p>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <div className="bg-[#F7FAFC] p-3 rounded-xl border border-slate-100 text-center">
+          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-[#D1E4F2] bg-[#F7FBFF] p-3 text-center">
               <Video className="w-5 h-5 mx-auto text-[#0E79B2] mb-1" />
-              <div className="text-lg font-bold text-[#2D3748]">{result.cameraCount}</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Cameras</div>
+              <div className="text-lg font-bold text-[#102A3D]">{result.cameraCount}</div>
+              <div className="text-[10px] uppercase tracking-wider text-slate-500">Cameras</div>
             </div>
-            <div className="bg-[#F7FAFC] p-3 rounded-xl border border-slate-100 text-center">
+            <div className="rounded-xl border border-[#D1E4F2] bg-[#F7FBFF] p-3 text-center">
               <Server className="w-5 h-5 mx-auto text-[#63B3ED] mb-1" />
-              <div className="text-lg font-bold text-[#2D3748]">{result.nvrChannel}</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Ch. NVR</div>
+              <div className="text-lg font-bold text-[#102A3D]">{result.nvrChannel}</div>
+              <div className="text-[10px] uppercase tracking-wider text-slate-500">Ch. NVR</div>
             </div>
-            <div className="bg-[#F7FAFC] p-3 rounded-xl border border-slate-100 text-center">
+            <div className="rounded-xl border border-[#D1E4F2] bg-[#F7FBFF] p-3 text-center">
               <HardDrive className="w-5 h-5 mx-auto text-[#2E8B57] mb-1" />
-              <div className="text-lg font-bold text-[#2D3748]">{storageSummaryLabel}</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Storage</div>
+              <div className="text-lg font-bold text-[#102A3D]">{storageSummaryLabel}</div>
+              <div className="text-[10px] uppercase tracking-wider text-slate-500">Storage</div>
             </div>
           </div>
 
           <div className="mb-6">
             <button
               onClick={handleExportPdf}
-              className="w-full bg-white text-[#0E79B2] border border-[#0E79B2]/30 py-3 rounded-lg font-bold text-sm hover:bg-[#F7FAFC] transition-colors flex items-center justify-center gap-2"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#0E79B2]/30 bg-white py-3 text-sm font-bold text-[#0E79B2] transition-colors hover:bg-[#F7FAFC]"
             >
               <Download className="w-4 h-4" /> Export as PDF
             </button>
@@ -862,27 +901,30 @@ export default function DIYView({
             {steps.map((step, index) => {
               const isOpen = openStep === index;
               return (
-                <div key={step.title} className="border border-slate-200 rounded-xl bg-white overflow-hidden">
+                <div
+                  key={step.title}
+                  className="overflow-hidden rounded-2xl border border-[#D1E4F2] bg-white/95 shadow-[0_18px_34px_-28px_rgba(4,48,79,0.45)]"
+                >
                   <button
                     type="button"
                     onClick={() => setOpenStep(isOpen ? null : index)}
                     aria-expanded={isOpen}
                     aria-controls={`diy-step-${index}`}
-                    className="w-full flex items-start justify-between gap-4 p-4 text-left"
+                    className="flex w-full items-start justify-between gap-4 bg-white px-4 py-4 text-left sm:px-5"
                   >
                     <div className="flex gap-3">
-                      <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center font-bold text-slate-500 shrink-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF4FB] font-bold text-[#0E79B2]">
                         {index + 1}
                       </div>
                       <div>
-                        <h4 className="font-bold text-sm text-[#2D3748]">{step.title}</h4>
-                        <p className="text-xs text-slate-500">{step.summary}</p>
+                        <h4 className="text-sm font-bold text-[#102A3D]">{step.title}</h4>
+                        <p className="text-xs text-slate-600">{step.summary}</p>
                       </div>
                     </div>
-                    <ChevronDown className={`w-4 h-4 text-slate-400 mt-1 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`mt-1 h-4 w-4 text-[#0E79B2] transition-transform ${isOpen ? "rotate-180" : ""}`} />
                   </button>
                   {isOpen && (
-                    <div id={`diy-step-${index}`} className="px-4 pb-4">
+                    <div id={`diy-step-${index}`} className="border-t border-[#E1EDF8] bg-[#FCFEFF] px-4 pb-4 pt-4 sm:px-5">
                       {step.content}
                     </div>
                   )}
@@ -891,37 +933,35 @@ export default function DIYView({
             })}
           </div>
 
-          <div className="bg-[#FFB300]/10 border border-[#FFB300]/30 rounded-2xl p-6 mb-6">
-            <h4 className="font-bold text-[#2D3748] mb-2 flex items-center gap-2">
-              <Wrench className="w-4 h-4 text-[#FFB300]" /> Done-For-You Option
+          <div className="mb-6 rounded-2xl border border-[#E2D3A4] bg-[#F8F2E3] p-5 sm:p-6">
+            <h4 className="mb-2 flex items-center gap-2 font-bold text-[#2D3748]">
+              <Wrench className="h-4 w-4 text-[#B38200]" /> Done-For-You Option
             </h4>
-            <p className="text-[#2D3748] mb-4 text-sm">
+            <p className="mb-4 text-sm text-[#2D3748]">
               For us to design, install, and care for everything end-to-end, click the button.
             </p>
-            <button
+            <CallUsNowCta
               onClick={onCall}
-              className="w-full bg-[#0E79B2] text-white py-3 rounded-lg font-bold text-sm hover:bg-[#0b5e8b] transition-colors flex items-center justify-center gap-2"
-            >
-              <Phone className="w-4 h-4" /> Call Us Now 0995 995 9229
-            </button>
+              className="py-3.5"
+            />
           </div>
 
-          <div className="border border-slate-200 rounded-xl bg-white overflow-hidden">
+          <div className="overflow-hidden rounded-2xl border border-[#D1E4F2] bg-white/95 shadow-[0_18px_34px_-28px_rgba(4,48,79,0.45)]">
             <button
               type="button"
               onClick={() => setShowShortcuts((prev) => !prev)}
               aria-expanded={showShortcuts}
               aria-controls="diy-shortcuts"
-              className="w-full flex items-start justify-between gap-4 p-4 text-left"
+              className="flex w-full items-start justify-between gap-4 px-4 py-4 text-left sm:px-5"
             >
               <div>
-                <h4 className="font-bold text-sm text-[#2D3748]">DIY Shopping Shortcuts</h4>
-                <p className="text-xs text-slate-500">Quick links to the gear we recommend.</p>
+                <h4 className="text-sm font-bold text-[#102A3D]">DIY Shopping Shortcuts</h4>
+                <p className="text-xs text-slate-600">Quick links to the gear we recommend.</p>
               </div>
-              <ChevronDown className={`w-4 h-4 text-slate-400 mt-1 transition-transform ${showShortcuts ? "rotate-180" : ""}`} />
+              <ChevronDown className={`mt-1 h-4 w-4 text-[#0E79B2] transition-transform ${showShortcuts ? "rotate-180" : ""}`} />
             </button>
             {showShortcuts && (
-              <div id="diy-shortcuts" className="px-4 pb-4 text-xs text-slate-600 space-y-3">
+              <div id="diy-shortcuts" className="space-y-3 border-t border-[#E1EDF8] bg-[#FCFEFF] px-4 pb-4 pt-4 text-xs text-slate-600 sm:px-5">
                 <ul className="list-disc pl-5 space-y-1">
                   {shoppingShortcuts.map((item) => (
                     <li key={item.href}>

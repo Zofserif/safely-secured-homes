@@ -512,7 +512,7 @@ export default function ResultsPage({
     setActiveBlueprintId(null);
   };
 
-  const handleAwarenessBookAudit = () => {
+  const handleAwarenessCallNow = () => {
     setAwarenessPendingState(awarenessPendingStorageKey);
     setActiveBlueprintId(null);
   };
@@ -592,7 +592,7 @@ export default function ResultsPage({
                 onClose={() => setActiveBlueprintId(null)}
                 isCompleted={isActiveBlueprintCompleted}
                 onToggleComplete={handleToggleComplete}
-                onAwarenessBookAudit={handleAwarenessBookAudit}
+                onAwarenessCallNow={handleAwarenessCallNow}
               />
             </section>
 

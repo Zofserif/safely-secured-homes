@@ -176,10 +176,10 @@ export const createInitialFormData = (mode: WizardMode): FormData => {
   return {
     ...baseFormData,
     first_name: normalizeFirstName(
-      lead.first_name || deriveFirstNameFromEmail(lead.email || "")
+      lead.name || deriveFirstNameFromEmail(lead.email || "")
     ),
     email: lead.email || "",
-    mobile: lead.mobile || "",
+    mobile: "",
   };
 };
 

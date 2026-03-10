@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
-  deriveFirstNameFromEmail,
+  deriveNameFromEmail,
   normalizeEmail,
 } from "../../lib/contactName";
 
@@ -17,10 +17,8 @@ const toSafeString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
 
 type InsertNewsletterSubscriber = {
-  first_name: string;
-  last_name: string;
+  name: string;
   email: string;
-  contact_number: string;
   source: string;
 };
 
@@ -33,31 +31,11 @@ const sanitizeInsertBody = (value: unknown): InsertNewsletterSubscriber | null =
   const email = normalizeEmail(toSafeString(value.email));
   if (!email) return null;
 
-  const firstName = toSafeString(value.first_name) || deriveFirstNameFromEmail(email);
-
   return {
-    first_name: firstName,
-    last_name: toSafeString(value.last_name),
+    name: deriveNameFromEmail(email),
     email,
-    contact_number: toSafeString(value.contact_number),
     source: toSafeString(value.source) || "newsletter",
   };
-};
-
-const isNameConstraintError = (error: {
-  code?: string;
-  message?: string;
-  details?: string;
-}): boolean => {
-  if (error.code === "23502") return true;
-  if (error.code !== "23514") return false;
-
-  const errorText = `${error.message ?? ""} ${error.details ?? ""}`.toLowerCase();
-  return (
-    errorText.includes("first_name") ||
-    errorText.includes("last_name") ||
-    errorText.includes("name")
-  );
 };
 
 export async function POST(req: Request) {
@@ -104,28 +82,9 @@ export async function POST(req: Request) {
     );
   }
 
-  let { error } = await supabase
+  const { error } = await supabase
     .from("newsletter_subscribers")
     .insert(insertBody);
-
-  if (
-    error &&
-    !insertBody.last_name &&
-    isNameConstraintError({
-      code: error.code ?? undefined,
-      message: error.message,
-      details: error.details ?? undefined,
-    })
-  ) {
-    const retryBody: InsertNewsletterSubscriber = {
-      ...insertBody,
-      last_name: "Subscriber",
-    };
-    const retryResult = await supabase
-      .from("newsletter_subscribers")
-      .insert(retryBody);
-    error = retryResult.error;
-  }
 
   if (error) {
     console.error("Newsletter insert failed:", error);

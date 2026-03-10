@@ -1,34 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, X } from "lucide-react";
 import { trackNewsletterLeadGenerated } from "../../lib/analytics";
-import {
-  deriveFirstNameFromEmail,
-  normalizeEmail,
-} from "../../lib/contactName";
+import { deriveNameFromEmail, normalizeEmail } from "../../lib/contactName";
 import { sendChecklistEmail } from "../../lib/email";
 import { writeNewsletterLead } from "../../lib/newsletterLead";
 import { panatagChecklistUrl } from "../../lib/site";
 
 type Status = "idle" | "submitting" | "success" | "error";
-const TOTAL_STEPS = 2;
 
 export default function NewsletterChecklistModal() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState(0);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [checklistEmailSent, setChecklistEmailSent] = useState<boolean | null>(
     null
   );
-  const [values, setValues] = useState({
-    email: "",
-    contactNumber: "",
-  });
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -42,11 +34,10 @@ export default function NewsletterChecklistModal() {
   }, [open]);
 
   const resetForm = () => {
-    setStep(0);
     setStatus("idle");
     setError(null);
     setChecklistEmailSent(null);
-    setValues({ email: "", contactNumber: "" });
+    setEmail("");
   };
 
   const openModal = () => {
@@ -61,68 +52,24 @@ export default function NewsletterChecklistModal() {
     }
   };
 
-  const updateValue = (field: keyof typeof values, value: string) => {
-    setValues((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const validateStep = () => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (status === "submitting") return;
     setError(null);
-    if (step === 0) {
-      const email = values.email.trim();
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setError("Please enter a valid email address.");
-        return false;
-      }
-    }
-    if (step === 1) {
-      const rawContact = values.contactNumber.trim();
-      const digitsOnly = rawContact.replace(/\D/g, "");
-      let normalizedContact = digitsOnly;
-      if (digitsOnly.startsWith("63") && digitsOnly.length === 12) {
-        normalizedContact = `0${digitsOnly.slice(2)}`;
-      } else if (digitsOnly.startsWith("9") && digitsOnly.length === 10) {
-        normalizedContact = `0${digitsOnly}`;
-      }
-      const phPhoneRegex = /^09\d{9}$/;
-      if (!phPhoneRegex.test(normalizedContact)) {
-        setError("Use 09XXXXXXXXX or +63 9xx-xxx-xxxx.");
-        return false;
-      }
-    }
-    return true;
-  };
-
-  const handleNext = () => {
-    if (!validateStep()) return;
-    setStep((prev) => Math.min(prev + 1, TOTAL_STEPS - 1));
-  };
-
-  const handleBack = () => {
-    setError(null);
-    setStep((prev) => Math.max(prev - 1, 0));
-  };
-
-  const handleSubmit = async () => {
-    if (!validateStep()) return;
     setStatus("submitting");
-    setError(null);
+    setChecklistEmailSent(null);
 
-    const email = normalizeEmail(values.email);
-    const firstName = deriveFirstNameFromEmail(email);
-    const digitsOnly = values.contactNumber.trim().replace(/\D/g, "");
-    let normalizedContact = digitsOnly;
-    if (digitsOnly.startsWith("63") && digitsOnly.length === 12) {
-      normalizedContact = `0${digitsOnly.slice(2)}`;
-    } else if (digitsOnly.startsWith("9") && digitsOnly.length === 10) {
-      normalizedContact = `0${digitsOnly}`;
+    const normalizedEmail = normalizeEmail(email);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      setError("Please enter a valid email address.");
+      setStatus("error");
+      return;
     }
+    const name = deriveNameFromEmail(normalizedEmail);
 
     const payload = {
-      first_name: firstName,
-      last_name: "",
-      email,
-      contact_number: normalizedContact,
+      email: normalizedEmail,
       source: "newsletter",
     };
 
@@ -140,11 +87,6 @@ export default function NewsletterChecklistModal() {
           setStatus("error");
           return;
         }
-        if (response.status === 400 && errorData?.code === "23514") {
-          setError("Please use a valid PH phone number.");
-          setStatus("error");
-          return;
-        }
         setError(errorData?.error || "Newsletter signup failed.");
         setStatus("error");
         return;
@@ -154,9 +96,7 @@ export default function NewsletterChecklistModal() {
       try {
         await sendChecklistEmail({
           to_email: payload.email,
-          firstname: payload.first_name,
-          last_name: payload.last_name,
-          mobile: normalizedContact,
+          name,
           checklist_name: "Panatag Home Checklist",
           checklist_url: panatagChecklistUrl,
         });
@@ -166,10 +106,8 @@ export default function NewsletterChecklistModal() {
       }
 
       writeNewsletterLead({
-        first_name: payload.first_name,
-        last_name: payload.last_name,
+        name,
         email: payload.email,
-        mobile: normalizedContact,
       });
       setChecklistEmailSent(checklistSent);
       trackNewsletterLeadGenerated(
@@ -209,16 +147,6 @@ export default function NewsletterChecklistModal() {
           ></div>
           <div
             className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-[#E2E0D8] p-6 sm:p-8"
-            onKeyDown={(event) => {
-              if (event.key !== "Enter" || event.shiftKey) return;
-              if (status === "success" || status === "submitting") return;
-              event.preventDefault();
-              if (step < TOTAL_STEPS - 1) {
-                handleNext();
-              } else {
-                handleSubmit();
-              }
-            }}
           >
             <button
               type="button"
@@ -228,17 +156,6 @@ export default function NewsletterChecklistModal() {
             >
               <X className="w-5 h-5 text-slate-500" />
             </button>
-            <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold">
-                Step {step + 1} of {TOTAL_STEPS}
-              </p>
-            </div>
-            <div className="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#0E79B2] transition-all"
-                style={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
-              ></div>
-            </div>
 
             {status === "success" ? (
               <div className="mt-8 text-center">
@@ -262,42 +179,24 @@ export default function NewsletterChecklistModal() {
                 </button>
               </div>
             ) : (
-              <>
-                <div className="mt-6 space-y-4">
-                  {step === 0 && (
-                    <div>
-                      <label className="block text-sm font-semibold text-[#2D3748] mb-2">
-                        Email address
-                      </label>
-                      <input
-                        value={values.email}
-                        onChange={(event) =>
-                          updateValue("email", event.target.value)
-                        }
-                        type="email"
-                        className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
-                        placeholder="you@email.com"
-                      />
-                    </div>
-                  )}
-
-                  {step === 1 && (
-                    <div>
-                      <label className="block text-sm font-semibold text-[#2D3748] mb-2">
-                        Contact number
-                      </label>
-                      <input
-                        value={values.contactNumber}
-                        onChange={(event) =>
-                          updateValue("contactNumber", event.target.value)
-                        }
-                        type="tel"
-                        inputMode="tel"
-                        className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
-                        placeholder="+63 9xx-xxx-xxxx"
-                      />
-                    </div>
-                  )}
+              <form onSubmit={handleSubmit} className="mt-6">
+                <div>
+                  <label className="block text-sm font-semibold text-[#2D3748] mb-2">
+                    Email address
+                  </label>
+                  <input
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      if (error) setError(null);
+                    }}
+                    type="email"
+                    required
+                    autoComplete="email"
+                    autoFocus
+                    className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
+                    placeholder="you@email.com"
+                  />
                 </div>
 
                 {error && (
@@ -324,35 +223,18 @@ export default function NewsletterChecklistModal() {
                   .
                 </p>
 
-                <div className="mt-6 flex items-center justify-between">
+                <div className="mt-6 flex items-center justify-center">
                   <button
-                    type="button"
-                    onClick={handleBack}
-                    disabled={step === 0 || status === "submitting"}
-                    className="text-sm font-semibold text-slate-500 disabled:opacity-40"
+                    type="submit"
+                    disabled={status === "submitting"}
+                    className="inline-flex items-center justify-center px-6 py-2 rounded-full bg-[#0E79B2] text-white font-semibold shadow-md shadow-[#0E79B2]/20 disabled:opacity-70"
                   >
-                    Back
+                    {status === "submitting"
+                      ? "Submitting..."
+                      : "Get my checklist now"}
                   </button>
-                  {step < TOTAL_STEPS - 1 ? (
-                    <button
-                      type="button"
-                      onClick={handleNext}
-                      className="inline-flex items-center justify-center px-6 py-2 rounded-full bg-[#0E79B2] text-white font-semibold shadow-md shadow-[#0E79B2]/20"
-                    >
-                      Continue
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={status === "submitting"}
-                      className="inline-flex items-center justify-center px-6 py-2 rounded-full bg-[#0E79B2] text-white font-semibold shadow-md shadow-[#0E79B2]/20 disabled:opacity-70"
-                    >
-                      {status === "submitting" ? "Submitting..." : "Submit"}
-                    </button>
-                  )}
                 </div>
-              </>
+              </form>
             )}
           </div>
         </div>

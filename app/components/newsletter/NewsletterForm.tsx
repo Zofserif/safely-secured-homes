@@ -4,10 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { trackNewsletterLeadGenerated } from "../../lib/analytics";
-import {
-  deriveFirstNameFromEmail,
-  normalizeEmail,
-} from "../../lib/contactName";
+import { deriveNameFromEmail, normalizeEmail } from "../../lib/contactName";
 import { sendChecklistEmail } from "../../lib/email";
 import { panatagChecklistUrl } from "../../lib/site";
 
@@ -15,7 +12,6 @@ export default function NewsletterForm() {
   const [status, setStatus] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
-  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [checklistEmailSent, setChecklistEmailSent] = useState<boolean | null>(
     null
@@ -24,37 +20,17 @@ export default function NewsletterForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (status === "submitting") return;
-    setPhoneError(null);
     setSubmitError(null);
     setChecklistEmailSent(null);
 
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const rawContact = String(formData.get("contactNumber") || "").trim();
     const email = normalizeEmail(String(formData.get("email") || ""));
-    const firstName = deriveFirstNameFromEmail(email);
-    const digitsOnly = rawContact.replace(/\D/g, "");
-    let normalizedContact = digitsOnly;
-    if (digitsOnly.startsWith("63") && digitsOnly.length === 12) {
-      normalizedContact = `0${digitsOnly.slice(2)}`;
-    } else if (digitsOnly.startsWith("9") && digitsOnly.length === 10) {
-      normalizedContact = `0${digitsOnly}`;
-    }
+    const name = deriveNameFromEmail(email);
     const payload = {
-      first_name: firstName,
-      last_name: "",
       email,
-      contact_number: normalizedContact,
       source: "newsletter",
     };
-
-    const phPhoneRegex = /^09\d{9}$/;
-    if (!phPhoneRegex.test(normalizedContact)) {
-      setPhoneError(
-        "Use 09XXXXXXXXX, +639XXXXXXXXX, or +63 9xx-xxx-xxxx."
-      );
-      return;
-    }
 
     setStatus("submitting");
 
@@ -72,11 +48,6 @@ export default function NewsletterForm() {
           setStatus("error");
           return;
         }
-        if (response.status === 400 && errorData?.code === "23514") {
-          setSubmitError("Please use a valid PH phone number.");
-          setStatus("error");
-          return;
-        }
         if (response.status === 400 && errorData?.code === "23502") {
           setSubmitError("Please fill in all required fields.");
           setStatus("error");
@@ -91,9 +62,7 @@ export default function NewsletterForm() {
       try {
         await sendChecklistEmail({
           to_email: payload.email,
-          firstname: payload.first_name,
-          last_name: payload.last_name,
-          mobile: normalizedContact,
+          name,
           checklist_name: "Panatag Home Checklist",
           checklist_url: panatagChecklistUrl,
         });
@@ -145,28 +114,6 @@ export default function NewsletterForm() {
             className="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none"
             placeholder="you@email.com"
           />
-        </div>
-
-        <div>
-          <label
-            htmlFor="newsletter-contact"
-            className="block text-sm font-semibold text-[#2D3748] mb-2"
-          >
-            Contact number
-          </label>
-          <input
-            id="newsletter-contact"
-            name="contactNumber"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            required
-            className={`w-full p-3 rounded-xl border bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 outline-none ${phoneError ? "border-red-500" : "border-slate-300"}`}
-            placeholder="09xx xxx xxxx"
-          />
-          {phoneError && (
-            <p className="text-xs text-red-600 mt-1">{phoneError}</p>
-          )}
         </div>
 
         <button

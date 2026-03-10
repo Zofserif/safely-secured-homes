@@ -1,5 +1,6 @@
-import { Calendar, FileText, Phone } from "lucide-react";
+import { Calendar, FileText } from "lucide-react";
 import Image from "next/image";
+import CallUsNowCta from "./CallUsNowCta";
 import type { Step2CtaDecision } from "../step2CtaDecision";
 
 type ResultActionButtonsProps = {
@@ -19,6 +20,7 @@ export default function ResultActionButtons({
     "flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#0E79B2] to-[#095F8E] px-4 py-4 font-extrabold text-white shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0B6C9F] hover:to-[#074E74] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40";
   const bookButtonClass =
     "w-full max-w-[760px] min-h-[108px] items-center justify-center px-4 py-5 text-left sm:px-5";
+  const callButtonClass = "w-full max-w-[760px] min-h-[108px] px-4 py-5 sm:px-5";
 
   const actionConfigByDecision = {
     diy: {
@@ -28,7 +30,6 @@ export default function ResultActionButtons({
     },
     call: {
       label: "Call Us Now",
-      icon: Phone,
       onClick: onCallUs,
     },
     book: {
@@ -39,8 +40,8 @@ export default function ResultActionButtons({
   } as const;
 
   const actionConfig = actionConfigByDecision[decision.action];
-  const ActionIcon = actionConfig.icon;
   const isBookAction = decision.action === "book";
+  const isCallAction = decision.action === "call";
   const followupMessage =
     decision.followupChannel === "call"
       ? "A professional will call you shortly."
@@ -48,11 +49,11 @@ export default function ResultActionButtons({
 
   return (
     <div className="flex w-full flex-col items-center gap-2">
-      <button
-        onClick={actionConfig.onClick}
-        className={`${primaryButtonClass} ${isBookAction ? bookButtonClass : ""}`}
-      >
-        {isBookAction ? (
+      {isBookAction ? (
+        <button
+          onClick={actionConfig.onClick}
+          className={`${primaryButtonClass} ${bookButtonClass}`}
+        >
           <span className="flex w-full items-center justify-between gap-4">
             <span className="flex min-w-0 items-center gap-4">
               <span className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/45 bg-white/20">
@@ -75,12 +76,20 @@ export default function ResultActionButtons({
             </span>
             <Calendar className="h-6 w-6 shrink-0 text-white/95" />
           </span>
-        ) : (
-          <>
-            <ActionIcon className="w-5 h-5" /> {actionConfig.label}
-          </>
-        )}
-      </button>
+        </button>
+      ) : isCallAction ? (
+        <CallUsNowCta
+          onClick={actionConfig.onClick}
+          className={callButtonClass}
+        />
+      ) : (
+        <button
+          onClick={actionConfig.onClick}
+          className={primaryButtonClass}
+        >
+          <FileText className="w-5 h-5" /> {actionConfig.label}
+        </button>
+      )}
       {decision.showFollowup && (
         <p className="w-full text-center text-xs font-medium text-slate-600">
           {followupMessage}

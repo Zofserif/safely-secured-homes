@@ -2,13 +2,8 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getResultsSummary } from "../../lib/calculations";
 import { buildResultsScoringBreakdown } from "../../lib/resultsScoring";
-import {
-  trackBookConsultClick,
-  trackChecklistDownloadClick,
-} from "../../lib/analytics";
-import { panatagChecklistPath } from "../../lib/site";
+import { trackBookConsultClick } from "../../lib/analytics";
 import { deriveFirstNameFromEmail } from "../../lib/contactName";
-import { SOLUTION_OPTIONS } from "../../lib/formOptions";
 import type { CalculationResult, FormData, SeverityLevel } from "../../lib/types";
 import { RESULTS_BOOK_VISIT_URL, RESULTS_CALL_HREF } from "./constants";
 import { createBlueprintCards } from "./blueprints";
@@ -26,6 +21,7 @@ import type {
   BlueprintModalState,
 } from "./types";
 import DIYView from "./DIYView";
+import { resolveStep2CtaDecision } from "./step2CtaDecision";
 
 const BLUEPRINT_COMPLETION_STORAGE_PREFIX =
   "ssh_results_blueprint_completion_v1:";
@@ -295,8 +291,12 @@ export default function ResultsPage({
   data: FormData;
 }) {
   const [showDIY, setShowDIY] = useState(false);
-  const showDIYPlan =
-    data.solution === SOLUTION_OPTIONS.DIY_HOME_SAFETY_PLAN;
+  const step2CtaDecision = resolveStep2CtaDecision({
+    leadTier: result.leadTier,
+    solution: data.solution,
+    mobile: data.mobile,
+  });
+  const isEligibleForDIYView = step2CtaDecision.action === "diy";
   const normalizedEmail = data.email.trim().toLowerCase() || "unknown";
   const shouldAutoCompleteAwareness = hasAuditBookedSignal();
   const completionStorageKey = `${BLUEPRINT_COMPLETION_STORAGE_PREFIX}${normalizedEmail}`;
@@ -499,13 +499,6 @@ export default function ResultsPage({
     window.open(RESULTS_BOOK_VISIT_URL, "_blank", "noopener,noreferrer");
   };
 
-  const handleChecklistDownload = () => {
-    trackChecklistDownloadClick("results", undefined, {
-      cta_location: "next_step_panel",
-      target_path: panatagChecklistPath,
-    });
-  };
-
   const handleToggleComplete = () => {
     if (!activeBlueprintId) return;
     const blueprintId = activeBlueprintId;
@@ -539,9 +532,20 @@ export default function ResultsPage({
     setActiveBlueprintId(id);
   };
 
+  useEffect(() => {
+    if (isEligibleForDIYView || !showDIY) return;
+    const timeoutId = window.setTimeout(() => {
+      setShowDIY(false);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isEligibleForDIYView, showDIY]);
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#E8F3FB_0%,#F7FAFC_50%,#ECF6FF_100%)] px-4 py-14 sm:py-16">
-      {showDIY && showDIYPlan && (
+      {showDIY && isEligibleForDIYView && (
         <DIYView
           onBack={() => setShowDIY(false)}
           onCall={handleCallUs}
@@ -593,18 +597,12 @@ export default function ResultsPage({
             </section>
 
             <NextStepPanel cameraCount={result.cameraCount}>
-              <a
-                href={panatagChecklistPath}
-                download
-                onClick={handleChecklistDownload}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#0E79B2]/25 bg-white px-4 py-3 font-bold text-[#0E79B2] shadow-sm transition-colors hover:bg-[#F3F9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/30"
-              >
-                Download Panatag Home Checklist
-              </a>
               <ResultActionButtons
-                leadTier={result.leadTier}
-                showDIYPlan={showDIYPlan}
-                onShowDIY={() => setShowDIY(true)}
+                decision={step2CtaDecision}
+                onShowDIY={() => {
+                  if (!isEligibleForDIYView) return;
+                  setShowDIY(true);
+                }}
                 onCallUs={handleCallUs}
                 onBookVisit={handleBookVisit}
               />

@@ -2,24 +2,24 @@ import type { FormEvent, KeyboardEvent } from "react";
 import { normalizeFirstName } from "../../../lib/contactName";
 import type { IntroStepProps } from "../types";
 
-const FIRST_NAME_MAX_LENGTH = 50;
+const NAME_MAX_LENGTH = 50;
 
 export default function IntroStep({
   formData,
   onNext,
   onUpdateField,
 }: IntroStepProps) {
-  const trimmedFirstName = formData.first_name.trim();
-  const canContinue = trimmedFirstName.length > 0;
+  const trimmedName = formData.name.trim();
+  const canContinue = trimmedName.length > 0;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canContinue) return;
-    const normalizedFirstName = normalizeFirstName(trimmedFirstName).slice(
+    const normalizedName = normalizeFirstName(trimmedName).slice(
       0,
-      FIRST_NAME_MAX_LENGTH
+      NAME_MAX_LENGTH
     );
-    onUpdateField("first_name", normalizedFirstName);
+    onUpdateField("name", normalizedName);
     onNext();
   };
 
@@ -39,11 +39,11 @@ export default function IntroStep({
       <form onSubmit={handleSubmit} className="mx-auto max-w-xl space-y-4">
         <input
           type="text"
-          placeholder="First Name"
-          maxLength={FIRST_NAME_MAX_LENGTH}
+          placeholder="Name"
+          maxLength={NAME_MAX_LENGTH}
           className="w-full scroll-mt-[35vh] rounded-2xl border border-[#D8DDE3] bg-white px-4 py-3.5 text-center text-slate-800 shadow-sm outline-none transition focus-visible:border-[#0E79B2] focus-visible:ring-4 focus-visible:ring-[#0E79B2]/15"
-          value={formData.first_name}
-          onChange={(event) => onUpdateField("first_name", event.target.value)}
+          value={formData.name}
+          onChange={(event) => onUpdateField("name", event.target.value)}
           onKeyDown={handleNameInputKeyDown}
         />
 

@@ -1,11 +1,11 @@
-import { sendLeadEmail } from "./email";
+import { sendEmail } from "./email";
 import type { CalculationResult, FormData } from "./types";
 
-type LeadAnswers = Omit<FormData, "first_name" | "email" | "mobile">;
+type LeadAnswers = Omit<FormData, "name" | "email" | "mobile">;
 
 type LeadCreateBody = {
   contact: {
-    first_name: string;
+    name: string;
     email: string;
     mobile: string;
   };
@@ -42,7 +42,7 @@ const buildLeadAnswers = (data: FormData): LeadAnswers => ({
 
 const buildLeadCreateBody = (data: FormData, source?: string): LeadCreateBody => ({
   contact: {
-    first_name: toSafeString(data.first_name),
+    name: toSafeString(data.name),
     email: toSafeString(data.email),
     mobile: toSafeString(data.mobile),
   },
@@ -52,24 +52,14 @@ const buildLeadCreateBody = (data: FormData, source?: string): LeadCreateBody =>
   },
 });
 
-export async function submitToEmail(
-  data: FormData,
-  result: CalculationResult,
-  source?: string
-) {
+export async function submitToEmail(data: FormData) {
   const templateParams = {
     to_email: data.email,
-    firstname: data.first_name,
-    mobile: data.mobile,
-    lead_tier: result.leadTier,
-    camera_count: result.cameraCount,
-    property_type: data.property_type,
-    recommendations: result.recommendations.join(", "),
-    lead_source: source ?? "website",
+    name: data.name,
   };
 
   try {
-    await sendLeadEmail(templateParams);
+    await sendEmail("lead", templateParams);
     console.log("Email sent successfully via EmailJS");
   } catch (error) {
     console.error("Email submission failed:", error);

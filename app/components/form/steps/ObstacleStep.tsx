@@ -7,7 +7,7 @@ export default function ObstacleStep({
   onNext,
   onUpdateField,
 }: ObstacleStepProps) {
-  const firstName = resolveFirstName(formData.first_name);
+  const firstName = resolveFirstName(formData.name);
 
   return (
     <div className="space-y-5">

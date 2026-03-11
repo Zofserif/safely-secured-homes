@@ -1,28 +1,36 @@
 import { createClient } from "@supabase/supabase-js";
-import { siteUrl } from "./site";
+import type { BlogEmailAssetSource } from "./blogPostContent";
 
-export type BlogEmailAssets = {
-  subject: string;
-  previewText: string;
-  plainTextBody: string;
-  htmlBody: string;
-};
+export type {
+  BlogEmailAssetDiagnostics,
+  BlogEmailAssets,
+  LegacyBlogPostContentRow,
+} from "./blogPostContent";
+export {
+  buildBlogCtaHtml,
+  convertLegacyBlogPostToStoredFields,
+  getBlogEmailAssetDiagnostics,
+  getBlogEmailAssets,
+  renderBlogContentHtml,
+} from "./blogPostContent";
 
-export type BlogPost = {
+export type BlogPost = BlogEmailAssetSource & {
+  id: string;
   slug: string;
-  title: string;
-  excerpt: string;
-  publishedAt: string;
-  markdownContent: string;
-  emailAssets: BlogEmailAssets;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type BlogPostRow = {
+  id: string | null;
   slug: string | null;
+  subject: string | null;
   title: string | null;
-  excerpt: string | null;
-  published_at: string | null;
-  content_markdown?: unknown;
+  content: string | null;
+  preview_text: string | null;
+  cta: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 type SupabaseError = {
@@ -38,405 +46,74 @@ const supabase =
     ? createClient(supabaseUrl, serviceRoleKey)
     : null;
 
-const BLOG_POST_SELECT_WITH_MARKDOWN =
-  "slug,title,excerpt,published_at,content_markdown";
-const BLOG_POST_SELECT_FALLBACK = "slug,title,excerpt,published_at";
 const BLOG_TABLE = "blog_posts";
-const EMAIL_LOGO_TARGET_URL = "https://safelysecuredhomes.com";
-const EMAIL_UNSUBSCRIBE_URL_TEMPLATE =
-  "https://safelysecuredhomes.com/unsubscribe?email={{email}}";
-const DEFAULT_FOOTER_LOGO_PATH =
-  "https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/brand-assets/sssh-banner-logo.png";
-
-const toAbsoluteUrl = (value: string) => {
-  if (value.startsWith("http://") || value.startsWith("https://")) {
-    return value;
-  }
-  if (value.startsWith("/")) {
-    return new URL(value, siteUrl).toString();
-  }
-  return "";
-};
-
-const FOOTER_LOGO_URL = (() => {
-  const envLogoUrl = process.env.NEXT_PUBLIC_BRAND_FOOTER_LOGO_URL?.trim();
-  if (envLogoUrl) {
-    const resolvedEnvLogoUrl = toAbsoluteUrl(envLogoUrl);
-    if (resolvedEnvLogoUrl) return resolvedEnvLogoUrl;
-  }
-  return new URL(DEFAULT_FOOTER_LOGO_PATH, siteUrl).toString();
-})();
+const BLOG_POST_SELECT =
+  "id,slug,subject,title,content,preview_text,cta,created_at,updated_at";
+const BLOG_POST_REQUIRED_COLUMNS = [
+  "subject",
+  "content",
+  "preview_text",
+  "cta",
+  "created_at",
+  "updated_at",
+];
+let hasWarnedMissingBlogPostSchema = false;
 
 const isMissingTableError = (error: SupabaseError | null | undefined) =>
   error?.code === "PGRST205";
 
-const isMissingColumnError = (
+const isMissingBlogPostSchemaError = (
   error: SupabaseError | null | undefined,
-  columns: string[],
 ) => {
   if (!error) return false;
-  if (error.code === "PGRST204" || error.code === "42703") return true;
+  if (error.code === "42703" || error.code === "PGRST204") return true;
   const message = error.message?.toLowerCase() ?? "";
-  return columns.some((column) => message.includes(column.toLowerCase()));
+  return BLOG_POST_REQUIRED_COLUMNS.some((column) =>
+    message.includes(column.toLowerCase()),
+  );
 };
 
-const parseMarkdownContent = (value: unknown) =>
+const warnMissingBlogPostSchema = () => {
+  if (hasWarnedMissingBlogPostSchema) return;
+  hasWarnedMissingBlogPostSchema = true;
+  console.warn(
+    'Supabase "blog_posts" is still on the legacy schema. Run supabase/blog_posts.sql, then npm run backfill:blog-posts, and rerun supabase/blog_posts.sql to finish the migration.',
+  );
+};
+
+const parseOptionalText = (value: unknown) =>
   typeof value === "string" ? value.trim() : "";
 
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
-const stripMarkdownSyntax = (value: string) =>
-  value
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, "$1")
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
-    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
-    .replace(/^\s{0,3}>\s?/gm, "")
-    .replace(/^\s*[-*+]\s+/gm, "")
-    .replace(/^\s*\d+\.\s+/gm, "")
-    .replace(/[*_~]+/g, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-
-const HEADING_2_STYLE =
-  "font-weight:bold;margin:0 0 12px 0;font-size:22px;line-height:1.35;";
-const HEADING_3_STYLE =
-  "font-weight:bold;margin:0 0 10px 0;font-size:19px;line-height:1.4;";
-const PARAGRAPH_STYLE = "margin:0 0 14px 0;font-weight:normal;";
-const BLOCKQUOTE_STYLE =
-  "margin:0 0 14px 0;padding:0 0 0 12px;border-left:4px solid #BEE9E8;";
-const UNORDERED_LIST_STYLE =
-  "margin:0 0 14px 24px;padding:0;list-style-type:disc;";
-const ORDERED_LIST_STYLE =
-  "margin:0 0 14px 24px;padding:0;list-style-type:decimal;";
-const LIST_ITEM_STYLE = "margin-bottom:8px;";
-
-const parseInlineMarkdownForEmail = (value: string) => {
-  let html = escapeHtml(value);
-
-  html = html.replace(
-    /`([^`]+)`/g,
-    (_match, code: string) =>
-      `<code style="font-family:Courier, monospace;background-color:#EEF2F7;padding:1px 4px;border-radius:4px;">${code}</code>`,
-  );
-  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  html = html.replace(/__([^_]+)__/g, "<strong>$1</strong>");
-  html = html.replace(/(^|[^*])\*([^*]+)\*([^*]|$)/g, "$1<em>$2</em>$3");
-  html = html.replace(/(^|[^_])_([^_]+)_([^_]|$)/g, "$1<em>$2</em>$3");
-  html = html.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-    (_match, label: string, href: string) =>
-      `<a href="${escapeHtml(href)}" target="_blank" style="color:#0E79B2;text-decoration:underline;">${label}</a>`,
-  );
-
-  return html;
-};
-
-const flushParagraphBlock = (paragraphLines: string[], blocks: string[]) => {
-  if (paragraphLines.length === 0) return;
-
-  const paragraphContent = parseInlineMarkdownForEmail(
-    paragraphLines.join(" ").trim(),
-  );
-  blocks.push(`<p style="${PARAGRAPH_STYLE}">${paragraphContent}</p>`);
-  paragraphLines.length = 0;
-};
-
-const flushListBlock = (
-  listType: "ul" | "ol" | null,
-  listItems: string[],
-  blocks: string[],
-) => {
-  if (!listType || listItems.length === 0) return;
-
-  const listTag = listType === "ul" ? "ul" : "ol";
-  const listStyle =
-    listType === "ul" ? UNORDERED_LIST_STYLE : ORDERED_LIST_STYLE;
-  const itemsHtml = listItems
-    .map(
-      (item) =>
-        `<li style="${LIST_ITEM_STYLE}">${parseInlineMarkdownForEmail(item)}</li>`,
-    )
-    .join("");
-
-  blocks.push(`<${listTag} style="${listStyle}">${itemsHtml}</${listTag}>`);
-  listItems.length = 0;
-};
-
-const renderMarkdownToEmailHtml = (markdownContent: string) => {
-  const normalizedMarkdown = markdownContent.trim();
-  if (!normalizedMarkdown) return "";
-
-  const lines = normalizedMarkdown.split(/\r?\n/);
-  const blocks: string[] = [];
-  const paragraphLines: string[] = [];
-  const listItems: string[] = [];
-  let listType: "ul" | "ol" | null = null;
-
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-
-    if (!trimmedLine) {
-      flushParagraphBlock(paragraphLines, blocks);
-      flushListBlock(listType, listItems, blocks);
-      listType = null;
-      continue;
-    }
-
-    const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.+)$/);
-    if (headingMatch) {
-      flushParagraphBlock(paragraphLines, blocks);
-      flushListBlock(listType, listItems, blocks);
-      listType = null;
-
-      const headingDepth = headingMatch[1].length;
-      const headingText = parseInlineMarkdownForEmail(headingMatch[2]);
-      const headingTag = headingDepth <= 2 ? "h3" : "h4";
-      const headingStyle =
-        headingDepth <= 2 ? HEADING_2_STYLE : HEADING_3_STYLE;
-      blocks.push(
-        `<${headingTag} style="${headingStyle}">${headingText}</${headingTag}>`,
-      );
-      continue;
-    }
-
-    const unorderedListMatch = trimmedLine.match(/^[-*+]\s+(.+)$/);
-    if (unorderedListMatch) {
-      flushParagraphBlock(paragraphLines, blocks);
-      if (listType !== "ul") {
-        flushListBlock(listType, listItems, blocks);
-        listType = "ul";
-      }
-      listItems.push(unorderedListMatch[1].trim());
-      continue;
-    }
-
-    const orderedListMatch = trimmedLine.match(/^\d+\.\s+(.+)$/);
-    if (orderedListMatch) {
-      flushParagraphBlock(paragraphLines, blocks);
-      if (listType !== "ol") {
-        flushListBlock(listType, listItems, blocks);
-        listType = "ol";
-      }
-      listItems.push(orderedListMatch[1].trim());
-      continue;
-    }
-
-    const blockquoteMatch = trimmedLine.match(/^>\s+(.+)$/);
-    if (blockquoteMatch) {
-      flushParagraphBlock(paragraphLines, blocks);
-      flushListBlock(listType, listItems, blocks);
-      listType = null;
-      blocks.push(
-        `<blockquote style="${BLOCKQUOTE_STYLE}"><p style="${PARAGRAPH_STYLE}">${parseInlineMarkdownForEmail(
-          blockquoteMatch[1],
-        )}</p></blockquote>`,
-      );
-      continue;
-    }
-
-    flushListBlock(listType, listItems, blocks);
-    listType = null;
-    paragraphLines.push(trimmedLine);
-  }
-
-  flushParagraphBlock(paragraphLines, blocks);
-  flushListBlock(listType, listItems, blocks);
-
-  return blocks.join("");
-};
-
-const buildBlogHtmlBody = ({
-  title,
-  excerpt,
-  markdownContent,
-}: {
-  title: string;
-  excerpt: string;
-  markdownContent: string;
-}) => {
-  const excerptHtml = excerpt.trim()
-    ? `<div style="padding:16px 24px 0px 24px">${renderMarkdownToEmailHtml(
-        excerpt,
-      )}</div>`
-    : "";
-
-  const markdownHtml = renderMarkdownToEmailHtml(markdownContent);
-
-  const contentHtml = markdownHtml
-    ? `<div style="padding:16px 24px 0px 24px">${markdownHtml}</div>`
-    : "";
-
-  return `<!doctype html>
-<html>
-  <body>
-    <div
-      style='background-color:#F5F5F5;color:#262626;font-family:"Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;font-size:16px;font-weight:400;letter-spacing:0.15008px;line-height:1.5;margin:0;padding:32px 0;min-height:100%;width:100%'
-    >
-      <table
-        align="center"
-        width="100%"
-        style="margin:0 auto;max-width:600px;background-color:#FFFFFF"
-        role="presentation"
-        cellspacing="0"
-        cellpadding="0"
-        border="0"
-      >
-        <tbody>
-          <tr style="width:100%">
-            <td>
-              <h2
-                style="font-weight:bold;text-align:center;margin:0;font-size:24px;padding:16px 24px 16px 24px"
-              >
-                ${escapeHtml(title)}
-              </h2>
-              ${excerptHtml}
-              ${contentHtml}
-              <div
-                style="padding:20px 24px 8px 24px;text-align:center;border-top:1px solid #E5E7EB;margin-top:20px"
-              >
-                <a
-                  href="${escapeHtml(EMAIL_LOGO_TARGET_URL)}"
-                  style="text-decoration:none"
-                  target="_blank"
-                  ><img
-                    alt="Safely Secured Homes Logo"
-                    src="${escapeHtml(FOOTER_LOGO_URL)}"
-                    width="220"
-                    style="width:220px;max-width:100%;height:auto;outline:none;border:none;text-decoration:none;vertical-align:middle;display:inline-block"
-                /></a>
-              </div>
-              <div
-                style="font-size:12px;font-weight:bold;text-align:center;padding:0px 24px 0px 24px"
-              >
-                Safely Secured Homes, Candelaria, Quezon, 4323, Philippines
-              </div>
-              <div
-                style="font-size:12px;text-align:center;padding:0px 24px 0px 24px"
-              >
-                <a
-                  href="${escapeHtml(EMAIL_UNSUBSCRIBE_URL_TEMPLATE)}"
-                  style="color:#262626"
-                >
-                  Unsubscribe
-                </a>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </body>
-</html>`;
-};
-
-const getPreviewText = (excerpt: string, markdownContent: string) => {
-  if (excerpt.trim()) return excerpt.trim();
-
-  const normalizedMarkdown = stripMarkdownSyntax(markdownContent);
-  if (!normalizedMarkdown) {
-    return "Practical home security guidance for safer, smarter homes.";
-  }
-
-  return normalizedMarkdown.length > 160
-    ? `${normalizedMarkdown.slice(0, 157)}...`
-    : normalizedMarkdown;
-};
-
-const buildBlogPlainTextBody = ({
-  slug,
-  title,
-  excerpt,
-  markdownContent,
-}: {
-  slug: string;
-  title: string;
-  excerpt: string;
-  markdownContent: string;
-}) => {
-  const articleUrl = `${siteUrl}/blog/${slug}`;
-  const lines: string[] = [];
-
-  lines.push(title);
-  lines.push("");
-
-  if (excerpt.trim()) {
-    lines.push(stripMarkdownSyntax(excerpt));
-    lines.push("");
-  }
-
-  const plainArticleContent = stripMarkdownSyntax(markdownContent);
-  if (plainArticleContent) {
-    lines.push(plainArticleContent);
-    lines.push("");
-  }
-
-  lines.push("Read the full article:");
-  lines.push(articleUrl);
-  lines.push("");
-  lines.push("Safely Secured Homes");
-
-  return lines.join("\n");
-};
-
-const buildEmailAssetsFromContent = ({
-  slug,
-  title,
-  excerpt,
-  markdownContent,
-}: {
-  slug: string;
-  title: string;
-  excerpt: string;
-  markdownContent: string;
-}): BlogEmailAssets => ({
-  subject: title,
-  previewText: getPreviewText(excerpt, markdownContent),
-  plainTextBody: buildBlogPlainTextBody({ slug, title, excerpt, markdownContent }),
-  htmlBody: buildBlogHtmlBody({ title, excerpt, markdownContent }),
-});
-
-const sortByPublishedDateDesc = (a: BlogPost, b: BlogPost) =>
-  new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+const sortByCreatedDateDesc = (a: BlogPost, b: BlogPost) =>
+  new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 
 const normalizeBlogPost = (row: BlogPostRow): BlogPost | null => {
-  const slug = typeof row.slug === "string" ? row.slug.trim() : "";
-  const title = typeof row.title === "string" ? row.title.trim() : "";
-  if (!slug || !title) return null;
+  const id = parseOptionalText(row.id);
+  const slug = parseOptionalText(row.slug);
+  const title = parseOptionalText(row.title);
 
-  const excerpt = typeof row.excerpt === "string" ? row.excerpt : "";
-  const storedMarkdown = parseMarkdownContent(row.content_markdown);
-  const markdownContent = storedMarkdown || excerpt.trim();
+  if (!id || !slug || !title) return null;
 
-  const emailAssets = buildEmailAssetsFromContent({
-    slug,
-    title,
-    excerpt,
-    markdownContent,
-  });
+  const createdAt = row.created_at || new Date().toISOString();
 
   return {
+    id,
     slug,
+    subject: parseOptionalText(row.subject),
     title,
-    excerpt,
-    publishedAt: row.published_at || new Date().toISOString(),
-    markdownContent,
-    emailAssets,
+    content: parseOptionalText(row.content),
+    previewText: parseOptionalText(row.preview_text),
+    cta: parseOptionalText(row.cta),
+    createdAt,
+    updatedAt: row.updated_at || createdAt,
   };
 };
 
 const mapRowsToPosts = (rows: BlogPostRow[]): BlogPost[] =>
   rows
-    .map(normalizeBlogPost)
+    .map((row) => normalizeBlogPost(row))
     .filter((post): post is BlogPost => Boolean(post))
-    .sort(sortByPublishedDateDesc);
+    .sort(sortByCreatedDateDesc);
 
 export const getBlogPosts = async (): Promise<BlogPost[]> => {
   if (!supabase) {
@@ -444,34 +121,25 @@ export const getBlogPosts = async (): Promise<BlogPost[]> => {
     return [];
   }
 
-  const primaryResult = await supabase
+  const { data, error } = await supabase
     .from(BLOG_TABLE)
-    .select(BLOG_POST_SELECT_WITH_MARKDOWN)
-    .order("published_at", { ascending: false, nullsFirst: false });
-
-  let data = primaryResult.data as BlogPostRow[] | null;
-  let error = primaryResult.error as SupabaseError | null;
-
-  if (error && isMissingColumnError(error, ["content_markdown"])) {
-    const fallbackResult = await supabase
-      .from(BLOG_TABLE)
-      .select(BLOG_POST_SELECT_FALLBACK)
-      .order("published_at", { ascending: false, nullsFirst: false });
-
-    data = fallbackResult.data as BlogPostRow[] | null;
-    error = fallbackResult.error as SupabaseError | null;
-  }
+    .select(BLOG_POST_SELECT)
+    .order("created_at", { ascending: false, nullsFirst: false });
 
   if (error) {
-    if (isMissingTableError(error)) {
+    if (isMissingTableError(error as SupabaseError | null)) {
       console.warn(`Supabase table "${BLOG_TABLE}" not found yet.`);
+      return [];
+    }
+    if (isMissingBlogPostSchemaError(error as SupabaseError | null)) {
+      warnMissingBlogPostSchema();
       return [];
     }
     console.error("Failed to fetch blog posts:", error);
     return [];
   }
 
-  return mapRowsToPosts(data ?? []);
+  return mapRowsToPosts((data as BlogPostRow[] | null) ?? []);
 };
 
 export const getBlogPostBySlug = async (
@@ -485,29 +153,19 @@ export const getBlogPostBySlug = async (
   const normalizedSlug = slug.trim();
   if (!normalizedSlug) return undefined;
 
-  const primaryResult = await supabase
+  const { data, error } = await supabase
     .from(BLOG_TABLE)
-    .select(BLOG_POST_SELECT_WITH_MARKDOWN)
+    .select(BLOG_POST_SELECT)
     .eq("slug", normalizedSlug)
     .maybeSingle();
 
-  let data = primaryResult.data as BlogPostRow | null;
-  let error = primaryResult.error as SupabaseError | null;
-
-  if (error && isMissingColumnError(error, ["content_markdown"])) {
-    const fallbackResult = await supabase
-      .from(BLOG_TABLE)
-      .select(BLOG_POST_SELECT_FALLBACK)
-      .eq("slug", normalizedSlug)
-      .maybeSingle();
-
-    data = fallbackResult.data as BlogPostRow | null;
-    error = fallbackResult.error as SupabaseError | null;
-  }
-
   if (error) {
-    if (isMissingTableError(error)) {
+    if (isMissingTableError(error as SupabaseError | null)) {
       console.warn(`Supabase table "${BLOG_TABLE}" not found yet.`);
+      return undefined;
+    }
+    if (isMissingBlogPostSchemaError(error as SupabaseError | null)) {
+      warnMissingBlogPostSchema();
       return undefined;
     }
     console.error("Failed to fetch blog post by slug:", error);
@@ -515,7 +173,41 @@ export const getBlogPostBySlug = async (
   }
 
   if (!data) return undefined;
-  return normalizeBlogPost(data) ?? undefined;
+  return normalizeBlogPost(data as BlogPostRow) ?? undefined;
+};
+
+export const getBlogPostById = async (
+  id: string,
+): Promise<BlogPost | undefined> => {
+  if (!supabase) {
+    console.warn("Supabase env vars missing; skipping blog post fetch.");
+    return undefined;
+  }
+
+  const normalizedId = id.trim();
+  if (!normalizedId) return undefined;
+
+  const { data, error } = await supabase
+    .from(BLOG_TABLE)
+    .select(BLOG_POST_SELECT)
+    .eq("id", normalizedId)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTableError(error as SupabaseError | null)) {
+      console.warn(`Supabase table "${BLOG_TABLE}" not found yet.`);
+      return undefined;
+    }
+    if (isMissingBlogPostSchemaError(error as SupabaseError | null)) {
+      warnMissingBlogPostSchema();
+      return undefined;
+    }
+    console.error("Failed to fetch blog post by id:", error);
+    return undefined;
+  }
+
+  if (!data) return undefined;
+  return normalizeBlogPost(data as BlogPostRow) ?? undefined;
 };
 
 export const getBlogSlugs = async (): Promise<string[]> => {
@@ -527,10 +219,10 @@ export const getBlogSlugs = async (): Promise<string[]> => {
   const { data, error } = await supabase
     .from(BLOG_TABLE)
     .select("slug")
-    .order("published_at", { ascending: false, nullsFirst: false });
+    .order("created_at", { ascending: false, nullsFirst: false });
 
   if (error) {
-    if (isMissingTableError(error)) {
+    if (isMissingTableError(error as SupabaseError | null)) {
       console.warn(`Supabase table "${BLOG_TABLE}" not found yet.`);
       return [];
     }

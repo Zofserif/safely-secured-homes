@@ -1,5 +1,5 @@
 export const FORM_STEPS = [
-  { id: "first_name", label: "First name" },
+  { id: "name", label: "Name" },
   { id: "property_type", label: "Property type" },
   { id: "safety_habit_spare_key", label: "Safety habit: spare key" },
   {

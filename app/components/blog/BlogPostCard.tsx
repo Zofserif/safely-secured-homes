@@ -13,7 +13,7 @@ export default function BlogPostCard({ post }: { post: BlogPost }) {
     <article className="group overflow-hidden rounded-3xl border border-[#BEE9E8]/70 bg-white/95 shadow-lg shadow-[#0E79B2]/10 transition-transform duration-300 hover:-translate-y-1">
       <div className="p-6">
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          <span>{formatPublishDate(post.publishedAt)}</span>
+          <span>{formatPublishDate(post.createdAt)}</span>
         </div>
 
         <h2 className="mt-3 text-xl font-bold leading-snug text-[#1F2937]">
@@ -25,9 +25,7 @@ export default function BlogPostCard({ post }: { post: BlogPost }) {
           </Link>
         </h2>
 
-        <p className="mt-3 text-sm leading-relaxed text-slate-600">
-          {post.excerpt}
-        </p>
+        <p className="mt-3 text-sm leading-relaxed text-slate-600">{post.previewText}</p>
 
         <Link
           href={`/blog/${post.slug}`}

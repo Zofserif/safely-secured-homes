@@ -27,12 +27,12 @@ type LeadLocation = {
 };
 
 type LeadContact = {
-  first_name: string;
+  name: string;
   email: string;
   mobile: string;
 };
 
-type LeadAnswers = Omit<FormData, "first_name" | "email" | "mobile">;
+type LeadAnswers = Omit<FormData, "name" | "email" | "mobile">;
 
 type LeadCreateBody = {
   contact: LeadContact;
@@ -132,7 +132,7 @@ const sanitizeLeadContact = (value: unknown): LeadContact | null => {
   if (!email) return null;
 
   return {
-    first_name: toSafeString(value.first_name),
+    name: toSafeString(value.name),
     email,
     mobile: toSafeString(value.mobile),
   };
@@ -222,7 +222,7 @@ const resolveLeadLocation = (req: Request): LeadLocation => {
 const toFormData = (contact: LeadContact, answers: LeadAnswers): FormData =>
   normalizeSafetyHabitAnswers({
     ...answers,
-    first_name: contact.first_name,
+    name: contact.name,
     email: contact.email,
     mobile: contact.mobile,
   });
@@ -283,10 +283,10 @@ const buildNewsletterSubscriberInsertBody = (
   contact: LeadContact
 ): NewsletterSubscriberInsertBody => {
   const email = toSafeString(contact.email).toLowerCase();
-  const firstName = toSafeString(contact.first_name);
+  const name = toSafeString(contact.name);
 
   return {
-    name: firstName || deriveNameFromEmail(email),
+    name: name || deriveNameFromEmail(email),
     email,
     source: WIZARD_FORM_SOURCE,
   };
@@ -352,9 +352,11 @@ export async function POST(req: Request) {
 
   const location = resolveLeadLocation(req);
   const payload = buildLeadPayload(leadBody, location);
+  const leadName =
+    toSafeString(payload.contact.name) || deriveNameFromEmail(payload.contact.email);
   const leadInsertBody: LeadInsertBody = {
     email: payload.contact.email,
-    name: payload.contact.first_name,
+    name: leadName,
     payload,
   };
 

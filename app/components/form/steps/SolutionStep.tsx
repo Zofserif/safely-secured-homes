@@ -34,7 +34,7 @@ export default function SolutionStep({
   onNext,
   onUpdateField,
 }: SolutionStepProps) {
-  const firstName = resolveFirstName(formData.first_name);
+  const firstName = resolveFirstName(formData.name);
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const scrollRafRef = useRef<number | null>(null);
   const resizeRafRef = useRef<number | null>(null);

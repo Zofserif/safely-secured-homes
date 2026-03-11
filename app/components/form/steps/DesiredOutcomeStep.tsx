@@ -7,7 +7,7 @@ export default function DesiredOutcomeStep({
   onNext,
   onUpdateField,
 }: DesiredOutcomeStepProps) {
-  const firstName = resolveFirstName(formData.first_name);
+  const firstName = resolveFirstName(formData.name);
 
   return (
     <div className="space-y-4 sm:space-y-5">

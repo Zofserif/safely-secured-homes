@@ -138,8 +138,17 @@ const writeStoredLead = (formData: FormData, result: CalculationResult) => {
   );
 };
 
-const normalizeFormDataForApp = (data: FormData): FormData =>
-  normalizeSafetyHabitAnswers(data);
+const normalizeFormDataForApp = (data: FormData): FormData => {
+  const legacyFirstName =
+    typeof (data as { first_name?: unknown }).first_name === "string"
+      ? (data as { first_name?: string }).first_name?.trim() ?? ""
+      : "";
+
+  return normalizeSafetyHabitAnswers({
+    ...data,
+    name: typeof data.name === "string" ? data.name : legacyFirstName,
+  });
+};
 
 const normalizeError = (error: unknown): string => {
   if (error instanceof Error) return error.message;
@@ -325,7 +334,7 @@ export default function AppShell({
           ? {
               mode,
               payload: {
-                name: latestLead?.formData.first_name ?? "",
+                name: latestLead?.formData.name ?? "",
                 email: latestLead?.formData.email ?? "",
                 mobile: latestLead?.formData.mobile ?? "",
                 tier: latestLead?.result.leadTier ?? "Nurture",
@@ -692,7 +701,7 @@ export default function AppShell({
         body: JSON.stringify({
           payload,
           contact: {
-            first_name: data.first_name,
+            name: data.name,
             email: data.email,
             mobile: data.mobile,
           },
@@ -738,7 +747,7 @@ export default function AppShell({
 
     if (shouldSendExternalLeads) {
       if (effectiveFormMode !== "newsletter") {
-        submissions.push(submitToEmail(normalizedData, calcResult, submissionSource));
+        submissions.push(submitToEmail(normalizedData));
       }
     } else {
       console.info(

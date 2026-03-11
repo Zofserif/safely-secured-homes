@@ -52,11 +52,13 @@ This project uses a hybrid media strategy:
 
 - Keep small, app-owned static assets in `public/assets` and track them in Git.
 - Store dynamic media (email media and user uploads) in Supabase Storage.
-- Keep `blog_posts` text-only (`slug`, `title`, `excerpt`, `published_at`, `content_markdown`).
+- Keep `blog_posts` shared between the blog site and EmailJS (`id`, `slug`, `subject`, `title`, `content`, `preview_text`, `cta`, `created_at`, `updated_at`).
+  The `cta` field stores an HTML button fragment (or `''` when unused). See `supabase/blog_posts.sql` for copy-paste examples.
 
 ### Supabase setup
 
 1. Run `supabase/blog_posts.sql` to create/update the `blog_posts` schema.
+   If you are migrating from the old blog schema, run `npm run backfill:blog-posts` after the first SQL run, then rerun `supabase/blog_posts.sql` to drop the legacy columns.
 2. Run `supabase/storage_assets.sql` to create storage buckets + policies.
 3. Run `supabase/testimonials.sql` to create/update testimonial moderation schema for `/rate` and public testimonial feeds.
 4. Optional: run `supabase/blog_posts_seed.sql` for sample content.
@@ -70,7 +72,8 @@ This project uses a hybrid media strategy:
 - `NEXT_PUBLIC_BRAND_FOOTER_LOGO_URL`: absolute or root-relative URL for the email footer logo.
   If omitted, the app uses `https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/brand-assets/sssh-banner-logo.png`.
 - `NEXT_PUBLIC_GA4_MEASUREMENT_ID`: GA4 measurement ID (for example `G-XXXXXXXXXX`). When set, GA4 is initialized and lead/checklist/consult events are dual-written alongside PostHog.
-- `NEXT_PUBLIC_EMAILJS_CHECKLIST_TEMPLATE_ID`: EmailJS template ID used to send the Panatag Home Checklist follow-up email after newsletter signup.
+- `NEXT_PUBLIC_EMAILJS_TEMPLATE_ID`: shared EmailJS template ID used by lead, checklist, and newsletter sends.
+  The EmailJS template should render from the common fields `to_email`, `name`, `subject`, `title`, `preview_text`, `content`, and `cta`.
 - `NEXT_PUBLIC_SHOW_INTERNAL_EMAIL_ASSETS`: set to `true` to display the internal blog email-assets panel. Default behavior is hidden.
 - `NEXT_PUBLIC_WHATSAPP_PREFILL_MESSAGE`: optional message prefilled in WhatsApp CTA links. Defaults to a home-security consultation intent message.
 - `REPORT_CYCLE_ANCHOR_ISO`: ISO-8601 UTC timestamp that anchors 72-hour complimentary-plan cycles in `/api/reports-remaining`.

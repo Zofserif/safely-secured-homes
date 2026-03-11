@@ -19,7 +19,7 @@ export type FormData = {
   has_additional_notes: boolean | null;
   additional_notes: string;
   solution: string;
-  first_name: string;
+  name: string;
   email: string;
   mobile: string;
 };

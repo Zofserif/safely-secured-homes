@@ -6,7 +6,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.results_links (
   id uuid primary key default gen_random_uuid(),
   link_key text not null unique,
-  first_name text,
+  name text,
   email text,
   mobile text,
   payload jsonb not null,
@@ -16,13 +16,33 @@ create table if not exists public.results_links (
 );
 
 alter table public.results_links
-  add column if not exists first_name text;
+  add column if not exists name text;
 
 alter table public.results_links
   add column if not exists email text;
 
 alter table public.results_links
   add column if not exists mobile text;
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'results_links'
+      and column_name = 'first_name'
+  ) then
+    execute $sql$
+      update public.results_links
+      set name = coalesce(nullif(btrim(name), ''), nullif(btrim(first_name), ''))
+      where name is null or btrim(name) = ''
+    $sql$;
+
+    execute 'alter table public.results_links drop column if exists first_name';
+  end if;
+end
+$$;
 
 alter table public.results_links
   drop column if exists last_name;

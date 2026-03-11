@@ -31,7 +31,7 @@ export default function DIYView({
   const storageLabel = `${result.storageRecommendedTB} TB recommended (~${formatStorageEstimateTB(result.storageEstimatedTB7d)} TB for 7 days)`;
   const storageSummaryLabel = `${result.storageRecommendedTB} TB (~${formatStorageEstimateTB(result.storageEstimatedTB7d)} TB/7d)`;
   const firstName =
-    data.first_name?.trim() || deriveFirstNameFromEmail(data.email) || "there";
+    data.name?.trim() || deriveFirstNameFromEmail(data.email) || "there";
   const storageRows = [
     { cams: 4, bitrate: "1 Mbps", days7: "~0.30 TB", days14: "~0.61 TB", days30: "~1.30 TB" },
     { cams: 4, bitrate: "2.5 Mbps", days7: "~0.76 TB", days14: "~1.51 TB", days30: "~3.24 TB" },

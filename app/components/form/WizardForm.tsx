@@ -80,7 +80,7 @@ export default function WizardForm({
   };
 
   const stepContentById: StepRenderMap = {
-    first_name: (
+    name: (
       <IntroStep
         formData={formData}
         onNext={nextStep}

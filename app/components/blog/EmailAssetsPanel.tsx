@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { BlogEmailAssets } from "../../lib/blogPosts";
+import type {
+  BlogEmailAssetDiagnostics,
+  BlogEmailAssets,
+} from "../../lib/blogPosts";
 
 type AssetKey = keyof BlogEmailAssets;
 
@@ -19,29 +22,51 @@ const FIELD_CONFIG: Array<{
   {
     key: "subject",
     label: "Subject",
-    helper: "Use as your campaign subject line.",
+    helper: "Maps to {{subject}} for the EmailJS subject line.",
     isLongForm: false,
   },
   {
-    key: "previewText",
+    key: "preview_text",
     label: "Preview Text",
-    helper: "Use as preheader text in your email tool.",
+    helper: "Use this as the EmailJS preheader variable.",
     isLongForm: false,
   },
   {
-    key: "htmlBody",
-    label: "HTML Body",
-    helper: "Paste into the HTML editor of your email platform.",
+    key: "content",
+    label: "Content",
+    helper: "Paste into the HTML variable rendered with {{{content}}}.",
+    isLongForm: true,
+  },
+  {
+    key: "cta",
+    label: "CTA",
+    helper: "Paste into the HTML variable rendered with {{{cta}}}.",
     isLongForm: true,
   },
 ];
 
-const defaultFeedback = (): Record<AssetKey, Feedback> => ({
-  subject: { kind: "idle" },
-  previewText: { kind: "idle" },
-  plainTextBody: { kind: "idle" },
-  htmlBody: { kind: "idle" },
-});
+const ASSET_KEYS = FIELD_CONFIG.map((field) => field.key);
+
+const defaultFeedback = (): Record<AssetKey, Feedback> =>
+  ASSET_KEYS.reduce(
+    (accumulator, key) => {
+      accumulator[key] = { kind: "idle" };
+      return accumulator;
+    },
+    {} as Record<AssetKey, Feedback>,
+  );
+
+const defaultResetTimers = (): Record<
+  AssetKey,
+  ReturnType<typeof setTimeout> | null
+> =>
+  ASSET_KEYS.reduce(
+    (accumulator, key) => {
+      accumulator[key] = null;
+      return accumulator;
+    },
+    {} as Record<AssetKey, ReturnType<typeof setTimeout> | null>,
+  );
 
 const legacyCopy = (value: string) => {
   const textArea = document.createElement("textarea");
@@ -59,20 +84,19 @@ const legacyCopy = (value: string) => {
   return copied;
 };
 
+const formatKilobytes = (bytes: number) => `${(bytes / 1024).toFixed(1)} KB`;
+
 export default function EmailAssetsPanel({
   emailAssets,
+  emailAssetDiagnostics,
 }: {
   emailAssets: BlogEmailAssets;
+  emailAssetDiagnostics: BlogEmailAssetDiagnostics;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [feedbackByField, setFeedbackByField] =
     useState<Record<AssetKey, Feedback>>(defaultFeedback);
-  const resetTimers = useRef<Record<AssetKey, ReturnType<typeof setTimeout> | null>>({
-    subject: null,
-    previewText: null,
-    plainTextBody: null,
-    htmlBody: null,
-  });
+  const resetTimers = useRef(defaultResetTimers());
 
   useEffect(() => {
     const timers = resetTimers.current;
@@ -105,6 +129,18 @@ export default function EmailAssetsPanel({
   };
 
   const copyField = async (key: AssetKey, value: string) => {
+    if (!value) {
+      setFeedbackWithReset(
+        key,
+        {
+          kind: "error",
+          message: "Nothing to copy for this field.",
+        },
+        2200,
+      );
+      return;
+    }
+
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(value);
@@ -127,13 +163,23 @@ export default function EmailAssetsPanel({
     }
   };
 
+  const sizeMessage = emailAssetDiagnostics.overLimit
+    ? `Generated preview_text + content + cta totals ${formatKilobytes(
+        emailAssetDiagnostics.totalDynamicVariableBytes,
+      )}. EmailJS limits dynamic variables to 50 KB, so trim the content before sending.`
+    : emailAssetDiagnostics.nearLimit
+      ? `Generated preview_text + content + cta totals ${formatKilobytes(
+          emailAssetDiagnostics.totalDynamicVariableBytes,
+        )}. This is close to EmailJS's 50 KB dynamic-variable limit.`
+      : null;
+
   return (
     <section className="rounded-3xl border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-[#1F2937]">Email Campaign Assets</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
-            Internal publishing assets for campaign operations.
+            Internal publishing assets for EmailJS-ready newsletter campaigns.
           </p>
         </div>
         <button
@@ -149,9 +195,79 @@ export default function EmailAssetsPanel({
 
       {isExpanded && (
         <div id="email-assets-content" className="mt-6 space-y-4">
+          <article className="rounded-2xl border border-[#BEE9E8] bg-[#F0F9FF] p-4 sm:p-5">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-[#2D3748]">
+              EmailJS Template Contract
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              Runtime placeholders must use these exact names. Use triple braces
+              for HTML fragments, and set the EmailJS subject line to
+              {" "}
+              <code>{"{{subject}}"}</code>.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-[#1F2937]">
+              <code className="rounded-full bg-white px-3 py-1">{"{{name}}"}</code>
+              <code className="rounded-full bg-white px-3 py-1">{"{{subject}}"}</code>
+              <code className="rounded-full bg-white px-3 py-1">{"{{title}}"}</code>
+              <code className="rounded-full bg-white px-3 py-1">
+                {"{{preview_text}}"}
+              </code>
+              <code className="rounded-full bg-white px-3 py-1">
+                {"{{to_email}}"}
+              </code>
+              <code className="rounded-full bg-white px-3 py-1">
+                {"{{{content}}}"}
+              </code>
+              <code className="rounded-full bg-white px-3 py-1">
+                {"{{{cta}}}"}
+              </code>
+            </div>
+          </article>
+
+          {emailAssetDiagnostics.warnings.length > 0 && (
+            <article className="rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:p-5">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-amber-900">
+                Warnings
+              </h3>
+              <div className="mt-3 space-y-2">
+                {emailAssetDiagnostics.warnings.map((warning) => (
+                  <p key={warning} className="text-sm leading-relaxed text-amber-900">
+                    {warning}
+                  </p>
+                ))}
+              </div>
+            </article>
+          )}
+
+          {sizeMessage && (
+            <article
+              className={`rounded-2xl border p-4 sm:p-5 ${
+                emailAssetDiagnostics.overLimit
+                  ? "border-red-300 bg-red-50"
+                  : "border-amber-300 bg-amber-50"
+              }`}
+            >
+              <h3
+                className={`text-sm font-bold uppercase tracking-wide ${
+                  emailAssetDiagnostics.overLimit ? "text-red-700" : "text-amber-900"
+                }`}
+              >
+                Size Warning
+              </h3>
+              <p
+                className={`mt-2 text-sm leading-relaxed ${
+                  emailAssetDiagnostics.overLimit ? "text-red-700" : "text-amber-900"
+                }`}
+              >
+                {sizeMessage}
+              </p>
+            </article>
+          )}
+
           {FIELD_CONFIG.map((field) => {
             const value = emailAssets[field.key];
             const feedback = feedbackByField[field.key];
+            const isEmptyCta = field.key === "cta" && !value;
             return (
               <article
                 key={field.key}
@@ -167,7 +283,8 @@ export default function EmailAssetsPanel({
                   <button
                     type="button"
                     onClick={() => copyField(field.key, value)}
-                    className="inline-flex items-center justify-center rounded-full bg-[#0E79B2] px-4 py-2 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#0b5e8b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0E79B2]"
+                    disabled={!value}
+                    className="inline-flex items-center justify-center rounded-full bg-[#0E79B2] px-4 py-2 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#0b5e8b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0E79B2] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:bg-slate-300"
                     aria-label={`Copy ${field.label}`}
                   >
                     Copy
@@ -175,9 +292,17 @@ export default function EmailAssetsPanel({
                 </div>
 
                 {field.isLongForm ? (
-                  <pre className="mt-4 max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white p-4 text-xs leading-relaxed text-slate-700 whitespace-pre-wrap wrap-break-words">
-                    {value}
-                  </pre>
+                  isEmptyCta ? (
+                    <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
+                      CTA omitted. Leave <code>cta</code> blank for campaigns without a
+                      CTA, or store the final HTML fragment in the <code>cta</code>{" "}
+                      column to populate this field.
+                    </div>
+                  ) : (
+                    <pre className="mt-4 max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white p-4 text-xs leading-relaxed whitespace-pre-wrap break-words text-slate-700">
+                      {value}
+                    </pre>
+                  )
                 ) : (
                   <p className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
                     {value}

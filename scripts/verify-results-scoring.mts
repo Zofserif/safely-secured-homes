@@ -117,7 +117,7 @@ const createBaseFormData = (): FormData => ({
   has_additional_notes: null,
   additional_notes: "",
   solution: "",
-  first_name: "",
+  name: "",
   email: "",
   mobile: "",
 });

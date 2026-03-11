@@ -7,7 +7,7 @@ export default function CurrentSituationStep({
   onNext,
   onUpdateField,
 }: CurrentSituationStepProps) {
-  const firstName = resolveFirstName(formData.first_name);
+  const firstName = resolveFirstName(formData.name);
 
   return (
     <div className="space-y-5">

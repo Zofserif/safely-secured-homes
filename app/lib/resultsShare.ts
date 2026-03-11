@@ -273,7 +273,7 @@ export const parseShareableResultsPayload = (
     has_additional_notes: hasAdditionalNotes,
     additional_notes: normalizeText(value.additional_notes),
     solution,
-    first_name: "",
+    name: "",
     email: "",
     mobile: "",
   };

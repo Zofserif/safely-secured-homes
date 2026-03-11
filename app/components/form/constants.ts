@@ -163,7 +163,7 @@ export const createInitialFormData = (mode: WizardMode): FormData => {
     has_additional_notes: null,
     additional_notes: "",
     solution: "",
-    first_name: "",
+    name: "",
     email: "",
     mobile: "",
   };
@@ -175,7 +175,7 @@ export const createInitialFormData = (mode: WizardMode): FormData => {
 
   return {
     ...baseFormData,
-    first_name: normalizeFirstName(
+    name: normalizeFirstName(
       lead.name || deriveFirstNameFromEmail(lead.email || "")
     ),
     email: lead.email || "",

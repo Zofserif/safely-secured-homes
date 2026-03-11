@@ -82,13 +82,13 @@ export const useWizardController = ({
 
     const normalizedEmail = formData.email.trim();
     const normalizedMobile = formData.mobile.trim();
-    const normalizedFirstName = normalizeFirstName(formData.first_name).slice(0, 50);
-    const derivedFirstName = deriveFirstNameFromEmail(normalizedEmail).slice(0, 50);
+    const normalizedName = normalizeFirstName(formData.name).slice(0, 50);
+    const derivedName = deriveFirstNameFromEmail(normalizedEmail).slice(0, 50);
     const normalizedData = {
       ...formData,
       email: normalizedEmail,
       mobile: normalizedMobile,
-      first_name: normalizedFirstName || derivedFirstName,
+      name: normalizedName || derivedName,
     };
 
     setIsSubmitting(true);

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, X } from "lucide-react";
 import { trackNewsletterLeadGenerated } from "../../lib/analytics";
 import { deriveNameFromEmail, normalizeEmail } from "../../lib/contactName";
-import { sendChecklistEmail } from "../../lib/email";
+import { sendEmail } from "../../lib/email";
 import { writeNewsletterLead } from "../../lib/newsletterLead";
 import { panatagChecklistUrl } from "../../lib/site";
 
@@ -94,7 +94,7 @@ export default function NewsletterChecklistModal() {
 
       let checklistSent = false;
       try {
-        await sendChecklistEmail({
+        await sendEmail("checklist", {
           to_email: payload.email,
           name,
           checklist_name: "Panatag Home Checklist",

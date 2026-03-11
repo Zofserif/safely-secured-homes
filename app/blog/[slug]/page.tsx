@@ -3,11 +3,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import EmailAssetsPanel from "../../components/blog/EmailAssetsPanel";
-import MarkdownContent from "../../components/blog/MarkdownContent";
+import HtmlContent from "../../components/blog/HtmlContent";
 import Footer from "../../components/layout/Footer";
 import BlogPostingJsonLd from "../../components/seo/BlogPostingJsonLd";
 import BreadcrumbJsonLd from "../../components/seo/BreadcrumbJsonLd";
-import { getBlogPostBySlug, getBlogSlugs } from "../../lib/blogPosts";
+import {
+  getBlogEmailAssetDiagnostics,
+  getBlogEmailAssets,
+  getBlogPostBySlug,
+  getBlogSlugs,
+} from "../../lib/blogPosts";
 import { ogImageUrl, siteName, siteUrl } from "../../lib/site";
 
 type BlogPostPageProps = {
@@ -46,17 +51,18 @@ export async function generateMetadata({
 
   return {
     title: post.title,
-    description: post.excerpt,
+    description: post.previewText,
     alternates: {
       canonical: `/blog/${post.slug}`,
     },
     openGraph: {
       title: post.title,
-      description: post.excerpt,
+      description: post.previewText,
       url: new URL(`/blog/${post.slug}`, siteUrl),
       siteName,
       type: "article",
-      publishedTime: post.publishedAt,
+      publishedTime: post.createdAt,
+      modifiedTime: post.updatedAt,
       images: [
         {
           url: ogImageUrl,
@@ -67,7 +73,7 @@ export async function generateMetadata({
     twitter: {
       card: "summary_large_image",
       title: post.title,
-      description: post.excerpt,
+      description: post.previewText,
       images: [ogImageUrl],
     },
   };
@@ -83,13 +89,17 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     notFound();
   }
 
+  const emailAssets = getBlogEmailAssets(post);
+  const emailAssetDiagnostics = getBlogEmailAssetDiagnostics(post);
+
   return (
     <div className="min-h-screen bg-[#F8F6F2] text-[#1F2937]">
       <BlogPostingJsonLd
         slug={post.slug}
         title={post.title}
-        description={post.excerpt}
-        publishedAt={post.publishedAt}
+        description={post.previewText}
+        createdAt={post.createdAt}
+        updatedAt={post.updatedAt}
       />
       <BreadcrumbJsonLd
         items={[
@@ -137,7 +147,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           <div className="mx-auto max-w-5xl">
             <article className="rounded-3xl border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
               <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <span>{formatPublishDate(post.publishedAt)}</span>
+                <span>{formatPublishDate(post.createdAt)}</span>
               </div>
 
               <h1 className="mt-4 text-3xl font-bold leading-tight text-[#1F2937] sm:text-4xl lg:text-5xl">
@@ -145,12 +155,19 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               </h1>
 
               <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-600 sm:text-lg">
-                {post.excerpt}
+                {post.previewText}
               </p>
 
               <div className="mt-10">
-                <MarkdownContent markdown={post.markdownContent} />
+                <HtmlContent html={post.content} />
               </div>
+
+              {post.cta && (
+                <div
+                  className="mt-8"
+                  dangerouslySetInnerHTML={{ __html: post.cta }}
+                />
+              )}
 
               <div className="mt-10 rounded-2xl border border-[#BEE9E8]/70 bg-[#F8FAFC] p-4 sm:p-5">
                 <p className="text-sm font-semibold uppercase tracking-wide text-[#2D3748]">
@@ -208,7 +225,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
               {showInternalEmailAssets && (
                 <div className="mt-12">
-                  <EmailAssetsPanel emailAssets={post.emailAssets} />
+                  <EmailAssetsPanel
+                    emailAssets={emailAssets}
+                    emailAssetDiagnostics={emailAssetDiagnostics}
+                  />
                 </div>
               )}
             </article>

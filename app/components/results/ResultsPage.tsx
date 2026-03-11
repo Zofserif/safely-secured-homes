@@ -317,7 +317,7 @@ export default function ResultsPage({
       };
     });
   const firstName =
-    data.first_name.trim() || deriveFirstNameFromEmail(data.email);
+    data.name?.trim() || deriveFirstNameFromEmail(data.email);
   const heroGreeting = firstName ? `Hi ${firstName}!` : "Hi there!";
   const blueprintCards = createBlueprintCards(result);
 

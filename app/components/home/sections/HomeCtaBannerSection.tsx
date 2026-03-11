@@ -24,9 +24,11 @@ export default function HomeCtaBannerSection({
     0,
     Math.min(100, (scarcity.reportsClaimed / reportsLimit) * 100),
   );
-  const ctaSupportText = scarcity.show
-    ? "In 60 seconds, get your personalized plan and practical next security steps."
-    : "Your personalized plan is already ready. Open it now and take the next step.";
+  const ctaSupportText = scarcity.soldOut
+    ? "Reports are sold out for this cycle. Join the newsletter to get notified when the Panatag Rating refreshes."
+    : scarcity.show
+      ? "In 60 seconds, get your personalized plan and practical next security steps."
+      : "Your personalized plan is already ready. Open it now and take the next step.";
 
   return (
     <section className="py-20 px-6">

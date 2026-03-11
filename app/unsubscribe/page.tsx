@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { unsubscribeNewsletterSubscriber } from "../lib/newsletterSubscribers";
+import {
+  isValidEmailAddress,
+  normalizeEmail,
+  unsubscribeNewsletterSubscriber,
+} from "../lib/newsletterSubscribers";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 import UnsubscribeStatusPopup from "./UnsubscribeStatusPopup";
 
@@ -23,6 +27,26 @@ const toUiStatus = (value: string): UiStatus => {
   if (value === "invalid") return "invalid";
   if (value === "error") return "error";
   return "idle";
+};
+
+const redirectByUnsubscribeStatus = (
+  status: Awaited<ReturnType<typeof unsubscribeNewsletterSubscriber>>["status"],
+) => {
+  if (status === "success") {
+    redirect("/unsubscribe?status=success");
+  }
+  if (status === "invalid_email") {
+    redirect("/unsubscribe?status=invalid");
+  }
+  redirect("/unsubscribe?status=error");
+};
+
+const handleUnsubscribeSubmit = async (formData: FormData) => {
+  "use server";
+
+  const rawEmail = String(formData.get("email") ?? "");
+  const result = await unsubscribeNewsletterSubscriber(rawEmail);
+  redirectByUnsubscribeStatus(result.status);
 };
 
 export const dynamic = "force-dynamic";
@@ -68,16 +92,9 @@ export default async function UnsubscribePage({
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const rawEmail = readSearchParam(resolvedSearchParams, "email");
-  if (rawEmail.trim()) {
-    const result = await unsubscribeNewsletterSubscriber(rawEmail);
-    if (result.status === "success") {
-      redirect("/unsubscribe?status=success");
-    }
-    if (result.status === "invalid_email") {
-      redirect("/unsubscribe?status=invalid");
-    }
-    redirect("/unsubscribe?status=error");
-  }
+  const prefilledEmail = normalizeEmail(rawEmail);
+  const hasPrefilledEmail = prefilledEmail.length > 0;
+  const hasValidPrefilledEmail = isValidEmailAddress(prefilledEmail);
 
   const status = toUiStatus(readSearchParam(resolvedSearchParams, "status"));
   const showForm = status !== "success";
@@ -132,13 +149,26 @@ export default async function UnsubscribePage({
           )}
 
           {status === "idle" && (
-            <p className="mt-4 text-base leading-relaxed text-slate-700">
-              Enter your email below to unsubscribe from newsletter emails.
-            </p>
+            <>
+              {hasValidPrefilledEmail ? (
+                <p className="mt-4 text-base leading-relaxed text-slate-700">
+                  Confirm that you want to unsubscribe{" "}
+                  <span className="font-semibold">{prefilledEmail}</span> from
+                  newsletter emails.
+                </p>
+              ) : (
+                <p className="mt-4 text-base leading-relaxed text-slate-700">
+                  {hasPrefilledEmail
+                    ? "This unsubscribe link looks invalid. Enter your email below to continue."
+                    : "Enter your email below to unsubscribe from newsletter emails."}
+                </p>
+              )}
+            </>
           )}
 
-          {showForm && (
-            <form method="GET" action="/unsubscribe" className="mt-6 space-y-4">
+          {showForm && hasValidPrefilledEmail && (
+            <form action={handleUnsubscribeSubmit} className="mt-6 space-y-4">
+              <input type="hidden" name="email" value={prefilledEmail} />
               <div>
                 <label
                   htmlFor="unsubscribe-email"
@@ -148,6 +178,35 @@ export default async function UnsubscribePage({
                 </label>
                 <input
                   id="unsubscribe-email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  readOnly
+                  value={prefilledEmail}
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm text-slate-900 outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center rounded-full bg-[#0E79B2] px-6 py-2 font-semibold text-white shadow-md shadow-[#0E79B2]/20 transition-colors hover:bg-[#0b5e8b]"
+              >
+                Confirm Unsubscribe
+              </button>
+            </form>
+          )}
+
+          {showForm && !hasValidPrefilledEmail && (
+            <form action={handleUnsubscribeSubmit} className="mt-6 space-y-4">
+              <div>
+                <label
+                  htmlFor="unsubscribe-email-manual"
+                  className="mb-2 block text-sm font-semibold text-[#2D3748]"
+                >
+                  Email address
+                </label>
+                <input
+                  id="unsubscribe-email-manual"
                   name="email"
                   type="email"
                   required

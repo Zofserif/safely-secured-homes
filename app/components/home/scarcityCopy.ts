@@ -66,10 +66,10 @@ export const buildHomeScarcityCopy = (
   if (scarcity.soldOut) {
     return {
       tone: "sold_out",
-      statusPill: "Current cycle is full",
+      statusPill: "Reports are sold out for this cycle",
       timerPill: scarcity.windowCountdown
-        ? `Panatag Home Rating opens in ${scarcity.windowCountdown} (PHT)`
-        : "Panatag Home Rating is opening soon",
+        ? `Panatag Rating refreshes in ${scarcity.windowCountdown} (PHT)`
+        : "Panatag Rating refresh is coming soon",
     };
   }
 

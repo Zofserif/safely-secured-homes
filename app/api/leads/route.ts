@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { estimateCameraPlan, getResultsSummary } from "../../lib/calculations";
+import { deriveNameFromEmail } from "../../lib/contactName";
 import { sendLeadNtfyNotification } from "../../lib/ntfy";
 import { normalizeSafetyHabitAnswers } from "../../lib/safetyHabits";
 import {
@@ -77,6 +78,18 @@ type LeadInsertBody = {
   name: string;
   payload: LeadPayload;
 };
+
+type NewsletterSubscriberInsertBody = {
+  name: string;
+  email: string;
+  source: string;
+};
+
+type NewsletterSubscriberLookupRow = {
+  id: string | number;
+};
+
+const WIZARD_FORM_SOURCE = "wizard_form";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -266,6 +279,62 @@ const buildLeadPayload = (
   };
 };
 
+const buildNewsletterSubscriberInsertBody = (
+  contact: LeadContact
+): NewsletterSubscriberInsertBody => {
+  const email = toSafeString(contact.email).toLowerCase();
+  const firstName = toSafeString(contact.first_name);
+
+  return {
+    name: firstName || deriveNameFromEmail(email),
+    email,
+    source: WIZARD_FORM_SOURCE,
+  };
+};
+
+const syncLeadToNewsletterSubscribers = async (contact: LeadContact) => {
+  if (!supabase) return;
+
+  const newsletterInsertBody = buildNewsletterSubscriberInsertBody(contact);
+  const updatePayload = {
+    name: newsletterInsertBody.name,
+    source: newsletterInsertBody.source,
+  };
+
+  const { data: existing, error: lookupError } = await supabase
+    .from("newsletter_subscribers")
+    .select("id")
+    .eq("email", newsletterInsertBody.email)
+    .limit(1);
+
+  if (lookupError) throw lookupError;
+
+  const existingRow = (existing?.[0] ?? null) as NewsletterSubscriberLookupRow | null;
+  if (existingRow) {
+    const { error: updateError } = await supabase
+      .from("newsletter_subscribers")
+      .update(updatePayload)
+      .eq("id", existingRow.id);
+
+    if (updateError) throw updateError;
+    return;
+  }
+
+  const { error: insertError } = await supabase
+    .from("newsletter_subscribers")
+    .insert(newsletterInsertBody);
+
+  if (!insertError) return;
+  if (insertError.code !== "23505") throw insertError;
+
+  const { error: raceUpdateError } = await supabase
+    .from("newsletter_subscribers")
+    .update(updatePayload)
+    .eq("email", newsletterInsertBody.email);
+
+  if (raceUpdateError) throw raceUpdateError;
+};
+
 export async function POST(req: Request) {
   if (!supabase) {
     console.warn("Supabase env vars missing; skipping lead insert.");
@@ -291,6 +360,19 @@ export async function POST(req: Request) {
 
   const { error } = await supabase.from("leads").insert(leadInsertBody);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  try {
+    await syncLeadToNewsletterSubscribers(payload.contact);
+  } catch (newsletterSyncError) {
+    console.error("Lead newsletter sync failed:", {
+      email: leadInsertBody.email,
+      source: WIZARD_FORM_SOURCE,
+      error:
+        newsletterSyncError instanceof Error
+          ? newsletterSyncError.message
+          : newsletterSyncError,
+    });
+  }
 
   try {
     await sendLeadNtfyNotification({

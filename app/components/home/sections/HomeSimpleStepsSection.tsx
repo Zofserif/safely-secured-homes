@@ -26,9 +26,11 @@ export default function HomeSimpleStepsSection({
     0,
     Math.min(100, (scarcity.reportsClaimed / reportsLimit) * 100),
   );
-  const ctaSupportText = scarcity.show
-    ? "In 60 seconds, get your personalized plan and practical next security steps."
-    : "Your plan is ready. Open it now and continue your next security steps.";
+  const ctaSupportText = scarcity.soldOut
+    ? "Reports are sold out for this cycle. Join the newsletter to get notified when the Panatag Rating refreshes."
+    : scarcity.show
+      ? "In 60 seconds, get your personalized plan and practical next security steps."
+      : "Your plan is ready. Open it now and continue your next security steps.";
 
   return (
     <section className="py-32 bg-white">

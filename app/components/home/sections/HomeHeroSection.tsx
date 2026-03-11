@@ -146,6 +146,8 @@ export default function HomeHeroSection({
       ? "bg-[#DD6B20]"
       : "bg-[#0E79B2]";
   const showBonusCard = !scarcity.bonusExpired && scarcity.show && !scarcity.soldOut;
+  const soldOutSupportText =
+    "Reports are sold out for this cycle. Join the newsletter to get notified when the Panatag Rating refreshes.";
   const prefersReducedMotion = useReducedMotion();
   const headlineSegments = parseHeadlineSegments(HOME_HERO_COPY.headline);
   const subcopySegments = parseSubcopyBoldSegments(HOME_HERO_COPY.subcopy);
@@ -383,6 +385,12 @@ export default function HomeHeroSection({
                   </>
                 )}
               </div>
+            )}
+
+            {scarcity.show && scarcity.soldOut && (
+              <p className="mt-3 text-xs font-medium leading-relaxed text-slate-700 sm:text-sm">
+                {soldOutSupportText}
+              </p>
             )}
           </div>
 

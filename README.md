@@ -54,20 +54,22 @@ This project uses a hybrid media strategy:
 - Store dynamic media (email media and user uploads) in Supabase Storage.
 - Keep `blog_posts` shared between the blog site and EmailJS (`id`, `slug`, `subject`, `title`, `content`, `preview_text`, `cta`, `created_at`, `updated_at`).
   The `cta` field stores an HTML button fragment (or `''` when unused). See `supabase/blog_posts.sql` for copy-paste examples.
+  The admin workflow also stores `status`, `published_at`, `content_markdown`, `cta_label`, `cta_url`, `newsletter_enabled`, and `newsletter_send_key`.
 
 ### Supabase setup
 
 1. Run `supabase/blog_posts.sql` to create/update the `blog_posts` schema.
-   If you are migrating from the old blog schema, run `npm run backfill:blog-posts` after the first SQL run, then rerun `supabase/blog_posts.sql` to drop the legacy columns.
-2. Run `supabase/storage_assets.sql` to create storage buckets + policies.
-3. Run `supabase/testimonials.sql` to create/update testimonial moderation schema for `/rate` and public testimonial feeds.
-4. Optional: run `supabase/blog_posts_seed.sql` for sample content.
-5. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
+   If you are migrating from the old blog schema, run `npm run backfill:blog-posts` after the first SQL run.
+2. Run `npm run backfill:blog-admin-fields` once to populate `content_markdown`, `cta_label`, and `cta_url` from the existing rendered HTML rows.
+3. Run `supabase/storage_assets.sql` to create storage buckets + policies.
+4. Run `supabase/testimonials.sql` to create/update testimonial moderation schema for `/rate` and public testimonial feeds.
+5. Optional: run `supabase/blog_posts_seed.sql` for sample content.
+6. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
    This table also stores `first_name`, `email`, and `mobile` for each generated link.
-6. Run `supabase/leads.sql` to align `leads` with canonical payload storage and remove legacy summary columns.
-7. Run `supabase/email_core.sql` to align `newsletter_subscribers`, create `email_journey_enrollments` and `email_deliveries`, and backfill existing subscriber/journey/send data from the legacy campaign tables when present.
-8. After verifying the app is running on the reset model, run `supabase/email_cleanup.sql` to drop the retired campaign and bucket tables.
-9. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/lead-journeys` once daily at `01:00 UTC` for Hobby-safe lead-journey sends.
+7. Run `supabase/leads.sql` to align `leads` with canonical payload storage and remove legacy summary columns.
+8. Run `supabase/email_core.sql` to align `newsletter_subscribers`, create `email_journey_enrollments` and `email_deliveries`, and backfill existing subscriber/journey/send data from the legacy campaign tables when present.
+9. After verifying the app is running on the reset model, run `supabase/email_cleanup.sql` to drop the retired campaign and bucket tables.
+10. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/lead-journeys` once daily at `01:00 UTC` for Hobby-safe lead-journey sends.
    On Vercel Hobby, steps 2-4 are delivered on the first daily batch after they become due rather than at exact hour precision.
 
 ### Blog Email Organization
@@ -94,6 +96,8 @@ Optional flags:
 - `NEXT_PUBLIC_GA4_MEASUREMENT_ID`: GA4 measurement ID (for example `G-XXXXXXXXXX`). When set, GA4 is initialized and lead/checklist/consult events are dual-written alongside PostHog.
 - `NEXT_PUBLIC_EMAILJS_TEMPLATE_ID`: shared EmailJS template ID used by lead, checklist, and newsletter sends.
   The EmailJS template should render from the common fields `to_email`, `name`, `subject`, `title`, `preview_text`, `content`, and `cta`.
+- `ADMIN_PASSWORD`: password used by `/admin/login`.
+- `ADMIN_SESSION_SECRET`: server-only secret used to sign the admin session cookie.
 - `EMAILJS_PRIVATE_KEY`: optional server-only EmailJS private key used for cron and server-side campaign sends.
   If omitted, the app still uses the public EmailJS key and template for browser-safe sends.
 - `NEXT_PUBLIC_SHOW_INTERNAL_EMAIL_ASSETS`: set to `true` to display the internal blog email-assets panel. Default behavior is hidden.

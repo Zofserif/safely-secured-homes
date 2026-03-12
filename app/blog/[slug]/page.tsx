@@ -63,7 +63,7 @@ export async function generateMetadata({
       url: new URL(`/blog/${post.slug}`, siteUrl),
       siteName,
       type: "article",
-      publishedTime: post.createdAt,
+      publishedTime: post.publishedAt || post.createdAt,
       modifiedTime: post.updatedAt,
       images: [
         {
@@ -106,7 +106,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         slug={post.slug}
         title={post.title}
         description={post.previewText}
-        createdAt={post.createdAt}
+        publishedAt={post.publishedAt || post.createdAt}
         updatedAt={post.updatedAt}
       />
       <BreadcrumbJsonLd
@@ -155,7 +155,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           <div className="mx-auto max-w-5xl">
             <article className="rounded-3xl border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
               <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <span>{formatPublishDate(post.createdAt)}</span>
+                <span>{formatPublishDate(post.publishedAt || post.createdAt)}</span>
               </div>
 
               <EmailBucketBadges buckets={post.emailBuckets} className="mt-4" />

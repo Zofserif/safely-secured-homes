@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "backfill:blog-posts": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/backfill-blog-posts-html.mts",
+    "backfill:blog-admin-fields": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/backfill-blog-admin-fields.mts",
     "create:bonus-link": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/create-bonus-link.mts",
     "send:weekly-newsletter": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/send-weekly-newsletter.mts",
     "verify:camera-scoring": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-results-scoring.mts",

@@ -14,7 +14,7 @@ export default function BlogPostCard({ post }: { post: BlogPost }) {
     <article className="group overflow-hidden rounded-3xl border border-[#BEE9E8]/70 bg-white/95 shadow-lg shadow-[#0E79B2]/10 transition-transform duration-300 hover:-translate-y-1">
       <div className="p-6">
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          <span>{formatPublishDate(post.createdAt)}</span>
+          <span>{formatPublishDate(post.publishedAt || post.createdAt)}</span>
         </div>
 
         <EmailBucketBadges buckets={post.emailBuckets} className="mt-3" />

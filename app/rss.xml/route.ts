@@ -19,7 +19,9 @@ export async function GET() {
   const items = posts
     .map((post) => {
       const postUrl = absoluteUrl(`/blog/${post.slug}`);
-      const publishedDate = new Date(post.createdAt).toUTCString();
+      const publishedDate = new Date(
+        post.publishedAt || post.createdAt,
+      ).toUTCString();
 
       return `<item>
   <title>${escapeXml(post.title)}</title>

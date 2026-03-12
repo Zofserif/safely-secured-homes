@@ -29,7 +29,7 @@ export type LegacyBlogPostContentRow = {
 };
 
 const DEFAULT_SITE_URL = "https://www.safelysecuredhomes.com";
-const DEFAULT_PREVIEW_TEXT =
+export const DEFAULT_BLOG_PREVIEW_TEXT =
   "Practical home security guidance for safer, smarter homes.";
 const EMAILJS_VARIABLE_LIMIT_BYTES = 50 * 1024;
 const EMAILJS_VARIABLE_WARNING_BYTES = 45 * 1024;
@@ -91,6 +91,15 @@ const stripMarkdownSyntax = (value: string) =>
     .replace(/[*_~]+/g, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+
+const decodeHtmlEntities = (value: string) =>
+  value
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
 
 const resolveContentHref = (href: string) => {
   const trimmedHref = href.trim();
@@ -265,17 +274,98 @@ export const buildBlogCtaHtml = ({
     label,
   )}</a></div>`;
 
-const getPreviewText = (excerpt: string, markdownContent: string) => {
+export const deriveBlogPreviewText = (
+  excerpt: string,
+  markdownContent: string,
+) => {
   if (excerpt.trim()) return excerpt.trim();
 
   const normalizedMarkdown = stripMarkdownSyntax(markdownContent);
   if (!normalizedMarkdown) {
-    return DEFAULT_PREVIEW_TEXT;
+    return DEFAULT_BLOG_PREVIEW_TEXT;
   }
 
   return normalizedMarkdown.length > 160
     ? `${normalizedMarkdown.slice(0, 157)}...`
     : normalizedMarkdown;
+};
+
+export const resolveBlogCtaHtml = ({
+  label,
+  url,
+}: {
+  label: string;
+  url: string;
+}) => {
+  const resolvedLabel = parseOptionalText(label);
+  const resolvedUrl = parseOptionalText(url);
+  const warnings: string[] = [];
+
+  if (!resolvedLabel && !resolvedUrl) {
+    return {
+      cta: "",
+      warnings,
+    };
+  }
+
+  if (!resolvedLabel) {
+    warnings.push("CTA label is blank. CTA field was left empty.");
+    return {
+      cta: "",
+      warnings,
+    };
+  }
+
+  if (!resolvedUrl) {
+    warnings.push("CTA URL is blank. CTA field was left empty.");
+    return {
+      cta: "",
+      warnings,
+    };
+  }
+
+  const absoluteCtaUrl = resolveCtaUrl(resolvedUrl);
+  if (!absoluteCtaUrl) {
+    warnings.push(
+      "CTA URL must be an absolute http(s) URL or a root-relative path. CTA field was left empty.",
+    );
+    return {
+      cta: "",
+      warnings,
+    };
+  }
+
+  return {
+    cta: buildBlogCtaHtml({
+      label: resolvedLabel,
+      url: absoluteCtaUrl,
+    }),
+    warnings,
+  };
+};
+
+export const buildBlogStoredFields = ({
+  previewText,
+  markdownContent,
+  ctaLabel,
+  ctaUrl,
+}: {
+  previewText: string;
+  markdownContent: string;
+  ctaLabel: string;
+  ctaUrl: string;
+}) => {
+  const ctaResult = resolveBlogCtaHtml({
+    label: ctaLabel,
+    url: ctaUrl,
+  });
+
+  return {
+    previewText: deriveBlogPreviewText(previewText, markdownContent),
+    content: renderBlogContentHtml(markdownContent),
+    cta: ctaResult.cta,
+    warnings: ctaResult.warnings,
+  };
 };
 
 export const convertLegacyBlogPostToStoredFields = ({
@@ -297,35 +387,145 @@ export const convertLegacyBlogPostToStoredFields = ({
   const resolvedCtaLabel = parseOptionalText(cta_label);
   const resolvedCtaUrl = parseOptionalText(cta_url);
   const markdownSource = resolvedMarkdown || resolvedExcerpt;
-  const warnings: string[] = [];
-  let cta = "";
-
-  if (!resolvedCtaLabel && !resolvedCtaUrl) {
-    cta = "";
-  } else if (!resolvedCtaLabel) {
-    warnings.push("CTA label is blank. CTA field was left empty.");
-  } else if (!resolvedCtaUrl) {
-    warnings.push("CTA URL is blank. CTA field was left empty.");
-  } else {
-    const absoluteCtaUrl = resolveCtaUrl(resolvedCtaUrl);
-    if (!absoluteCtaUrl) {
-      warnings.push(
-        "CTA URL must be an absolute http(s) URL or a root-relative path. CTA field was left empty.",
-      );
-    } else {
-      cta = buildBlogCtaHtml({
-        label: resolvedCtaLabel,
-        url: absoluteCtaUrl,
-      });
-    }
-  }
+  const storedFields = buildBlogStoredFields({
+    previewText: resolvedExcerpt,
+    markdownContent: markdownSource,
+    ctaLabel: resolvedCtaLabel,
+    ctaUrl: resolvedCtaUrl,
+  });
 
   return {
     subject: resolvedTitle,
-    previewText: getPreviewText(resolvedExcerpt, markdownSource),
-    content: renderBlogContentHtml(markdownSource),
-    cta,
-    warnings,
+    previewText: storedFields.previewText,
+    content: storedFields.content,
+    cta: storedFields.cta,
+    warnings: storedFields.warnings,
+  };
+};
+
+const stripHtmlTags = (value: string) => decodeHtmlEntities(value.replace(/<[^>]+>/g, ""));
+
+const normalizeMarkdownWhitespace = (value: string) =>
+  value
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+const convertInlineHtmlToMarkdown = (value: string): string => {
+  let normalized = value.trim();
+
+  normalized = normalized.replace(/<br\s*\/?>/gi, "\n");
+  normalized = normalized.replace(
+    /<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi,
+    (_match, href: string, label: string) =>
+      `[${convertInlineHtmlToMarkdown(label)}](${decodeHtmlEntities(href).trim()})`,
+  );
+  normalized = normalized.replace(
+    /<(strong|b)>([\s\S]*?)<\/\1>/gi,
+    (_match, _tag: string, content: string) =>
+      `**${convertInlineHtmlToMarkdown(content)}**`,
+  );
+  normalized = normalized.replace(
+    /<(em|i)>([\s\S]*?)<\/\1>/gi,
+    (_match, _tag: string, content: string) =>
+      `*${convertInlineHtmlToMarkdown(content)}*`,
+  );
+  normalized = normalized.replace(
+    /<code>([\s\S]*?)<\/code>/gi,
+    (_match, content: string) => `\`${stripHtmlTags(content).trim()}\``,
+  );
+  normalized = stripHtmlTags(normalized);
+  return normalized.replace(/\s+/g, " ").trim();
+};
+
+export const convertStoredBlogContentHtmlToMarkdown = (htmlContent: string) => {
+  const normalizedHtml = htmlContent.trim();
+  if (!normalizedHtml) return "";
+
+  const blocks: string[] = [];
+  const blockPattern = /<(h2|h3|p|ul|ol|blockquote)>([\s\S]*?)<\/\1>/gi;
+  let match: RegExpExecArray | null = null;
+
+  while ((match = blockPattern.exec(normalizedHtml))) {
+    const tag = match[1].toLowerCase();
+    const innerHtml = match[2].trim();
+
+    if (tag === "h2") {
+      blocks.push(`## ${convertInlineHtmlToMarkdown(innerHtml)}`);
+      continue;
+    }
+
+    if (tag === "h3") {
+      blocks.push(`### ${convertInlineHtmlToMarkdown(innerHtml)}`);
+      continue;
+    }
+
+    if (tag === "p") {
+      blocks.push(convertInlineHtmlToMarkdown(innerHtml));
+      continue;
+    }
+
+    if (tag === "blockquote") {
+      const quoteBody = innerHtml.replace(/^<p>([\s\S]*?)<\/p>$/i, "$1");
+      const quoteLines = convertInlineHtmlToMarkdown(quoteBody)
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => `> ${line}`)
+        .join("\n");
+
+      if (quoteLines) {
+        blocks.push(quoteLines);
+      }
+      continue;
+    }
+
+    const itemPattern = /<li>([\s\S]*?)<\/li>/gi;
+    const items: string[] = [];
+    let itemMatch: RegExpExecArray | null = null;
+    while ((itemMatch = itemPattern.exec(innerHtml))) {
+      const itemText = convertInlineHtmlToMarkdown(itemMatch[1]);
+      if (itemText) {
+        items.push(itemText);
+      }
+    }
+
+    if (items.length === 0) continue;
+
+    if (tag === "ul") {
+      blocks.push(items.map((item) => `- ${item}`).join("\n"));
+      continue;
+    }
+
+    blocks.push(items.map((item, index) => `${index + 1}. ${item}`).join("\n"));
+  }
+
+  return normalizeMarkdownWhitespace(blocks.join("\n\n"));
+};
+
+export const parseStoredBlogCtaHtml = (ctaHtml: string) => {
+  const normalizedHtml = ctaHtml.trim();
+  if (!normalizedHtml) {
+    return {
+      label: "",
+      url: "",
+    };
+  }
+
+  const linkMatch = normalizedHtml.match(
+    /<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i,
+  );
+  if (!linkMatch) {
+    return {
+      label: "",
+      url: "",
+    };
+  }
+
+  return {
+    label: stripHtmlTags(linkMatch[2]).trim(),
+    url: decodeHtmlEntities(linkMatch[1]).trim(),
   };
 };
 

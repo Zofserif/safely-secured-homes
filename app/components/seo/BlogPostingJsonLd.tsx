@@ -5,13 +5,13 @@ export default function BlogPostingJsonLd({
   slug,
   title,
   description,
-  createdAt,
+  publishedAt,
   updatedAt,
 }: {
   slug: string;
   title: string;
   description: string;
-  createdAt: string;
+  publishedAt: string;
   updatedAt: string;
 }) {
   const articleUrl = absoluteUrl(`/blog/${slug}`);
@@ -21,7 +21,7 @@ export default function BlogPostingJsonLd({
     "@type": "BlogPosting",
     headline: title,
     description,
-    datePublished: createdAt,
+    datePublished: publishedAt,
     dateModified: updatedAt,
     mainEntityOfPage: {
       "@type": "WebPage",

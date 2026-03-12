@@ -8,6 +8,9 @@ insert into public.blog_posts (
   content,
   preview_text,
   cta,
+  status,
+  published_at,
+  newsletter_enabled,
   created_at,
   updated_at
 )
@@ -35,9 +38,12 @@ values
   <li>My team will email you soon with your personalized plan.</li>
   <li>Start your journey to becoming the client with a story that ends with "I finally sleep soundly."</li>
 </ul>
-$post_1$,
+    $post_1$,
     'A personal story about nightly worries, peace of mind, and the first practical step families can take to feel safer at home.',
     '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/form?source=blog_cta_free_plan" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Get My Free Plan</a></div>',
+    'published',
+    timestamptz '2026-01-28T00:00:00Z',
+    false,
     timestamptz '2026-01-28T00:00:00Z',
     timestamptz '2026-01-28T00:00:00Z'
   ),
@@ -73,6 +79,9 @@ $post_1$,
 $post_2$,
     'Security systems degrade silently. This short weekly routine keeps your cameras, alerts, and emergency readiness reliable without adding stress to your schedule.',
     '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=blog_cta_book_call" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Book a Free Site Visit</a></div>',
+    'published',
+    timestamptz '2026-01-20T00:00:00Z',
+    false,
     timestamptz '2026-01-20T00:00:00Z',
     timestamptz '2026-01-20T00:00:00Z'
   ),
@@ -108,6 +117,9 @@ $post_2$,
 $post_3$,
     'Good lighting improves prevention and video quality. Learn where to place lights, what schedules to use, and how to avoid glare that weakens camera footage.',
     '',
+    'published',
+    timestamptz '2026-01-12T00:00:00Z',
+    false,
     timestamptz '2026-01-12T00:00:00Z',
     timestamptz '2026-01-12T00:00:00Z'
   ),
@@ -140,6 +152,9 @@ $post_3$,
 $post_4$,
     'See what a home security site visit actually covers so your family can prepare, ask better questions, and move forward with confidence.',
     '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=blog_cta_site_visit" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Book a Free Site Visit</a></div>',
+    'published',
+    timestamptz '2026-02-02T00:00:00Z',
+    false,
     timestamptz '2026-02-02T00:00:00Z',
     timestamptz '2026-02-02T00:00:00Z'
   )
@@ -150,5 +165,8 @@ set
   content = excluded.content,
   preview_text = excluded.preview_text,
   cta = excluded.cta,
+  status = excluded.status,
+  published_at = excluded.published_at,
+  newsletter_enabled = excluded.newsletter_enabled,
   created_at = excluded.created_at,
   updated_at = now();

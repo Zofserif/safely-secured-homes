@@ -12,11 +12,18 @@ export type {
 } from "./blogPostContent";
 export {
   buildBlogCtaHtml,
+  buildBlogStoredFields,
   convertLegacyBlogPostToStoredFields,
+  convertStoredBlogContentHtmlToMarkdown,
+  deriveBlogPreviewText,
   getBlogEmailAssetDiagnostics,
   getBlogEmailAssets,
+  parseStoredBlogCtaHtml,
   renderBlogContentHtml,
+  resolveBlogCtaHtml,
 } from "./blogPostContent";
+
+export type BlogPostStatus = "draft" | "published";
 
 export type BlogPostEmailBucket = {
   key: string;
@@ -50,8 +57,10 @@ export type BlogPostEmailUsage = {
 export type BlogPost = BlogEmailAssetSource & {
   id: string;
   slug: string;
+  status: BlogPostStatus;
   createdAt: string;
   updatedAt: string;
+  publishedAt: string | null;
   emailBuckets: BlogPostEmailBucket[];
 };
 
@@ -63,8 +72,10 @@ type BlogPostRow = {
   content: string | null;
   preview_text: string | null;
   cta: string | null;
+  status?: string | null;
   created_at: string | null;
   updated_at: string | null;
+  published_at?: string | null;
 };
 
 type EmailDeliveryUsageRow = {
@@ -85,8 +96,10 @@ type SupabaseError = {
 type BlogPostBase = BlogEmailAssetSource & {
   id: string;
   slug: string;
+  status: BlogPostStatus;
   createdAt: string;
   updatedAt: string;
+  publishedAt: string | null;
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -99,6 +112,8 @@ const supabase =
 
 const BLOG_TABLE = "blog_posts";
 const BLOG_POST_SELECT =
+  "id,slug,subject,title,content,preview_text,cta,status,created_at,updated_at,published_at";
+const BLOG_POST_LEGACY_SELECT =
   "id,slug,subject,title,content,preview_text,cta,created_at,updated_at";
 const BLOG_POST_REQUIRED_COLUMNS = [
   "subject",
@@ -108,6 +123,7 @@ const BLOG_POST_REQUIRED_COLUMNS = [
   "created_at",
   "updated_at",
 ];
+const BLOG_POST_VISIBILITY_COLUMNS = ["status", "published_at"];
 const EMAIL_DELIVERIES_TABLE = "email_deliveries";
 const EMAIL_DELIVERY_USAGE_SELECT =
   "blog_post_id,send_key,status,queued_at,processed_at,subscriber_id";
@@ -147,6 +163,10 @@ const isMissingBlogPostSchemaError = (
   );
 };
 
+const isMissingBlogVisibilitySchemaError = (
+  error: SupabaseError | null | undefined,
+) => isMissingSchemaError(error, BLOG_POST_VISIBILITY_COLUMNS);
+
 const isMissingEmailCoreSchemaError = (
   error: SupabaseError | null | undefined,
 ) =>
@@ -162,7 +182,7 @@ const warnMissingBlogPostSchema = () => {
   if (hasWarnedMissingBlogPostSchema) return;
   hasWarnedMissingBlogPostSchema = true;
   console.warn(
-    'Supabase "blog_posts" is still on the legacy schema. Run supabase/blog_posts.sql, then npm run backfill:blog-posts, and rerun supabase/blog_posts.sql to finish the migration.',
+    'Supabase "blog_posts" is missing the admin fields. Run supabase/blog_posts.sql and npm run backfill:blog-admin-fields before using the admin blog manager.',
   );
 };
 
@@ -180,8 +200,16 @@ const parseOptionalText = (value: unknown) =>
 const distinctValues = (values: string[]) =>
   Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
 
-const sortByCreatedDateDesc = <T extends { createdAt: string }>(a: T, b: T) =>
-  new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+const toBlogPostStatus = (value: unknown): BlogPostStatus =>
+  value === "draft" ? "draft" : "published";
+
+const resolveSortTimestamp = (post: Pick<BlogPostBase, "publishedAt" | "createdAt">) =>
+  new Date(post.publishedAt || post.createdAt).getTime();
+
+const sortByPublicDateDesc = <T extends Pick<BlogPostBase, "publishedAt" | "createdAt">>(
+  a: T,
+  b: T,
+) => resolveSortTimestamp(b) - resolveSortTimestamp(a);
 
 const createEmptyBlogPostEmailUsage = (): BlogPostEmailUsage => ({
   broadcastSends: [],
@@ -196,6 +224,8 @@ const normalizeBlogPostBase = (row: BlogPostRow): BlogPostBase | null => {
   if (!id || !slug || !title) return null;
 
   const createdAt = row.created_at || new Date().toISOString();
+  const status = toBlogPostStatus(row.status);
+  const publishedAt = parseOptionalText(row.published_at) || (status === "published" ? createdAt : null);
 
   return {
     id,
@@ -205,8 +235,10 @@ const normalizeBlogPostBase = (row: BlogPostRow): BlogPostBase | null => {
     content: parseOptionalText(row.content),
     previewText: parseOptionalText(row.preview_text),
     cta: parseOptionalText(row.cta),
+    status,
     createdAt,
     updatedAt: row.updated_at || createdAt,
+    publishedAt,
   };
 };
 
@@ -364,35 +396,161 @@ const fetchJourneyStepsByPostSlug = (
         a.stepKey.localeCompare(b.stepKey),
     );
 
+const fetchPublishedBlogRows = async (): Promise<BlogPostRow[] | null> => {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from(BLOG_TABLE)
+    .select(BLOG_POST_SELECT)
+    .eq("status", "published")
+    .order("published_at", { ascending: false, nullsFirst: false });
+
+  if (!error) {
+    return (data as BlogPostRow[] | null) ?? [];
+  }
+
+  if (isMissingTableError(error as SupabaseError | null)) {
+    console.warn(`Supabase table "${BLOG_TABLE}" not found yet.`);
+    return [];
+  }
+
+  if (isMissingBlogVisibilitySchemaError(error as SupabaseError | null)) {
+    const legacyResult = await supabase
+      .from(BLOG_TABLE)
+      .select(BLOG_POST_LEGACY_SELECT)
+      .order("created_at", { ascending: false, nullsFirst: false });
+
+    if (legacyResult.error) {
+      if (isMissingBlogPostSchemaError(legacyResult.error as SupabaseError | null)) {
+        warnMissingBlogPostSchema();
+        return [];
+      }
+      console.error("Failed to fetch legacy blog posts:", legacyResult.error);
+      return [];
+    }
+
+    return (legacyResult.data as BlogPostRow[] | null) ?? [];
+  }
+
+  if (isMissingBlogPostSchemaError(error as SupabaseError | null)) {
+    warnMissingBlogPostSchema();
+    return [];
+  }
+
+  console.error("Failed to fetch blog posts:", error);
+  return [];
+};
+
+const fetchPublishedBlogRowBySlug = async (
+  slug: string,
+): Promise<BlogPostRow | null> => {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from(BLOG_TABLE)
+    .select(BLOG_POST_SELECT)
+    .eq("slug", slug)
+    .eq("status", "published")
+    .maybeSingle();
+
+  if (!error) {
+    return (data as BlogPostRow | null) ?? null;
+  }
+
+  if (isMissingTableError(error as SupabaseError | null)) {
+    console.warn(`Supabase table "${BLOG_TABLE}" not found yet.`);
+    return null;
+  }
+
+  if (isMissingBlogVisibilitySchemaError(error as SupabaseError | null)) {
+    const legacyResult = await supabase
+      .from(BLOG_TABLE)
+      .select(BLOG_POST_LEGACY_SELECT)
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (legacyResult.error) {
+      if (isMissingBlogPostSchemaError(legacyResult.error as SupabaseError | null)) {
+        warnMissingBlogPostSchema();
+        return null;
+      }
+      console.error("Failed to fetch legacy blog post by slug:", legacyResult.error);
+      return null;
+    }
+
+    return (legacyResult.data as BlogPostRow | null) ?? null;
+  }
+
+  if (isMissingBlogPostSchemaError(error as SupabaseError | null)) {
+    warnMissingBlogPostSchema();
+    return null;
+  }
+
+  console.error("Failed to fetch blog post by slug:", error);
+  return null;
+};
+
+const fetchBlogRowById = async (id: string): Promise<BlogPostRow | null> => {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from(BLOG_TABLE)
+    .select(BLOG_POST_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!error) {
+    return (data as BlogPostRow | null) ?? null;
+  }
+
+  if (isMissingTableError(error as SupabaseError | null)) {
+    console.warn(`Supabase table "${BLOG_TABLE}" not found yet.`);
+    return null;
+  }
+
+  if (isMissingBlogVisibilitySchemaError(error as SupabaseError | null)) {
+    const legacyResult = await supabase
+      .from(BLOG_TABLE)
+      .select(BLOG_POST_LEGACY_SELECT)
+      .eq("id", id)
+      .maybeSingle();
+
+    if (legacyResult.error) {
+      if (isMissingBlogPostSchemaError(legacyResult.error as SupabaseError | null)) {
+        warnMissingBlogPostSchema();
+        return null;
+      }
+      console.error("Failed to fetch legacy blog post by id:", legacyResult.error);
+      return null;
+    }
+
+    return (legacyResult.data as BlogPostRow | null) ?? null;
+  }
+
+  if (isMissingBlogPostSchemaError(error as SupabaseError | null)) {
+    warnMissingBlogPostSchema();
+    return null;
+  }
+
+  console.error("Failed to fetch blog post by id:", error);
+  return null;
+};
+
 export const getBlogPosts = async (): Promise<BlogPost[]> => {
   if (!supabase) {
     console.warn("Supabase env vars missing; skipping blog posts fetch.");
     return [];
   }
 
-  const { data, error } = await supabase
-    .from(BLOG_TABLE)
-    .select(BLOG_POST_SELECT)
-    .order("created_at", { ascending: false, nullsFirst: false });
+  const rows = await fetchPublishedBlogRows();
+  if (!rows) return [];
 
-  if (error) {
-    if (isMissingTableError(error as SupabaseError | null)) {
-      console.warn(`Supabase table "${BLOG_TABLE}" not found yet.`);
-      return [];
-    }
-    if (isMissingBlogPostSchemaError(error as SupabaseError | null)) {
-      warnMissingBlogPostSchema();
-      return [];
-    }
-    console.error("Failed to fetch blog posts:", error);
-    return [];
-  }
-
-  const posts = ((data as BlogPostRow[] | null) ?? [])
+  const posts = rows
     .map((row) => normalizeBlogPostBase(row))
-    .filter((post): post is BlogPostBase => Boolean(post));
+    .filter((post): post is BlogPostBase => Boolean(post))
+    .filter((post) => post.status === "published");
 
-  return (await enrichPostsWithEmailBuckets(posts)).sort(sortByCreatedDateDesc);
+  return (await enrichPostsWithEmailBuckets(posts)).sort(sortByPublicDateDesc);
 };
 
 export const getBlogPostBySlug = async (
@@ -406,29 +564,11 @@ export const getBlogPostBySlug = async (
   const normalizedSlug = slug.trim();
   if (!normalizedSlug) return undefined;
 
-  const { data, error } = await supabase
-    .from(BLOG_TABLE)
-    .select(BLOG_POST_SELECT)
-    .eq("slug", normalizedSlug)
-    .maybeSingle();
+  const row = await fetchPublishedBlogRowBySlug(normalizedSlug);
+  if (!row) return undefined;
 
-  if (error) {
-    if (isMissingTableError(error as SupabaseError | null)) {
-      console.warn(`Supabase table "${BLOG_TABLE}" not found yet.`);
-      return undefined;
-    }
-    if (isMissingBlogPostSchemaError(error as SupabaseError | null)) {
-      warnMissingBlogPostSchema();
-      return undefined;
-    }
-    console.error("Failed to fetch blog post by slug:", error);
-    return undefined;
-  }
-
-  if (!data) return undefined;
-
-  const post = normalizeBlogPostBase(data as BlogPostRow);
-  if (!post) return undefined;
+  const post = normalizeBlogPostBase(row);
+  if (!post || post.status !== "published") return undefined;
 
   const broadcastPostIds = await fetchBroadcastPostIds([post.id]);
   return attachEmailBuckets(post, broadcastPostIds);
@@ -445,28 +585,10 @@ export const getBlogPostById = async (
   const normalizedId = id.trim();
   if (!normalizedId) return undefined;
 
-  const { data, error } = await supabase
-    .from(BLOG_TABLE)
-    .select(BLOG_POST_SELECT)
-    .eq("id", normalizedId)
-    .maybeSingle();
+  const row = await fetchBlogRowById(normalizedId);
+  if (!row) return undefined;
 
-  if (error) {
-    if (isMissingTableError(error as SupabaseError | null)) {
-      console.warn(`Supabase table "${BLOG_TABLE}" not found yet.`);
-      return undefined;
-    }
-    if (isMissingBlogPostSchemaError(error as SupabaseError | null)) {
-      warnMissingBlogPostSchema();
-      return undefined;
-    }
-    console.error("Failed to fetch blog post by id:", error);
-    return undefined;
-  }
-
-  if (!data) return undefined;
-
-  const post = normalizeBlogPostBase(data as BlogPostRow);
+  const post = normalizeBlogPostBase(row);
   if (!post) return undefined;
 
   const broadcastPostIds = await fetchBroadcastPostIds([post.id]);
@@ -504,21 +626,10 @@ export const getBlogSlugs = async (): Promise<string[]> => {
     return [];
   }
 
-  const { data, error } = await supabase
-    .from(BLOG_TABLE)
-    .select("slug")
-    .order("created_at", { ascending: false, nullsFirst: false });
+  const rows = await fetchPublishedBlogRows();
+  if (!rows) return [];
 
-  if (error) {
-    if (isMissingTableError(error as SupabaseError | null)) {
-      console.warn(`Supabase table "${BLOG_TABLE}" not found yet.`);
-      return [];
-    }
-    console.error("Failed to fetch blog slugs:", error);
-    return [];
-  }
-
-  return (data ?? [])
+  return rows
     .map((item) => {
       const itemSlug = (item as { slug?: unknown }).slug;
       return typeof itemSlug === "string" ? itemSlug.trim() : "";

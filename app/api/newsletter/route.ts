@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import {
   deriveNameFromEmail,
   normalizeEmail,
 } from "../../lib/contactName";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const supabase =
-  supabaseUrl && serviceRoleKey
-    ? createClient(supabaseUrl, serviceRoleKey)
-    : null;
+import {
+  isNewsletterCampaignsConfigured,
+  syncNewsletterSubscriber,
+} from "../../lib/newsletterCampaigns";
 
 const toSafeString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
@@ -20,6 +15,9 @@ type InsertNewsletterSubscriber = {
   name: string;
   email: string;
   source: string;
+  utm_source: string;
+  utm_medium: string;
+  utm_campaign: string;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -35,11 +33,14 @@ const sanitizeInsertBody = (value: unknown): InsertNewsletterSubscriber | null =
     name: deriveNameFromEmail(email),
     email,
     source: toSafeString(value.source) || "newsletter",
+    utm_source: toSafeString(value.utm_source),
+    utm_medium: toSafeString(value.utm_medium),
+    utm_campaign: toSafeString(value.utm_campaign),
   };
 };
 
 export async function POST(req: Request) {
-  if (!supabase) {
+  if (!isNewsletterCampaignsConfigured()) {
     console.warn("Supabase env vars missing; skipping newsletter insert.");
     return NextResponse.json(
       { error: "Supabase not configured" },
@@ -57,48 +58,39 @@ export async function POST(req: Request) {
     );
   }
 
-  const { data: existing, error: lookupError } = await supabase
-    .from("newsletter_subscribers")
-    .select("id")
-    .eq("email", insertBody.email)
-    .limit(1);
+  try {
+    const result = await syncNewsletterSubscriber({
+      email: insertBody.email,
+      name: insertBody.name,
+      acquisitionSource: insertBody.source,
+      utmSource: insertBody.utm_source,
+      utmMedium: insertBody.utm_medium,
+      utmCampaign: insertBody.utm_campaign,
+      assignmentProfile: "newsletter_signup",
+    });
 
-  if (lookupError) {
-    console.error("Newsletter lookup failed:", lookupError);
+    return NextResponse.json({
+      ok: true,
+      subscriberId: result.subscriberId,
+      created: result.created,
+      reactivated: result.reactivated,
+      campaigns: result.campaignKeys,
+    });
+  } catch (error) {
+    console.error("Newsletter sync failed:", error);
+    const syncError =
+      error && typeof error === "object" ? (error as Record<string, unknown>) : {};
     return NextResponse.json(
       {
-        error: lookupError.message,
-        code: lookupError.code,
-        details: lookupError.details,
+        error:
+          typeof syncError.message === "string"
+            ? syncError.message
+            : "Newsletter signup failed.",
+        code: typeof syncError.code === "string" ? syncError.code : undefined,
+        details:
+          typeof syncError.details === "string" ? syncError.details : undefined,
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
-
-  if (existing && existing.length > 0) {
-    return NextResponse.json(
-      { error: "Email already exists", code: "email_exists" },
-      { status: 409 }
-    );
-  }
-
-  const { error } = await supabase
-    .from("newsletter_subscribers")
-    .insert(insertBody);
-
-  if (error) {
-    console.error("Newsletter insert failed:", error);
-    if (error.code === "23505") {
-      return NextResponse.json(
-        { error: "Email already exists", code: "email_exists" },
-        { status: 409 }
-      );
-    }
-    return NextResponse.json(
-      { error: error.message, code: error.code, details: error.details },
-      { status: 400 }
-    );
-  }
-
-  return NextResponse.json({ ok: true });
 }

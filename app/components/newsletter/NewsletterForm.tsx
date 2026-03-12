@@ -6,6 +6,7 @@ import { CheckCircle2 } from "lucide-react";
 import { trackNewsletterLeadGenerated } from "../../lib/analytics";
 import { deriveNameFromEmail, normalizeEmail } from "../../lib/contactName";
 import { sendEmail } from "../../lib/email";
+import { readCurrentMarketingAttribution } from "../../lib/marketingAttribution";
 import { panatagChecklistUrl } from "../../lib/site";
 
 export default function NewsletterForm() {
@@ -27,9 +28,13 @@ export default function NewsletterForm() {
     const formData = new FormData(form);
     const email = normalizeEmail(String(formData.get("email") || ""));
     const name = deriveNameFromEmail(email);
+    const attribution = readCurrentMarketingAttribution();
     const payload = {
       email,
-      source: "newsletter",
+      source: attribution.source || "newsletter_form",
+      utm_source: attribution.utm_source,
+      utm_medium: attribution.utm_medium,
+      utm_campaign: attribution.utm_campaign,
     };
 
     setStatus("submitting");
@@ -43,11 +48,6 @@ export default function NewsletterForm() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        if (response.status === 409 && errorData?.code === "email_exists") {
-          setSubmitError("That email is already subscribed.");
-          setStatus("error");
-          return;
-        }
         if (response.status === 400 && errorData?.code === "23502") {
           setSubmitError("Please fill in all required fields.");
           setStatus("error");

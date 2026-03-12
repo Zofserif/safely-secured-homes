@@ -17,10 +17,7 @@ import type { HomeCtaLocation, HomeCtaTarget } from "./home/types";
 import { FormData, CalculationResult } from "../lib/types";
 import { estimateCameraPlan } from "../lib/calculations";
 import { normalizeSafetyHabitAnswers } from "../lib/safetyHabits";
-import {
-  submitLeadToSupabase,
-  submitToEmail,
-} from "../lib/leads";
+import { submitLeadToSupabase } from "../lib/leads";
 import {
   registerSshDebugMethods,
   type LeadSendsStatus,
@@ -741,21 +738,20 @@ export default function AppShell({
       (effectiveFormMode === "newsletter" ? "newsletter" : undefined);
 
     const shouldSendExternalLeads = !IS_LOCAL_DEV || leadSendsEnabled;
-    const submissions = [
-      submitLeadToSupabase(normalizedData, calcResult, submissionSource),
-    ];
-
-    if (shouldSendExternalLeads) {
-      if (effectiveFormMode !== "newsletter") {
-        submissions.push(submitToEmail(normalizedData));
-      }
-    } else {
+    if (!shouldSendExternalLeads) {
       console.info(
-        "[sshDebug] Skipping EmailJS submissions in local dev. Run window.sshDebug.leadSendsOn() to enable."
+        "[sshDebug] Skipping lead-journey email sends in local dev. Run window.sshDebug.leadSendsOn() to enable."
       );
     }
 
-    await Promise.all(submissions);
+    await Promise.all([
+      submitLeadToSupabase(
+        normalizedData,
+        calcResult,
+        submissionSource,
+        shouldSendExternalLeads,
+      ),
+    ]);
 
     if (formSource === "apply") {
       router.push("/apply-success");

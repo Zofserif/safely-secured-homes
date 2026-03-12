@@ -7,6 +7,7 @@ import { CheckCircle2, X } from "lucide-react";
 import { trackNewsletterLeadGenerated } from "../../lib/analytics";
 import { deriveNameFromEmail, normalizeEmail } from "../../lib/contactName";
 import { sendEmail } from "../../lib/email";
+import { readCurrentMarketingAttribution } from "../../lib/marketingAttribution";
 import { writeNewsletterLead } from "../../lib/newsletterLead";
 import { panatagChecklistUrl } from "../../lib/site";
 
@@ -67,10 +68,14 @@ export default function NewsletterChecklistModal() {
       return;
     }
     const name = deriveNameFromEmail(normalizedEmail);
+    const attribution = readCurrentMarketingAttribution();
 
     const payload = {
       email: normalizedEmail,
-      source: "newsletter",
+      source: attribution.source || "newsletter_modal",
+      utm_source: attribution.utm_source,
+      utm_medium: attribution.utm_medium,
+      utm_campaign: attribution.utm_campaign,
     };
 
     try {
@@ -82,11 +87,6 @@ export default function NewsletterChecklistModal() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        if (response.status === 409 && errorData?.code === "email_exists") {
-          setError("That email is already subscribed.");
-          setStatus("error");
-          return;
-        }
         setError(errorData?.error || "Newsletter signup failed.");
         setStatus("error");
         return;

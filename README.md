@@ -65,7 +65,10 @@ This project uses a hybrid media strategy:
 5. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
    This table also stores `first_name`, `email`, and `mobile` for each generated link.
 6. Run `supabase/leads.sql` to align `leads` with canonical payload storage and remove legacy summary columns.
-7. Run `supabase/newsletter_email_only.sql` to migrate `newsletter_subscribers` to name-only (`name` + `email`) storage.
+7. Run `supabase/newsletter_campaign_tracking.sql` to align `newsletter_subscribers` and add campaign definitions, enrollments, send history, and subscriber campaign views.
+   This migration also backfills `name` from email for older `newsletter_subscribers` rows, enables RLS on the newsletter campaign tables, restricts campaign views to `service_role`, adds `email_campaign_steps`, and seeds the 4-step `lead_follow_up_journey`.
+8. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/lead-journeys` once daily at `01:00 UTC` for Hobby-safe lead-journey sends.
+   On Vercel Hobby, steps 2-4 are delivered on the first daily batch after they become due rather than at exact hour precision.
 
 ### Environment variables
 
@@ -74,11 +77,16 @@ This project uses a hybrid media strategy:
 - `NEXT_PUBLIC_GA4_MEASUREMENT_ID`: GA4 measurement ID (for example `G-XXXXXXXXXX`). When set, GA4 is initialized and lead/checklist/consult events are dual-written alongside PostHog.
 - `NEXT_PUBLIC_EMAILJS_TEMPLATE_ID`: shared EmailJS template ID used by lead, checklist, and newsletter sends.
   The EmailJS template should render from the common fields `to_email`, `name`, `subject`, `title`, `preview_text`, `content`, and `cta`.
+- `EMAILJS_PRIVATE_KEY`: optional server-only EmailJS private key used for cron and server-side campaign sends.
+  If omitted, the app still uses the public EmailJS key and template for browser-safe sends.
 - `NEXT_PUBLIC_SHOW_INTERNAL_EMAIL_ASSETS`: set to `true` to display the internal blog email-assets panel. Default behavior is hidden.
 - `NEXT_PUBLIC_WHATSAPP_PREFILL_MESSAGE`: optional message prefilled in WhatsApp CTA links. Defaults to a home-security consultation intent message.
 - `REPORT_CYCLE_ANCHOR_ISO`: ISO-8601 UTC timestamp that anchors 72-hour complimentary-plan cycles in `/api/reports-remaining`.
   Initial anchor value: `2026-02-26T09:42:57Z`.
   Changing this value re-anchors all future 72-hour cycles.
+- `CRON_SECRET`: bearer token expected by `GET /api/cron/lead-journeys` in production.
+  Vercel cron should send this value in the `Authorization: Bearer ...` header.
+  This project uses a daily Hobby-safe cron schedule of `0 1 * * *`, which is about `09:00 PHT`.
 - `NTFY_TOPIC_URL`: server-side ntfy publish URL for lead alerts (for example `https://ntfy.sh/your-topic`).
   If missing, lead inserts still succeed and ntfy notification delivery is skipped with a warning log.
 - `NTFY_ACCESS_TOKEN`: server-side Bearer token used to authenticate ntfy lead alerts.
@@ -91,4 +99,4 @@ This project uses a hybrid media strategy:
   `https://safelysecuredhomes.com/unsubscribe?email={{email}}`
 - Replace `{{email}}` with your provider's merge syntax if needed.
 - If the merge value is missing/invalid, `/unsubscribe` shows a manual email fallback form.
-- If you only use anon RLS policies, run `supabase/newsletter_unsubscribe_rpc.sql` so unsubscribe can still remove `newsletter_subscribers` rows via RPC.
+- If you only use anon RLS policies, run `supabase/newsletter_unsubscribe_rpc.sql` so unsubscribe can still mark subscribers as unsubscribed and cancel active enrollments via RPC.

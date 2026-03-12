@@ -1,4 +1,3 @@
-import emailjs from "@emailjs/browser";
 import { getBlogPostById, type BlogPost } from "./blogPosts";
 import { deriveNameFromEmail, normalizeEmail } from "./contactName";
 import { panatagChecklistUrl, siteUrl } from "./site";
@@ -6,6 +5,9 @@ import { panatagChecklistUrl, siteUrl } from "./site";
 const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "";
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "";
 const EMAIL_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "";
+const PRIVATE_KEY =
+  typeof window === "undefined" ? process.env.EMAILJS_PRIVATE_KEY || "" : "";
+const EMAILJS_API_ORIGIN = "https://api.emailjs.com";
 
 const DEFAULT_LEAD_SUBJECT = "We received your home security inquiry";
 const DEFAULT_LEAD_TITLE = "Your request is in";
@@ -38,6 +40,11 @@ export type SharedEmailTemplateParams = {
   preview_text: string;
   content: string;
   cta: string;
+};
+
+export type EmailSendResponse = {
+  status: number;
+  text: string;
 };
 
 export type LeadEmailInput = {
@@ -209,15 +216,15 @@ const normalizeSharedTemplateParams = (
 export function sendEmail(
   templateKind: "lead",
   templateParams: LeadEmailInput,
-): Promise<unknown> | undefined;
+): Promise<EmailSendResponse> | undefined;
 export function sendEmail(
   templateKind: "checklist",
   templateParams: ChecklistEmailInput,
-): Promise<unknown> | undefined;
+): Promise<EmailSendResponse> | undefined;
 export function sendEmail(
   templateKind: "newsletter",
   templateParams: SharedEmailTemplateParams,
-): Promise<unknown> | undefined;
+): Promise<EmailSendResponse> | undefined;
 export function sendEmail(
   templateKind: EmailTemplateKind,
   templateParams:
@@ -247,12 +254,39 @@ export function sendEmail(
     templateParams,
   );
 
-  return emailjs.send(
-    SERVICE_ID,
-    EMAIL_TEMPLATE_ID,
-    normalizedTemplateParams,
-    PUBLIC_KEY,
-  );
+  const payload: Record<string, unknown> = {
+    lib_version: "ssh-http-1",
+    user_id: PUBLIC_KEY,
+    service_id: SERVICE_ID,
+    template_id: EMAIL_TEMPLATE_ID,
+    template_params: normalizedTemplateParams,
+  };
+
+  if (PRIVATE_KEY) {
+    payload.accessToken = PRIVATE_KEY;
+  }
+
+  return fetch(`${EMAILJS_API_ORIGIN}/api/v1.0/email/send`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  }).then(async (response) => {
+    const text = await response.text();
+    if (!response.ok) {
+      const error = new Error(text || "EmailJS send failed.") as Error & {
+        status?: number;
+      };
+      error.status = response.status;
+      throw error;
+    }
+
+    return {
+      status: response.status,
+      text,
+    };
+  });
 }
 
 export async function sendNewsletterEmail(

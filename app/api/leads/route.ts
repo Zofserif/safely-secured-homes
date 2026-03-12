@@ -9,6 +9,12 @@ import {
   getSafetySummary,
 } from "../../lib/safetyScores";
 import { clampSafetyScore } from "../../lib/safetyScale.js";
+import { processLeadJourneyEnrollment } from "../../lib/leadJourney";
+import {
+  EMAIL_CAMPAIGN_KEYS,
+  getActiveCampaignEnrollmentForSubscriber,
+  syncNewsletterSubscriber,
+} from "../../lib/newsletterCampaigns";
 import type { FormData, LeadTier } from "../../lib/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -39,6 +45,10 @@ type LeadCreateBody = {
   answers: LeadAnswers;
   meta: {
     source: string;
+    utm_source: string;
+    utm_medium: string;
+    utm_campaign: string;
+    allow_external_emails: boolean | null;
   };
 };
 
@@ -78,18 +88,6 @@ type LeadInsertBody = {
   name: string;
   payload: LeadPayload;
 };
-
-type NewsletterSubscriberInsertBody = {
-  name: string;
-  email: string;
-  source: string;
-};
-
-type NewsletterSubscriberLookupRow = {
-  id: string | number;
-};
-
-const WIZARD_FORM_SOURCE = "wizard_form";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -197,6 +195,10 @@ const sanitizeLeadCreateBody = (value: unknown): LeadCreateBody | null => {
     answers,
     meta: {
       source,
+      utm_source: toSafeString(rawMeta.utm_source),
+      utm_medium: toSafeString(rawMeta.utm_medium),
+      utm_campaign: toSafeString(rawMeta.utm_campaign),
+      allow_external_emails: toNullableBoolean(rawMeta.allow_external_emails),
     },
   };
 };
@@ -279,62 +281,6 @@ const buildLeadPayload = (
   };
 };
 
-const buildNewsletterSubscriberInsertBody = (
-  contact: LeadContact
-): NewsletterSubscriberInsertBody => {
-  const email = toSafeString(contact.email).toLowerCase();
-  const name = toSafeString(contact.name);
-
-  return {
-    name: name || deriveNameFromEmail(email),
-    email,
-    source: WIZARD_FORM_SOURCE,
-  };
-};
-
-const syncLeadToNewsletterSubscribers = async (contact: LeadContact) => {
-  if (!supabase) return;
-
-  const newsletterInsertBody = buildNewsletterSubscriberInsertBody(contact);
-  const updatePayload = {
-    name: newsletterInsertBody.name,
-    source: newsletterInsertBody.source,
-  };
-
-  const { data: existing, error: lookupError } = await supabase
-    .from("newsletter_subscribers")
-    .select("id")
-    .eq("email", newsletterInsertBody.email)
-    .limit(1);
-
-  if (lookupError) throw lookupError;
-
-  const existingRow = (existing?.[0] ?? null) as NewsletterSubscriberLookupRow | null;
-  if (existingRow) {
-    const { error: updateError } = await supabase
-      .from("newsletter_subscribers")
-      .update(updatePayload)
-      .eq("id", existingRow.id);
-
-    if (updateError) throw updateError;
-    return;
-  }
-
-  const { error: insertError } = await supabase
-    .from("newsletter_subscribers")
-    .insert(newsletterInsertBody);
-
-  if (!insertError) return;
-  if (insertError.code !== "23505") throw insertError;
-
-  const { error: raceUpdateError } = await supabase
-    .from("newsletter_subscribers")
-    .update(updatePayload)
-    .eq("email", newsletterInsertBody.email);
-
-  if (raceUpdateError) throw raceUpdateError;
-};
-
 export async function POST(req: Request) {
   if (!supabase) {
     console.warn("Supabase env vars missing; skipping lead insert.");
@@ -364,11 +310,46 @@ export async function POST(req: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   try {
-    await syncLeadToNewsletterSubscribers(payload.contact);
+    const newsletterSyncResult = await syncNewsletterSubscriber({
+      email: payload.contact.email,
+      name: payload.contact.name || deriveNameFromEmail(payload.contact.email),
+      acquisitionSource: leadBody.meta.source,
+      utmSource: leadBody.meta.utm_source,
+      utmMedium: leadBody.meta.utm_medium,
+      utmCampaign: leadBody.meta.utm_campaign,
+      assignmentProfile: "lead_capture",
+    });
+
+    const allowExternalEmails =
+      process.env.NODE_ENV === "production"
+        ? true
+        : leadBody.meta.allow_external_emails === true;
+
+    if (allowExternalEmails) {
+      const activeLeadEnrollment = await getActiveCampaignEnrollmentForSubscriber(
+        newsletterSyncResult.subscriberId,
+        EMAIL_CAMPAIGN_KEYS.leadFollowUpJourney,
+      );
+
+      if (activeLeadEnrollment) {
+        const journeyResult = await processLeadJourneyEnrollment(
+          activeLeadEnrollment.enrollmentId,
+        );
+
+        if (journeyResult.action === "failed") {
+          console.error("Immediate lead journey send failed:", {
+            email: payload.contact.email,
+            enrollmentId: activeLeadEnrollment.enrollmentId,
+            stepKey: journeyResult.stepKey,
+            reason: journeyResult.reason,
+          });
+        }
+      }
+    }
   } catch (newsletterSyncError) {
     console.error("Lead newsletter sync failed:", {
       email: leadInsertBody.email,
-      source: WIZARD_FORM_SOURCE,
+      source: leadBody.meta.source,
       error:
         newsletterSyncError instanceof Error
           ? newsletterSyncError.message

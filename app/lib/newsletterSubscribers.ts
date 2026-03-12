@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { unsubscribeNewsletterSubscriberByEmail } from "./newsletterCampaigns";
 
 type NewsletterUnsubscribeStatus =
   | "success"
@@ -11,8 +12,6 @@ type NewsletterUnsubscribeResult = {
 };
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const escapeLikePattern = (value: string) =>
-  value.replace(/[\\%_]/g, "\\$&");
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -39,12 +38,9 @@ export async function unsubscribeNewsletterSubscriber(
   }
 
   if (supabaseServiceRole) {
-    const { error } = await supabaseServiceRole
-      .from("newsletter_subscribers")
-      .delete()
-      .ilike("email", escapeLikePattern(email));
-
-    if (error) {
+    try {
+      await unsubscribeNewsletterSubscriberByEmail(email);
+    } catch (error) {
       console.error("Newsletter unsubscribe failed:", error);
       return { status: "error" };
     }

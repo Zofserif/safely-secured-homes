@@ -1,4 +1,4 @@
-import { sendEmail } from "./email";
+import { readCurrentMarketingAttribution } from "./marketingAttribution";
 import type { CalculationResult, FormData } from "./types";
 
 type LeadAnswers = Omit<FormData, "name" | "email" | "mobile">;
@@ -12,6 +12,10 @@ type LeadCreateBody = {
   answers: LeadAnswers;
   meta: {
     source: string;
+    utm_source: string;
+    utm_medium: string;
+    utm_campaign: string;
+    allow_external_emails: boolean;
   };
 };
 
@@ -40,38 +44,33 @@ const buildLeadAnswers = (data: FormData): LeadAnswers => ({
   solution: data.solution,
 });
 
-const buildLeadCreateBody = (data: FormData, source?: string): LeadCreateBody => ({
-  contact: {
-    name: toSafeString(data.name),
-    email: toSafeString(data.email),
-    mobile: toSafeString(data.mobile),
-  },
-  answers: buildLeadAnswers(data),
-  meta: {
-    source: toSafeString(source) || "website",
-  },
-});
-
-export async function submitToEmail(data: FormData) {
-  const templateParams = {
-    to_email: data.email,
-    name: data.name,
+const buildLeadCreateBody = (data: FormData, source?: string): LeadCreateBody => {
+  const attribution = readCurrentMarketingAttribution();
+  return {
+    contact: {
+      name: toSafeString(data.name),
+      email: toSafeString(data.email),
+      mobile: toSafeString(data.mobile),
+    },
+    answers: buildLeadAnswers(data),
+    meta: {
+      source: toSafeString(source) || attribution.source || "website",
+      utm_source: attribution.utm_source,
+      utm_medium: attribution.utm_medium,
+      utm_campaign: attribution.utm_campaign,
+      allow_external_emails: true,
+    },
   };
-
-  try {
-    await sendEmail("lead", templateParams);
-    console.log("Email sent successfully via EmailJS");
-  } catch (error) {
-    console.error("Email submission failed:", error);
-  }
-}
+};
 
 export async function submitLeadToSupabase(
   data: FormData,
   _result: CalculationResult,
-  source?: string
+  source?: string,
+  allowExternalEmails = true,
 ) {
   const insertBody = buildLeadCreateBody(data, source);
+  insertBody.meta.allow_external_emails = allowExternalEmails;
 
   try {
     const response = await fetch("/api/leads", {

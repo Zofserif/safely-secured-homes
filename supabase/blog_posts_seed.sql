@@ -110,6 +110,38 @@ $post_3$,
     '',
     timestamptz '2026-01-12T00:00:00Z',
     timestamptz '2026-01-12T00:00:00Z'
+  ),
+  (
+    'what-happens-during-a-home-security-site-visit',
+    'What Happens During a Home Security Site Visit?',
+    'What Happens During a Home Security Site Visit?',
+    $post_4$
+<h2>A Site Visit Is a Planning Session, Not a Pressure Tactic</h2>
+<p>A good site visit should help your family feel clearer, not more overwhelmed. The goal is to understand your layout, your daily routines, and the practical risks around your entry points, blind spots, lighting, and emergency readiness.</p>
+<p>We are not there to push the biggest package. We are there to identify what actually matters for your home and what can wait.</p>
+<h2>What We Usually Check</h2>
+<p>Every home is different, but most visits include a walk-through of the gate, main door, side access, driveway, windows, stairways, and any areas where visibility drops at night.</p>
+<ul>
+  <li>Entry points that need stronger visibility or deterrence.</li>
+  <li>Camera placements that avoid glare and capture useful angles.</li>
+  <li>Lighting opportunities that improve both safety and footage quality.</li>
+  <li>Power, storage, and wiring constraints that affect reliability.</li>
+</ul>
+<h2>How To Prepare for the Visit</h2>
+<p>You do not need a perfect checklist. It helps to gather the household concerns that come up most often: late arrivals, children coming home first, blind spots near the gate, or the areas that feel least secure after dark.</p>
+<ul>
+  <li>List the 2 or 3 zones that worry you most.</li>
+  <li>Note who needs app access, alerts, or playback access.</li>
+  <li>Bring any homeowner or landlord restrictions into the conversation.</li>
+</ul>
+<h2>What You Should Leave With</h2>
+<p>By the end of a useful site visit, you should understand the priority zones, the recommended first phase, and the tradeoffs between “good enough now” and “better later.”</p>
+<p>The next step should feel practical and staged, not vague or rushed.</p>
+$post_4$,
+    'See what a home security site visit actually covers so your family can prepare, ask better questions, and move forward with confidence.',
+    '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=blog_cta_site_visit" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Book a Free Site Visit</a></div>',
+    timestamptz '2026-02-02T00:00:00Z',
+    timestamptz '2026-02-02T00:00:00Z'
   )
 on conflict (slug) do update
 set

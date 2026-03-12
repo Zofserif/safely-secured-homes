@@ -1,4 +1,5 @@
 import Link from "next/link";
+import EmailBucketBadges from "./EmailBucketBadges";
 import type { BlogPost } from "../../lib/blogPosts";
 
 const formatPublishDate = (value: string) =>
@@ -15,6 +16,8 @@ export default function BlogPostCard({ post }: { post: BlogPost }) {
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
           <span>{formatPublishDate(post.createdAt)}</span>
         </div>
+
+        <EmailBucketBadges buckets={post.emailBuckets} className="mt-3" />
 
         <h2 className="mt-3 text-xl font-bold leading-snug text-[#1F2937]">
           <Link

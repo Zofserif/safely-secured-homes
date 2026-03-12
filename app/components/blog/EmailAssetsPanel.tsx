@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type {
   BlogEmailAssetDiagnostics,
   BlogEmailAssets,
+  BlogPostEmailUsage,
 } from "../../lib/blogPosts";
 
 type AssetKey = keyof BlogEmailAssets;
@@ -86,17 +87,30 @@ const legacyCopy = (value: string) => {
 
 const formatKilobytes = (bytes: number) => `${(bytes / 1024).toFixed(1)} KB`;
 
+const formatStatusLabel = (value: string) =>
+  value
+    .split("_")
+    .filter(Boolean)
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join(" ");
+
 export default function EmailAssetsPanel({
   emailAssets,
   emailAssetDiagnostics,
+  emailUsage,
 }: {
   emailAssets: BlogEmailAssets;
   emailAssetDiagnostics: BlogEmailAssetDiagnostics;
+  emailUsage: BlogPostEmailUsage;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [feedbackByField, setFeedbackByField] =
     useState<Record<AssetKey, Feedback>>(defaultFeedback);
   const resetTimers = useRef(defaultResetTimers());
+  const hasCampaignUsage =
+    emailUsage.manualBuckets.length > 0 ||
+    emailUsage.broadcastCampaigns.length > 0 ||
+    emailUsage.journeySteps.length > 0;
 
   useEffect(() => {
     const timers = resetTimers.current;
@@ -222,6 +236,108 @@ export default function EmailAssetsPanel({
                 {"{{{cta}}}"}
               </code>
             </div>
+          </article>
+
+          <article className="rounded-2xl border border-[#BEE9E8] bg-[#F8FAFC] p-4 sm:p-5">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-[#2D3748]">
+              Campaign Usage
+            </h3>
+
+            {!hasCampaignUsage ? (
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                This post is not assigned to any email bucket or campaign yet.
+              </p>
+            ) : (
+              <div className="mt-4 space-y-4">
+                <section className="rounded-xl border border-slate-200 bg-white p-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700">
+                    Assigned Buckets
+                  </h4>
+                  {emailUsage.manualBuckets.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {emailUsage.manualBuckets.map((bucket) => (
+                        <span
+                          key={bucket.key}
+                          className="inline-flex items-center rounded-full border border-[#0E79B2]/20 bg-[#E8F5FB] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#0B5E8B]"
+                        >
+                          {bucket.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-sm text-slate-500">
+                      No manual bucket assignments yet.
+                    </p>
+                  )}
+                </section>
+
+                <section className="rounded-xl border border-slate-200 bg-white p-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700">
+                    Weekly Broadcast Campaigns
+                  </h4>
+                  {emailUsage.broadcastCampaigns.length > 0 ? (
+                    <div className="mt-3 space-y-3">
+                      {emailUsage.broadcastCampaigns.map((campaign) => (
+                        <div
+                          key={campaign.id}
+                          className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-3"
+                        >
+                          <p className="text-sm font-semibold text-[#1F2937]">
+                            {campaign.name}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            <code>{campaign.key}</code>
+                          </p>
+                          <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                            Status: {formatStatusLabel(campaign.status)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-sm text-slate-500">
+                      No weekly broadcast campaigns are linked to this post yet.
+                    </p>
+                  )}
+                </section>
+
+                <section className="rounded-xl border border-slate-200 bg-white p-4">
+                  <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700">
+                    Journey Steps
+                  </h4>
+                  {emailUsage.journeySteps.length > 0 ? (
+                    <div className="mt-3 space-y-3">
+                      {emailUsage.journeySteps.map((step) => (
+                        <div
+                          key={step.id}
+                          className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-3"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-[#1F2937]">
+                              {step.campaignName}
+                            </p>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                              Step {step.stepOrder}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">
+                            <code>{step.stepKey}</code>
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                            <span>Delay: {step.delayDays} day{step.delayDays === 1 ? "" : "s"}</span>
+                            <span>Status: {formatStatusLabel(step.campaignStatus)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-sm text-slate-500">
+                      No journey steps currently reference this post.
+                    </p>
+                  )}
+                </section>
+              </div>
+            )}
           </article>
 
           {emailAssetDiagnostics.warnings.length > 0 && (

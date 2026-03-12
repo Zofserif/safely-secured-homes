@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import EmailBucketBadges from "../../components/blog/EmailBucketBadges";
 import EmailAssetsPanel from "../../components/blog/EmailAssetsPanel";
 import HtmlContent from "../../components/blog/HtmlContent";
 import Footer from "../../components/layout/Footer";
@@ -10,6 +11,7 @@ import BreadcrumbJsonLd from "../../components/seo/BreadcrumbJsonLd";
 import {
   getBlogEmailAssetDiagnostics,
   getBlogEmailAssets,
+  getBlogPostEmailUsage,
   getBlogPostBySlug,
   getBlogSlugs,
 } from "../../lib/blogPosts";
@@ -91,6 +93,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   const emailAssets = getBlogEmailAssets(post);
   const emailAssetDiagnostics = getBlogEmailAssetDiagnostics(post);
+  const emailUsage = showInternalEmailAssets
+    ? await getBlogPostEmailUsage(post.id)
+    : {
+        manualBuckets: [],
+        broadcastCampaigns: [],
+        journeySteps: [],
+      };
 
   return (
     <div className="min-h-screen bg-[#F8F6F2] text-[#1F2937]">
@@ -149,6 +158,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <span>{formatPublishDate(post.createdAt)}</span>
               </div>
+
+              <EmailBucketBadges buckets={post.emailBuckets} className="mt-4" />
 
               <h1 className="mt-4 text-3xl font-bold leading-tight text-[#1F2937] sm:text-4xl lg:text-5xl">
                 {post.title}
@@ -228,6 +239,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   <EmailAssetsPanel
                     emailAssets={emailAssets}
                     emailAssetDiagnostics={emailAssetDiagnostics}
+                    emailUsage={emailUsage}
                   />
                 </div>
               )}

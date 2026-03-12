@@ -232,6 +232,97 @@ to public
 using (auth.role() = 'service_role')
 with check (auth.role() = 'service_role');
 
+create table if not exists public.email_content_buckets (
+  id uuid primary key default gen_random_uuid(),
+  key text not null unique,
+  name text not null,
+  description text not null default '',
+  display_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists set_email_content_buckets_updated_at
+  on public.email_content_buckets;
+create trigger set_email_content_buckets_updated_at
+before update on public.email_content_buckets
+for each row execute function public.set_updated_at_timestamp();
+
+alter table if exists public.email_content_buckets enable row level security;
+
+drop policy if exists "Service role manages email content buckets"
+  on public.email_content_buckets;
+create policy "Service role manages email content buckets"
+on public.email_content_buckets
+for all
+to public
+using (auth.role() = 'service_role')
+with check (auth.role() = 'service_role');
+
+create table if not exists public.blog_post_email_buckets (
+  id uuid primary key default gen_random_uuid(),
+  blog_post_id uuid not null references public.blog_posts (id) on delete cascade,
+  bucket_id uuid not null references public.email_content_buckets (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'blog_post_email_buckets_blog_post_id_bucket_id_key'
+  ) then
+    alter table public.blog_post_email_buckets
+      add constraint blog_post_email_buckets_blog_post_id_bucket_id_key
+      unique (blog_post_id, bucket_id);
+  end if;
+end
+$$;
+
+create index if not exists blog_post_email_buckets_blog_post_id_idx
+  on public.blog_post_email_buckets (blog_post_id);
+
+create index if not exists blog_post_email_buckets_bucket_id_idx
+  on public.blog_post_email_buckets (bucket_id);
+
+alter table if exists public.blog_post_email_buckets enable row level security;
+
+drop policy if exists "Service role manages blog post email buckets"
+  on public.blog_post_email_buckets;
+create policy "Service role manages blog post email buckets"
+on public.blog_post_email_buckets
+for all
+to public
+using (auth.role() = 'service_role')
+with check (auth.role() = 'service_role');
+
+insert into public.email_content_buckets (
+  key,
+  name,
+  description,
+  display_order
+)
+values
+  (
+    'lead_journey',
+    'Lead Journey',
+    'Posts explicitly assigned to the lead follow-up journey.',
+    10
+  ),
+  (
+    'weekly_newsletter',
+    'Weekly Newsletter',
+    'Posts manually selected for weekly newsletter sends.',
+    20
+  )
+on conflict (key) do update
+set
+  name = excluded.name,
+  description = excluded.description,
+  display_order = excluded.display_order,
+  updated_at = now();
+
 insert into public.blog_posts (
   slug,
   subject,
@@ -582,6 +673,21 @@ set
   cta_override_html = excluded.cta_override_html,
   is_active = excluded.is_active,
   updated_at = now();
+
+insert into public.blog_post_email_buckets (
+  blog_post_id,
+  bucket_id
+)
+select distinct
+  step.blog_post_id,
+  bucket.id
+from public.email_campaign_steps as step
+join public.email_campaigns as campaign
+  on campaign.id = step.campaign_id
+join public.email_content_buckets as bucket
+  on bucket.key = 'lead_journey'
+where campaign.key = 'lead_follow_up_journey'
+on conflict (blog_post_id, bucket_id) do nothing;
 
 create or replace view public.newsletter_subscriber_campaign_history as
 select

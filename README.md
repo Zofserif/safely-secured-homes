@@ -70,6 +70,56 @@ This project uses a hybrid media strategy:
 8. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/lead-journeys` once daily at `01:00 UTC` for Hobby-safe lead-journey sends.
    On Vercel Hobby, steps 2-4 are delivered on the first daily batch after they become due rather than at exact hour precision.
 
+### Blog Email Organization
+
+- `supabase/newsletter_campaign_tracking.sql` now seeds two reusable blog email buckets: `lead_journey` and `weekly_newsletter`.
+- Public blog badges come only from manual `blog_post_email_buckets` assignments.
+- Exact send history still comes from `email_campaigns` and `email_campaign_steps`.
+- Weekly newsletter broadcasts should use one campaign row per send with the key format:
+  `weekly_newsletter_YYYYMMDD_<slug>`
+
+Assign a blog post to a bucket by slug:
+
+```sql
+insert into public.blog_post_email_buckets (blog_post_id, bucket_id)
+select
+  post.id,
+  bucket.id
+from public.blog_posts as post
+join public.email_content_buckets as bucket
+  on bucket.key = 'weekly_newsletter'
+where post.slug = 'camera-placement-mistakes-families-make'
+on conflict (blog_post_id, bucket_id) do nothing;
+```
+
+Create a weekly newsletter broadcast campaign for a blog post:
+
+```sql
+insert into public.email_campaigns (
+  key,
+  name,
+  kind,
+  objective_key,
+  status,
+  blog_post_id
+)
+select
+  'weekly_newsletter_20260312_camera-placement-mistakes-families-make',
+  'Weekly Newsletter - March 12, 2026',
+  'broadcast',
+  'weekly_newsletter',
+  'draft',
+  post.id
+from public.blog_posts as post
+where post.slug = 'camera-placement-mistakes-families-make'
+on conflict (key) do update
+set
+  name = excluded.name,
+  status = excluded.status,
+  blog_post_id = excluded.blog_post_id,
+  updated_at = now();
+```
+
 ### Environment variables
 
 - `NEXT_PUBLIC_BRAND_FOOTER_LOGO_URL`: absolute or root-relative URL for the email footer logo.

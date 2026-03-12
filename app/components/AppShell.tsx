@@ -34,7 +34,17 @@ import {
   type AppView,
   type FunnelContext,
 } from "../lib/analytics";
+import {
+  formatHasBonusQueryValue,
+  HAS_BONUS_QUERY_PARAM,
+  parseHasBonusQueryValue,
+} from "../lib/bonusFlag";
+import { readMarketingAttribution } from "../lib/marketingAttribution";
 import { createShareableResultsPayload } from "../lib/resultsShare";
+import { useBonusEndsAt } from "./home/hooks/useBonusTimer";
+import { useHomeCtaAndScarcity } from "./home/hooks/useHomeCtaAndScarcity";
+import { useHomeDebugControls } from "./home/hooks/useHomeDebugControls";
+import { useSharedClockNowMs } from "./home/hooks/useSharedClock";
 
 declare global {
   interface Window {
@@ -115,6 +125,26 @@ const readPersistedLeadSendsEnabled = (): boolean | null => {
 const readSearchParam = (key: string) => {
   if (typeof window === "undefined") return "";
   return new URLSearchParams(window.location.search).get(key)?.trim() ?? "";
+};
+
+const buildHomeFormPath = (hasBonus: boolean) => {
+  const params = new URLSearchParams();
+
+  if (typeof window !== "undefined") {
+    const attribution = readMarketingAttribution(
+      new URLSearchParams(window.location.search)
+    );
+
+    if (attribution.source) params.set("source", attribution.source);
+    if (attribution.utm_source) params.set("utm_source", attribution.utm_source);
+    if (attribution.utm_medium) params.set("utm_medium", attribution.utm_medium);
+    if (attribution.utm_campaign) {
+      params.set("utm_campaign", attribution.utm_campaign);
+    }
+  }
+
+  params.set(HAS_BONUS_QUERY_PARAM, formatHasBonusQueryValue(hasBonus));
+  return `/form?${params.toString()}`;
 };
 
 const readStoredLead = () => {
@@ -198,11 +228,13 @@ export default function AppShell({
   formMode = "default",
   source,
   resultsKey,
+  hasBonus = false,
 }: {
   initialView?: AppView;
   formMode?: "default" | "newsletter";
   source?: string;
   resultsKey?: string;
+  hasBonus?: boolean;
 }) {
   const router = useRouter();
   const [storedLead, setStoredLead] = useState<StoredLead | null>(null);
@@ -220,15 +252,6 @@ export default function AppShell({
   );
   const [reportsLoading, setReportsLoading] = useState(true);
   const [reportsError, setReportsError] = useState(false);
-  const [debugReportsRemaining, setDebugReportsRemaining] = useState<
-    number | null | undefined
-  >(undefined);
-  const [debugReportsLoading, setDebugReportsLoading] = useState<
-    boolean | undefined
-  >(undefined);
-  const [debugReportsError, setDebugReportsError] = useState<
-    boolean | undefined
-  >(undefined);
   const [leadSendsEnabled, setLeadSendsEnabled] = useState<boolean>(() => {
     if (!IS_LOCAL_DEV) return true;
     return readPersistedLeadSendsEnabled() ?? false;
@@ -237,6 +260,9 @@ export default function AppShell({
   const [resolvedResultsKey, setResolvedResultsKey] = useState(
     () => resultsKey?.trim() ?? ""
   );
+  const [hasBonusParam, setHasBonusParam] = useState<boolean>(hasBonus);
+  const nowMs = useSharedClockNowMs();
+  const bonusEndsAt = useBonusEndsAt();
   const sourceForSubmission =
     sourceParam.toLowerCase() === "apply" || sourceParam.toLowerCase() === "newsletter"
       ? sourceParam.toLowerCase()
@@ -251,6 +277,15 @@ export default function AppShell({
     [effectiveFormMode, formSource]
   );
   const shouldTrackView = initialView !== "results" || hasResolvedResultsView;
+  const {
+    effectiveReportsRemaining,
+    effectiveReportsLoading,
+    effectiveReportsError,
+  } = useHomeDebugControls({
+    reportsRemaining,
+    reportsLoading,
+    reportsError,
+  });
 
   const setLeadSendsEnabledForDebug = useCallback((enabled: boolean) => {
     if (!IS_LOCAL_DEV) {
@@ -425,10 +460,16 @@ export default function AppShell({
   useEffect(() => {
     const sourceFromUrl = readSearchParam("source");
     const resultsKeyFromUrl = readSearchParam("r");
+    const hasBonusFromUrl = readSearchParam(HAS_BONUS_QUERY_PARAM);
 
     setSourceParam(sourceFromUrl || source?.trim() || "");
     setResolvedResultsKey(resultsKeyFromUrl || resultsKey?.trim() || "");
-  }, [resultsKey, source]);
+    setHasBonusParam(
+      hasBonusFromUrl
+        ? parseHasBonusQueryValue(hasBonusFromUrl)
+        : hasBonus
+    );
+  }, [hasBonus, resultsKey, source]);
 
   useEffect(() => {
     if (!shouldTrackView) return;
@@ -580,64 +621,25 @@ export default function AppShell({
     };
   }, []);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const handleDebugReports = (event: Event) => {
-      const detail = (event as CustomEvent).detail as
-        | {
-            remaining?: number | null;
-            loading?: boolean;
-            error?: boolean;
-            reset?: boolean;
-          }
-        | undefined;
-
-      if (!detail) return;
-
-      if (detail.reset) {
-        setDebugReportsRemaining(undefined);
-        setDebugReportsLoading(undefined);
-        setDebugReportsError(undefined);
-        return;
-      }
-
-      if ("remaining" in detail) {
-        setDebugReportsRemaining(detail.remaining);
-      }
-      if ("loading" in detail) {
-        setDebugReportsLoading(detail.loading);
-      }
-      if ("error" in detail) {
-        setDebugReportsError(detail.error);
-      }
-    };
-
-    window.addEventListener("ssh-debug-reports", handleDebugReports);
-    return () => {
-      window.removeEventListener("ssh-debug-reports", handleDebugReports);
-    };
-  }, []);
-
-  const effectiveReportsRemaining =
-    debugReportsRemaining !== undefined
-      ? debugReportsRemaining
-      : reportsRemaining;
-  const effectiveReportsLoading =
-    debugReportsLoading !== undefined ? debugReportsLoading : reportsLoading;
-  const effectiveReportsError =
-    debugReportsError !== undefined ? debugReportsError : reportsError;
   const effectiveReportsLimit = reportsLimit;
   const effectiveReportsWindowEndsAt = reportsWindowEndsAt;
-  const reportsSoldOut =
-    effectiveReportsRemaining !== null && effectiveReportsRemaining <= 0;
+  const hasExistingPlan = Boolean(storedLead);
+  const { cta: homeCta, scarcity: homeScarcity } = useHomeCtaAndScarcity({
+    reportsRemaining: effectiveReportsRemaining,
+    reportsLimit: effectiveReportsLimit,
+    reportsWindowEndsAt: effectiveReportsWindowEndsAt,
+    reportsLoading: effectiveReportsLoading,
+    reportsError: effectiveReportsError,
+    hasExistingPlan,
+    nowMs,
+    bonusEndsAt,
+  });
   const homeCtaScarcityState = resolveHomeCtaScarcityState({
-    hasExistingPlan: Boolean(storedLead),
+    hasExistingPlan,
     reportsLoading: effectiveReportsLoading,
     reportsError: effectiveReportsError,
     reportsRemaining: effectiveReportsRemaining,
   });
-  const hasExistingPlan = Boolean(storedLead);
   const isResultsLoading = view === "results" && (!formData || !result);
 
   useEffect(() => {
@@ -748,8 +750,11 @@ export default function AppShell({
       submitLeadToSupabase(
         normalizedData,
         calcResult,
-        submissionSource,
-        shouldSendExternalLeads,
+        {
+          source: submissionSource,
+          allowExternalEmails: shouldSendExternalLeads,
+          hasBonus: hasBonusParam,
+        },
       ),
     ]);
 
@@ -810,12 +815,15 @@ export default function AppShell({
     target: HomeCtaTarget,
     location: HomeCtaLocation
   ) => {
+    const hasBonus = target === "form" && !homeScarcity.bonusExpired;
+
     trackFunnelCtaClicked(
       "home",
       {
         cta_id: HOME_CTA_ID_BY_LOCATION[location],
         cta_location: location,
         target_path: HOME_CTA_TARGET_PATH[target],
+        has_bonus: target === "form" ? hasBonus : undefined,
         scarcity_state: homeCtaScarcityState,
         reports_remaining: effectiveReportsRemaining ?? undefined,
         reports_limit: effectiveReportsLimit ?? undefined,
@@ -823,6 +831,11 @@ export default function AppShell({
       },
       analyticsContext
     );
+
+    if (target === "form") {
+      router.push(buildHomeFormPath(hasBonus));
+      return;
+    }
 
     handleNavigation(target);
   };
@@ -833,7 +846,7 @@ export default function AppShell({
         <Navbar
           onNavigate={handleNavigation}
           onPrimaryCtaClick={handleHomePrimaryCtaClick}
-          hideCta={view === "results" || (reportsSoldOut && !hasExistingPlan)}
+          hideCta={view === "results" || (homeScarcity.soldOut && !hasExistingPlan)}
           hasExistingPlan={hasExistingPlan}
           centerLogo={view === "results"}
           visibilityMode={view === "home" ? "home_hero_reveal" : "default"}
@@ -844,12 +857,8 @@ export default function AppShell({
       {view === "home" && (
         <HomePage
           onPrimaryCtaClick={handleHomePrimaryCtaClick}
-          reportsRemaining={effectiveReportsRemaining}
-          reportsLimit={effectiveReportsLimit}
-          reportsWindowEndsAt={effectiveReportsWindowEndsAt}
-          reportsLoading={effectiveReportsLoading}
-          reportsError={effectiveReportsError}
-          hasExistingPlan={hasExistingPlan}
+          cta={homeCta}
+          scarcity={homeScarcity}
         />
       )}
 

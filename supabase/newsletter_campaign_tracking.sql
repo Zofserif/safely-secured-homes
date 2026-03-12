@@ -1,3 +1,6 @@
+-- Retired by supabase/email_core.sql.
+-- Keep this file only for reference while older environments are being cut over.
+
 -- Newsletter subscriber + campaign tracking schema.
 -- Run this in Supabase SQL editor.
 
@@ -106,21 +109,79 @@ alter table if exists public.newsletter_subscribers
   add column if not exists unsubscribed_at timestamptz;
 
 alter table if exists public.newsletter_subscribers
+  add column if not exists unsubscribe_token text;
+
+update public.newsletter_subscribers
+set unsubscribe_token = lower(trim(unsubscribe_token))
+where unsubscribe_token is not null
+  and unsubscribe_token <> lower(trim(unsubscribe_token));
+
+update public.newsletter_subscribers
+set unsubscribe_token = encode(gen_random_bytes(18), 'hex')
+where unsubscribe_token is null
+   or btrim(unsubscribe_token) = '';
+
+with duplicate_tokens as (
+  select id
+  from (
+    select
+      id,
+      row_number() over (
+        partition by unsubscribe_token
+        order by subscribed_at asc nulls first, id asc
+      ) as duplicate_index
+    from public.newsletter_subscribers
+    where unsubscribe_token is not null
+      and btrim(unsubscribe_token) <> ''
+  ) deduped
+  where duplicate_index > 1
+)
+update public.newsletter_subscribers
+set unsubscribe_token = encode(gen_random_bytes(18), 'hex')
+where id in (select id from duplicate_tokens);
+
+alter table if exists public.newsletter_subscribers
+  alter column unsubscribe_token set default encode(gen_random_bytes(18), 'hex');
+
+alter table if exists public.newsletter_subscribers
+  alter column unsubscribe_token set not null;
+
+create unique index if not exists newsletter_subscribers_unsubscribe_token_key
+  on public.newsletter_subscribers (unsubscribe_token);
+
+alter table if exists public.newsletter_subscribers
   add column if not exists acquisition_source text;
 
-update public.newsletter_subscribers
-set acquisition_source = coalesce(
-  nullif(btrim(acquisition_source), ''),
-  nullif(btrim(source), ''),
-  'newsletter'
-)
-where acquisition_source is null
-   or btrim(acquisition_source) = '';
-
-update public.newsletter_subscribers
-set source = acquisition_source
-where source is null
-   or btrim(source) = '';
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'newsletter_subscribers'
+      and column_name = 'source'
+  ) then
+    execute $sql$
+      update public.newsletter_subscribers
+      set acquisition_source = coalesce(
+        nullif(btrim(acquisition_source), ''),
+        nullif(btrim(source), ''),
+        'newsletter'
+      )
+      where acquisition_source is null
+         or btrim(acquisition_source) = ''
+    $sql$;
+  else
+    update public.newsletter_subscribers
+    set acquisition_source = coalesce(
+      nullif(btrim(acquisition_source), ''),
+      'newsletter'
+    )
+    where acquisition_source is null
+       or btrim(acquisition_source) = '';
+  end if;
+end
+$$;
 
 alter table if exists public.newsletter_subscribers
   add column if not exists utm_source text;

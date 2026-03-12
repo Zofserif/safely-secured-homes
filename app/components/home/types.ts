@@ -3,12 +3,8 @@ export type HomePageProps = {
     target: HomeCtaTarget,
     location: HomeCtaLocation
   ) => void;
-  reportsRemaining: number | null;
-  reportsLimit: number | null;
-  reportsWindowEndsAt: number | null;
-  reportsLoading: boolean;
-  reportsError: boolean;
-  hasExistingPlan: boolean;
+  cta: HomeCtaState;
+  scarcity: HomeScarcityState;
 };
 
 export type HomeCtaTarget = "newsletter" | "results" | "form";

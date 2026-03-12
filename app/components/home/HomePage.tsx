@@ -2,11 +2,7 @@ import { useState } from "react";
 import CertModal from "../layout/CertModal";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import CaseStudiesSectionClient from "../case-studies/CaseStudiesSectionClient";
-import { useBonusEndsAt } from "./hooks/useBonusTimer";
-import { useHomeCtaAndScarcity } from "./hooks/useHomeCtaAndScarcity";
-import { useHomeDebugControls } from "./hooks/useHomeDebugControls";
 import { useHomeTestimonials } from "./hooks/useHomeTestimonials";
-import { useSharedClockNowMs } from "./hooks/useSharedClock";
 import HomeAboutSection from "./sections/HomeAboutSection";
 import HomeCtaBannerSection from "./sections/HomeCtaBannerSection";
 import HomeFaqSection from "./sections/HomeFaqSection";
@@ -23,41 +19,14 @@ export { resetBonusTimerForDebug } from "./hooks/useBonusTimer";
 
 export default function HomePage({
   onPrimaryCtaClick,
-  reportsRemaining,
-  reportsLimit,
-  reportsWindowEndsAt,
-  reportsLoading,
-  reportsError,
-  hasExistingPlan,
+  cta,
+  scarcity,
 }: HomePageProps) {
   const [expandedReason, setExpandedReason] = useState<number | null>(null);
   const [showCertModal, setShowCertModal] = useState(false);
-  const nowMs = useSharedClockNowMs();
-  const bonusEndsAt = useBonusEndsAt();
   const testimonials = useHomeTestimonials();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const showTestimonials = testimonials.length > 0;
-
-  const {
-    effectiveReportsRemaining,
-    effectiveReportsLoading,
-    effectiveReportsError,
-  } = useHomeDebugControls({
-    reportsRemaining,
-    reportsLoading,
-    reportsError,
-  });
-
-  const { cta, scarcity } = useHomeCtaAndScarcity({
-    reportsRemaining: effectiveReportsRemaining,
-    reportsLimit,
-    reportsWindowEndsAt,
-    reportsLoading: effectiveReportsLoading,
-    reportsError: effectiveReportsError,
-    hasExistingPlan,
-    nowMs,
-    bonusEndsAt,
-  });
 
   return (
     <div className="overflow-x-hidden bg-[#F7FAFC]">

@@ -16,7 +16,14 @@ type LeadCreateBody = {
     utm_medium: string;
     utm_campaign: string;
     allow_external_emails: boolean;
+    has_bonus: boolean;
   };
+};
+
+type SubmitLeadOptions = {
+  source?: string;
+  allowExternalEmails?: boolean;
+  hasBonus?: boolean;
 };
 
 const toSafeString = (value: unknown): string =>
@@ -44,7 +51,10 @@ const buildLeadAnswers = (data: FormData): LeadAnswers => ({
   solution: data.solution,
 });
 
-const buildLeadCreateBody = (data: FormData, source?: string): LeadCreateBody => {
+const buildLeadCreateBody = (
+  data: FormData,
+  options: Pick<SubmitLeadOptions, "source" | "hasBonus"> = {},
+): LeadCreateBody => {
   const attribution = readCurrentMarketingAttribution();
   return {
     contact: {
@@ -54,11 +64,12 @@ const buildLeadCreateBody = (data: FormData, source?: string): LeadCreateBody =>
     },
     answers: buildLeadAnswers(data),
     meta: {
-      source: toSafeString(source) || attribution.source || "website",
+      source: toSafeString(options.source) || attribution.source || "website",
       utm_source: attribution.utm_source,
       utm_medium: attribution.utm_medium,
       utm_campaign: attribution.utm_campaign,
       allow_external_emails: true,
+      has_bonus: options.hasBonus === true,
     },
   };
 };
@@ -66,11 +77,14 @@ const buildLeadCreateBody = (data: FormData, source?: string): LeadCreateBody =>
 export async function submitLeadToSupabase(
   data: FormData,
   _result: CalculationResult,
-  source?: string,
-  allowExternalEmails = true,
+  options: SubmitLeadOptions = {},
 ) {
-  const insertBody = buildLeadCreateBody(data, source);
-  insertBody.meta.allow_external_emails = allowExternalEmails;
+  const insertBody = buildLeadCreateBody(data, {
+    source: options.source,
+    hasBonus: options.hasBonus,
+  });
+  insertBody.meta.allow_external_emails = options.allowExternalEmails ?? true;
+  insertBody.meta.has_bonus = options.hasBonus === true;
 
   try {
     const response = await fetch("/api/leads", {

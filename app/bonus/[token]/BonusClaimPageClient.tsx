@@ -6,6 +6,7 @@ import {
   useEffectEvent,
   useState,
 } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -22,11 +23,33 @@ type BonusClaimPageClientProps = {
 
 type FieldErrors = Partial<Record<"name" | "mobile" | "address", string>>;
 
+type Coordinates = {
+  lat: number;
+  lng: number;
+};
+
+type LocationFeedback = {
+  tone: "info" | "error";
+  text: string;
+};
+
 const initialFormData = {
   name: "",
   mobile: "",
   address: "",
 };
+
+const DEFAULT_BONUS_MAP_CENTER: Coordinates = {
+  lat: 12.8797,
+  lng: 121.774,
+};
+
+const BonusLocationPicker = dynamic(() => import("./BonusLocationPicker"), {
+  ssr: false,
+  loading: () => (
+    <div className="bonus-location-map animate-pulse rounded-[1.5rem] bg-slate-100" />
+  ),
+});
 
 const formatCountdown = (remainingMs: number): string => {
   const totalSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
@@ -56,6 +79,12 @@ export default function BonusClaimPageClient({
   const [claimedState, setClaimedState] = useState<BonusLinkClaimedStatus | null>(
     null,
   );
+  const [mapCenter, setMapCenter] = useState<Coordinates>(DEFAULT_BONUS_MAP_CENTER);
+  const [pinnedLocation, setPinnedLocation] = useState<Coordinates | null>(null);
+  const [locationFeedback, setLocationFeedback] = useState<LocationFeedback | null>(
+    null,
+  );
+  const [isLocating, setIsLocating] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   const activateLink = useEffectEvent(async () => {
@@ -161,6 +190,60 @@ export default function BonusClaimPageClient({
     }
   };
 
+  const updatePinnedLocation = (nextLocation: Coordinates) => {
+    setPinnedLocation(nextLocation);
+    setLocationFeedback(null);
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationFeedback({
+        tone: "error",
+        text: "Location access is not available in this browser. You can still place the pin manually.",
+      });
+      return;
+    }
+
+    setIsLocating(true);
+    setLocationFeedback(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nextLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+
+        setMapCenter(nextLocation);
+        setPinnedLocation(nextLocation);
+        setLocationFeedback({
+          tone: "info",
+          text: "Current location pinned. You can drag the pin or tap elsewhere to adjust it.",
+        });
+        setIsLocating(false);
+      },
+      (error) => {
+        const errorText =
+          error.code === error.PERMISSION_DENIED
+            ? "Location permission was denied. You can still place the pin manually on the map."
+            : error.code === error.TIMEOUT
+              ? "Getting your current location took too long. Try again or place the pin manually."
+              : "We could not access your current location. You can still place the pin manually.";
+
+        setLocationFeedback({
+          tone: "error",
+          text: errorText,
+        });
+        setIsLocating(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000,
+      },
+    );
+  };
+
   const validateForm = (): boolean => {
     const nextErrors: FieldErrors = {};
     const normalizedName = formData.name.trim();
@@ -244,31 +327,421 @@ export default function BonusClaimPageClient({
     }
   };
 
+  const pageState = isOpening
+    ? "opening"
+    : claimedState
+      ? "complete"
+      : effectiveStatus.status;
+
   const headingText =
-    effectiveStatus.status === "claimed" && !claimedState
-      ? "This bonus link has already been claimed."
-      : effectiveStatus.status === "expired"
-        ? "This bonus link has expired."
-        : effectiveStatus.status === "invalid"
-          ? "This bonus link is not available."
-          : claimedState
-            ? "Your free bonus is on its way."
-            : "Claim your free Safely Secured Homes mug.";
+    pageState === "opening"
+      ? "Preparing your one-time bonus claim."
+      : pageState === "claimable"
+        ? "Claim your free Safely Secured Homes mug."
+        : pageState === "complete"
+          ? "Your free bonus is on its way."
+          : pageState === "claimed"
+            ? "This bonus link has already been claimed."
+            : pageState === "expired"
+              ? "This bonus link has expired."
+              : "This bonus link is not available.";
 
   const subheadingText =
-    effectiveStatus.status === "claimable"
-      ? "Your one-time shipping window is active. Enter your shipping details before the timer runs out."
-      : effectiveStatus.status === "claimed" && !claimedState
-        ? "This one-time shipment was already used, so the link is now closed."
-        : effectiveStatus.status === "expired"
-          ? "The one-hour claim window ended before the shipping form was completed."
-          : effectiveStatus.status === "invalid"
-            ? "Please contact Safely Secured Homes if you believe this link should still work."
-            : "We received your shipping details for the one-time bonus shipment.";
+    pageState === "opening"
+      ? "We are validating your one-time link and preparing the shipping form."
+      : pageState === "claimable"
+        ? "Your one-time shipping window is active. Enter your shipping details before the timer runs out."
+        : pageState === "complete"
+          ? "We received your shipping details for the one-time bonus shipment."
+          : pageState === "claimed"
+            ? "This one-time shipment was already used, so the link is now closed."
+            : pageState === "expired"
+              ? "The one-hour claim window ended before the shipping form was completed."
+              : "Please contact Safely Secured Homes if you believe this link should still work.";
+
+  const heroTitle =
+    pageState === "opening" || pageState === "claimable"
+      ? "Free bonus mug with one-time shipping."
+      : pageState === "complete"
+        ? "Bonus claim confirmed."
+        : pageState === "claimed"
+          ? "Bonus shipment already claimed."
+          : pageState === "expired"
+            ? "Claim window closed."
+            : "Bonus link unavailable.";
+
+  const heroSubtitle =
+    pageState === "opening" || pageState === "claimable"
+      ? "Complete the form before the claim window expires."
+      : pageState === "complete"
+        ? "Your shipping details have been recorded successfully."
+        : pageState === "claimed"
+          ? "This one-time link was already used and cannot be reopened."
+          : pageState === "expired"
+            ? "The one-hour access window has ended for this link."
+            : "This token is invalid, incomplete, or no longer available.";
+
+  const formFieldClassName = (hasError: boolean) =>
+    `mt-2 w-full rounded-2xl border bg-white px-5 py-4 text-base text-[#2D3748] shadow-sm outline-none transition focus-visible:ring-4 placeholder:text-slate-400 ${
+      hasError
+        ? "border-red-500 focus-visible:ring-red-100"
+        : "border-[#D8DDE3] focus-visible:border-[#0E79B2] focus-visible:ring-[#0E79B2]/15"
+    }`;
+
+  const summaryLabel = claimedState
+    ? "Claim complete"
+    : effectiveStatus.status === "claimed"
+      ? "Already claimed"
+      : effectiveStatus.status === "expired"
+        ? "Link expired"
+        : "Link unavailable";
+
+  const summaryTitle = claimedState
+    ? "Shipping details received."
+    : effectiveStatus.status === "claimed"
+      ? "This bonus shipment was already claimed."
+      : effectiveStatus.status === "expired"
+        ? "The one-hour claim window has ended."
+        : "We could not activate this bonus link.";
+
+  const summaryBody = claimedState
+    ? `Thank you${
+        claimedState.shippingName ? `, ${claimedState.shippingName}` : ""
+      }. We stored your shipping details on ${formatTimestamp(
+        claimedState.claimedAt,
+      )}.`
+    : effectiveStatus.status === "claimed"
+      ? `This one-time claim was completed on ${formatTimestamp(
+          effectiveStatus.claimedAt,
+        )}.`
+      : effectiveStatus.status === "expired"
+        ? effectiveStatus.claimExpiresAt
+          ? `This link expired on ${formatTimestamp(
+              effectiveStatus.claimExpiresAt,
+            )}.`
+          : "This link is no longer active."
+        : "This token is invalid, incomplete, or no longer available.";
+
+  const details = claimedState
+    ? [
+        {
+          label: "Claimed on",
+          value: formatTimestamp(claimedState.claimedAt),
+        },
+        {
+          label: "Recipient",
+          value: claimedState.shippingName ?? "Shipping details received",
+        },
+      ]
+    : effectiveStatus.status === "claimed"
+      ? [
+          {
+            label: "Claimed on",
+            value: formatTimestamp(effectiveStatus.claimedAt),
+          },
+          {
+            label: "Recipient",
+            value: effectiveStatus.shippingName ?? "Shipping details received",
+          },
+        ]
+      : effectiveStatus.status === "expired"
+        ? [
+            {
+              label: "Opened",
+              value: effectiveStatus.openedAt
+                ? formatTimestamp(effectiveStatus.openedAt)
+                : "Not available",
+            },
+            {
+              label: "Expired",
+              value: effectiveStatus.claimExpiresAt
+                ? formatTimestamp(effectiveStatus.claimExpiresAt)
+                : "Not available",
+            },
+          ]
+        : [];
+
+  const claimCardContent = isOpening ? (
+    <div className="mx-auto max-w-3xl text-center">
+      <div className="inline-flex rounded-full bg-[#F1F7FB] px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#0E79B2]">
+        Activating link
+      </div>
+      <h2 className="mt-5 text-2xl font-bold text-[#1F2937] sm:text-3xl">
+        Preparing your bonus claim page.
+      </h2>
+      <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+        We are checking this one-time link and starting the claim window if it is
+        still available.
+      </p>
+      <div className="mt-8 space-y-5 text-left">
+        <div className="rounded-3xl border border-[#DCE6F1] bg-[#F0F9FF] p-6">
+          <div className="h-3 w-40 animate-pulse rounded-full bg-slate-200" />
+          <div className="mt-4 h-12 w-36 animate-pulse rounded-full bg-slate-200" />
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="h-20 animate-pulse rounded-2xl bg-white" />
+            <div className="h-20 animate-pulse rounded-2xl bg-white" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="h-20 animate-pulse rounded-2xl bg-slate-100" />
+          <div className="h-20 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
+        <div className="h-44 animate-pulse rounded-2xl bg-slate-100" />
+        <div className="h-14 animate-pulse rounded-full bg-slate-200" />
+      </div>
+    </div>
+  ) : effectiveStatus.status === "claimable" ? (
+    <div className="space-y-8">
+      <div className="rounded-3xl border border-[#BEE9E8] bg-[#F0F9FF] p-5 sm:p-6">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#0E79B2]">
+              Claim window active
+            </p>
+            <p className="mt-3 text-4xl font-bold tracking-tight text-[#1F2937] sm:text-5xl">
+              {formatCountdown(effectiveStatus.remainingMs)}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              Complete the shipping form before the one-time timer runs out.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[320px]">
+            <div className="rounded-2xl bg-white/90 p-4 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Activated
+              </p>
+              <p className="mt-2 text-sm font-medium leading-relaxed text-[#1F2937]">
+                {formatTimestamp(effectiveStatus.openedAt)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white/90 p-4 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Expires
+              </p>
+              <p className="mt-2 text-sm font-medium leading-relaxed text-[#1F2937]">
+                {formatTimestamp(effectiveStatus.claimExpiresAt)}
+              </p>
+            </div>
+          </div>
+        </div>
+        {effectiveStatus.note && (
+          <p className="mt-4 rounded-2xl bg-white/90 px-4 py-3 text-sm leading-relaxed text-slate-600">
+            {effectiveStatus.note}
+          </p>
+        )}
+      </div>
+
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+            Shipping details
+          </p>
+          <h2 className="mt-3 text-2xl font-bold text-[#1F2937] sm:text-3xl">
+            Complete your one-time claim.
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
+            Use the recipient name, mobile number, and full address so the bonus
+            shipment can be processed correctly.
+          </p>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <div>
+            <label
+              htmlFor="bonus-name"
+              className="text-sm font-semibold text-[#1F2937]"
+            >
+              Recipient name
+            </label>
+            <input
+              id="bonus-name"
+              type="text"
+              autoComplete="name"
+              maxLength={80}
+              value={formData.name}
+              onChange={(event) => updateField("name", event.target.value)}
+              className={formFieldClassName(Boolean(fieldErrors.name))}
+              placeholder="Full recipient name"
+            />
+            {fieldErrors.name && (
+              <p className="mt-1 text-xs text-red-500">{fieldErrors.name}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="bonus-mobile"
+              className="text-sm font-semibold text-[#1F2937]"
+            >
+              Contact number
+            </label>
+            <input
+              id="bonus-mobile"
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
+              maxLength={11}
+              value={formData.mobile}
+              onChange={(event) => updateField("mobile", event.target.value)}
+              className={formFieldClassName(Boolean(fieldErrors.mobile))}
+              placeholder="09xxxxxxxxx"
+            />
+            {fieldErrors.mobile && (
+              <p className="mt-1 text-xs text-red-500">{fieldErrors.mobile}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-[#DCE6F1] bg-[#F8FBFD] p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
+                Pin your location
+              </p>
+              <h3 className="mt-2 text-lg font-semibold text-[#1F2937]">
+                Mark the delivery area on the map.
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                This pin helps show your location visually. You still need to type
+                the full shipping address below before submitting the claim.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleUseCurrentLocation}
+              disabled={isLocating}
+              className="inline-flex items-center justify-center rounded-full border border-[#0E79B2]/20 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0E79B2] transition-colors hover:border-[#0E79B2] hover:bg-[#F0F9FF] disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+            >
+              {isLocating ? "Locating..." : "Use My Current Location"}
+            </button>
+          </div>
+
+          <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-[#DCE6F1] bg-white">
+            <BonusLocationPicker
+              center={mapCenter}
+              value={pinnedLocation}
+              onChange={updatePinnedLocation}
+            />
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <p className="text-xs leading-relaxed text-slate-500">
+              Tap anywhere on the map to place a pin, then drag the pin to fine-tune
+              the spot. The pinned location only stays on this page and is not
+              submitted to the backend.
+            </p>
+
+            {pinnedLocation && (
+              <p className="text-xs font-medium text-slate-600">
+                Pinned coordinates: {pinnedLocation.lat.toFixed(5)},{" "}
+                {pinnedLocation.lng.toFixed(5)}
+              </p>
+            )}
+
+            {locationFeedback && (
+              <p
+                className={`rounded-2xl border px-4 py-3 text-sm ${
+                  locationFeedback.tone === "error"
+                    ? "border-amber-200 bg-amber-50 text-amber-800"
+                    : "border-[#BEE9E8] bg-[#F0F9FF] text-[#0E79B2]"
+                }`}
+              >
+                {locationFeedback.text}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="bonus-address"
+            className="text-sm font-semibold text-[#1F2937]"
+          >
+            Shipping address
+          </label>
+          <textarea
+            id="bonus-address"
+            rows={5}
+            autoComplete="street-address"
+            value={formData.address}
+            onChange={(event) => updateField("address", event.target.value)}
+            className={`${formFieldClassName(Boolean(fieldErrors.address))} min-h-[180px] resize-y`}
+            placeholder="House number, street, barangay, city, province, and any delivery notes"
+          />
+          {fieldErrors.address && (
+            <p className="mt-1 text-xs text-red-500">{fieldErrors.address}</p>
+          )}
+        </div>
+
+        {requestError && (
+          <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {requestError}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="inline-flex w-full items-center justify-center rounded-full bg-[#0E79B2] px-10 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5 hover:bg-[#0b5e8b] disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none"
+        >
+          {isSubmitting
+            ? "Submitting your shipping details..."
+            : "Claim My Free Bonus"}
+        </button>
+
+        <p className="text-center text-xs text-slate-500">
+          JavaScript is required so the one-time timer can be enforced correctly
+          on this page.
+        </p>
+      </form>
+    </div>
+  ) : (
+    <div className="mx-auto max-w-3xl text-center">
+      <div className="inline-flex rounded-full bg-[#F1F7FB] px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#0E79B2]">
+        {summaryLabel}
+      </div>
+      <h2 className="mt-5 text-2xl font-bold text-[#1F2937] sm:text-3xl">
+        {summaryTitle}
+      </h2>
+      <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+        {summaryBody}
+      </p>
+
+      {details.length > 0 && (
+        <div className="mt-8 grid gap-4 text-left sm:grid-cols-2">
+          {details.map((detail) => (
+            <div
+              key={detail.label}
+              className="rounded-2xl bg-[#F8FBFD] p-5 shadow-sm"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                {detail.label}
+              </p>
+              <p className="mt-2 text-sm font-medium leading-relaxed text-[#1F2937]">
+                {detail.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {requestError && (
+        <p className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm text-red-700">
+          {requestError}
+        </p>
+      )}
+
+      <div className="mt-6 rounded-3xl border border-[#DCE6F1] bg-[#F8FBFD] p-5 text-left text-sm leading-relaxed text-slate-600">
+        Need help with this bonus shipment? Contact Safely Secured Homes directly
+        so the team can verify whether a replacement link is appropriate.
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#F7FAFC] text-[#2D3748]">
-      <header className="container mx-auto flex items-center justify-between px-6 pb-6 pt-8">
+      <header className="container mx-auto flex items-center justify-center px-6 pb-6 pt-8">
         <Link href="/" className="flex items-center gap-3">
           <Image
             src="/assets/img/Logo/navbar banner.png"
@@ -279,284 +752,105 @@ export default function BonusClaimPageClient({
             priority
           />
         </Link>
-        <Link
-          href="/"
-          className="text-xs font-semibold uppercase tracking-widest text-slate-500 transition-colors hover:text-[#0E79B2]"
-        >
-          Back to Home
-        </Link>
       </header>
 
-      <main className="container mx-auto px-6 pb-16 pt-2 lg:pb-24">
-        <section className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
-          <div className="space-y-6">
-            <div className="max-w-2xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
-                One-time bonus shipment
-              </p>
-              <h1 className="mt-4 text-3xl font-bold leading-tight text-[#2D3748] sm:text-4xl lg:text-5xl">
-                {headingText}
-              </h1>
-              <p className="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
-                {subheadingText}
-              </p>
-            </div>
+      <main className="container mx-auto px-6 pb-16 pt-2 sm:pt-4 lg:pb-24">
+        <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 sm:gap-10">
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+              One-time bonus shipment
+            </p>
+            <h1 className="mt-4 text-3xl font-bold leading-tight text-[#2D3748] sm:text-4xl lg:text-5xl">
+              {headingText}
+            </h1>
+            <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:mt-4 sm:text-lg">
+              {subheadingText}
+            </p>
+          </div>
 
-            <div className="relative aspect-[7/4] overflow-hidden rounded-[2rem] border border-white bg-[#0B1724] shadow-2xl shadow-[#0E79B2]/15">
+          <div className="max-w-5xl mx-auto w-full">
+            <div className="relative aspect-7/4 w-full overflow-hidden rounded-4xl border border-white bg-[#0B1724] shadow-2xl shadow-[#0E79B2]/15">
               <video
                 className="h-full w-full object-cover"
-                controls
+                aria-hidden="true"
+                autoPlay
+                loop
                 muted
                 playsInline
-                preload="metadata"
+                preload="auto"
+                tabIndex={-1}
               >
                 <source src={BONUS_LINK_VIDEO_URL} type="video/mp4" />
               </video>
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
-              <div className="absolute left-4 top-4 rounded-full bg-white/92 px-3 py-1.5 text-xs font-semibold text-[#0E79B2] shadow-sm">
-                Safely Secured Homes Bonus
-              </div>
-              <div className="absolute bottom-4 left-4 right-4 text-left text-white sm:bottom-6 sm:left-6 sm:right-6">
-                <p className="text-base font-semibold sm:text-xl">
-                  Free bonus mug with one-time shipping.
+              <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/40 via-black/10 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 text-left sm:bottom-6 sm:left-6 sm:right-6">
+                <p className="text-base font-semibold text-white sm:text-xl">
+                  {heroTitle}
                 </p>
                 <p className="mt-1 text-xs text-white/80 sm:text-sm">
-                  Complete the form before the claim window expires.
+                  {heroSubtitle}
                 </p>
               </div>
             </div>
-
-            <article className="rounded-3xl border border-[#DCE6F1] bg-white/95 p-6 shadow-[0_18px_40px_rgba(14,121,178,0.08)]">
-              <h2 className="text-lg font-semibold text-[#1F2937]">
-                How this link works
-              </h2>
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl bg-[#F1F7FB] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
-                    Step 1
-                  </p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Opening this page starts a one-hour claim window for this link.
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-[#F1F7FB] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
-                    Step 2
-                  </p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Submit the recipient name, mobile number, and shipping address.
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-[#F1F7FB] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
-                    Step 3
-                  </p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Once claimed, the link is immediately closed and cannot be reused.
-                  </p>
-                </div>
-              </div>
-            </article>
           </div>
 
-          <aside className="rounded-[2rem] border border-white/90 bg-white/98 p-6 shadow-[0_24px_65px_rgba(14,121,178,0.12)] sm:p-8">
-            {isOpening ? (
-              <div className="space-y-4">
-                <div className="inline-flex rounded-full bg-[#F1F7FB] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
-                  Activating link
-                </div>
-                <div className="space-y-3">
-                  <div className="h-3 w-2/3 animate-pulse rounded-full bg-slate-200" />
-                  <div className="h-3 w-full animate-pulse rounded-full bg-slate-200" />
-                  <div className="h-3 w-5/6 animate-pulse rounded-full bg-slate-200" />
-                </div>
-              </div>
-            ) : effectiveStatus.status === "claimable" ? (
-              <div>
-                <div className="rounded-3xl border border-[#BEE9E8] bg-[#F0F9FF] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#0E79B2]">
-                    Claim window active
-                  </p>
-                  <p className="mt-3 text-4xl font-bold tracking-tight text-[#1F2937]">
-                    {formatCountdown(effectiveStatus.remainingMs)}
-                  </p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Link activated on {formatTimestamp(effectiveStatus.openedAt)}.
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Expires on {formatTimestamp(effectiveStatus.claimExpiresAt)}.
-                  </p>
-                  {effectiveStatus.note && (
-                    <p className="mt-3 rounded-2xl bg-white/90 px-4 py-3 text-sm text-slate-600">
-                      {effectiveStatus.note}
-                    </p>
-                  )}
-                </div>
+          <section className="rounded-[2rem] border border-white bg-white p-6 shadow-2xl shadow-[#0E79B2]/10 sm:p-8">
+            {claimCardContent}
+          </section>
 
-                <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-                  <div>
-                    <label
-                      htmlFor="bonus-name"
-                      className="text-sm font-semibold text-[#1F2937]"
-                    >
-                      Recipient name
-                    </label>
-                    <input
-                      id="bonus-name"
-                      type="text"
-                      autoComplete="name"
-                      maxLength={80}
-                      value={formData.name}
-                      onChange={(event) => updateField("name", event.target.value)}
-                      className={`mt-2 w-full rounded-2xl border px-5 py-3.5 shadow-sm outline-none transition focus-visible:ring-4 ${
-                        fieldErrors.name
-                          ? "border-red-500 focus-visible:ring-red-100"
-                          : "border-[#D8DDE3] focus-visible:border-[#0E79B2] focus-visible:ring-[#0E79B2]/15"
-                      }`}
-                      placeholder="Full recipient name"
-                    />
-                    {fieldErrors.name && (
-                      <p className="mt-1 text-xs text-red-500">{fieldErrors.name}</p>
-                    )}
-                  </div>
+          <section className="mt-2">
+            <div className="max-w-3xl mx-auto text-center">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
+                How this link works
+              </p>
+              <h2 className="mt-3 text-2xl font-bold text-[#1F2937] sm:text-3xl">
+                A simple three-step claim flow.
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+                This bonus link opens once, stays active for one hour, and closes
+                automatically after a successful claim.
+              </p>
+            </div>
 
-                  <div>
-                    <label
-                      htmlFor="bonus-mobile"
-                      className="text-sm font-semibold text-[#1F2937]"
-                    >
-                      Contact number
-                    </label>
-                    <input
-                      id="bonus-mobile"
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      maxLength={11}
-                      value={formData.mobile}
-                      onChange={(event) => updateField("mobile", event.target.value)}
-                      className={`mt-2 w-full rounded-2xl border px-5 py-3.5 shadow-sm outline-none transition focus-visible:ring-4 ${
-                        fieldErrors.mobile
-                          ? "border-red-500 focus-visible:ring-red-100"
-                          : "border-[#D8DDE3] focus-visible:border-[#0E79B2] focus-visible:ring-[#0E79B2]/15"
-                      }`}
-                      placeholder="09xxxxxxxxx"
-                    />
-                    {fieldErrors.mobile && (
-                      <p className="mt-1 text-xs text-red-500">
-                        {fieldErrors.mobile}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="bonus-address"
-                      className="text-sm font-semibold text-[#1F2937]"
-                    >
-                      Shipping address
-                    </label>
-                    <textarea
-                      id="bonus-address"
-                      rows={5}
-                      autoComplete="street-address"
-                      value={formData.address}
-                      onChange={(event) => updateField("address", event.target.value)}
-                      className={`mt-2 w-full rounded-2xl border px-5 py-3.5 shadow-sm outline-none transition focus-visible:ring-4 ${
-                        fieldErrors.address
-                          ? "border-red-500 focus-visible:ring-red-100"
-                          : "border-[#D8DDE3] focus-visible:border-[#0E79B2] focus-visible:ring-[#0E79B2]/15"
-                      }`}
-                      placeholder="House number, street, barangay, city, province, and any delivery notes"
-                    />
-                    {fieldErrors.address && (
-                      <p className="mt-1 text-xs text-red-500">
-                        {fieldErrors.address}
-                      </p>
-                    )}
-                  </div>
-
-                  {requestError && (
-                    <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                      {requestError}
-                    </p>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="inline-flex w-full items-center justify-center rounded-full bg-[#0E79B2] px-6 py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-[#0E79B2]/20 transition-all hover:-translate-y-0.5 hover:bg-[#0b5e8b] disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none"
-                  >
-                    {isSubmitting
-                      ? "Submitting your shipping details..."
-                      : "Claim My Free Bonus"}
-                  </button>
-
-                  <p className="text-center text-xs text-slate-500">
-                    JavaScript is required so the one-time timer can be enforced
-                    correctly on this page.
-                  </p>
-                </form>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="inline-flex rounded-full bg-[#F1F7FB] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
-                  {claimedState
-                    ? "Claim complete"
-                    : effectiveStatus.status === "claimed"
-                      ? "Already claimed"
-                      : effectiveStatus.status === "expired"
-                        ? "Link expired"
-                        : "Link unavailable"}
-                </div>
-
-                <div>
-                  <h2 className="text-2xl font-bold text-[#1F2937]">
-                    {claimedState
-                      ? "Shipping details received."
-                      : effectiveStatus.status === "claimed"
-                        ? "This bonus shipment was already claimed."
-                        : effectiveStatus.status === "expired"
-                          ? "The one-hour claim window has ended."
-                          : "We could not activate this bonus link."}
-                  </h2>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                    {claimedState
-                      ? `Thank you${
-                          claimedState.shippingName
-                            ? `, ${claimedState.shippingName}`
-                            : ""
-                        }. We stored your shipping details on ${formatTimestamp(
-                          claimedState.claimedAt,
-                        )}.`
-                      : effectiveStatus.status === "claimed"
-                        ? `This one-time claim was completed on ${formatTimestamp(
-                            effectiveStatus.claimedAt,
-                          )}.`
-                        : effectiveStatus.status === "expired"
-                          ? effectiveStatus.claimExpiresAt
-                            ? `This link expired on ${formatTimestamp(
-                                effectiveStatus.claimExpiresAt,
-                              )}.`
-                            : "This link is no longer active."
-                          : "This token is invalid, incomplete, or no longer available."}
-                  </p>
-                </div>
-
-                {requestError && (
-                  <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {requestError}
-                  </p>
-                )}
-
-                <div className="rounded-3xl border border-[#DCE6F1] bg-[#F8FBFD] p-5 text-sm text-slate-600">
-                  Need help with this bonus shipment? Contact Safely Secured Homes
-                  directly so the team can verify whether a replacement link is
-                  appropriate.
-                </div>
-              </div>
-            )}
-          </aside>
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              <article className="rounded-3xl border border-[#DCE6F1] bg-white p-6 shadow-[0_18px_40px_rgba(14,121,178,0.08)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
+                  Step 1
+                </p>
+                <h3 className="mt-3 text-lg font-semibold text-[#1F2937]">
+                  Open the link
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Opening this page starts a one-hour claim window for this
+                  one-time link.
+                </p>
+              </article>
+              <article className="rounded-3xl border border-[#DCE6F1] bg-white p-6 shadow-[0_18px_40px_rgba(14,121,178,0.08)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
+                  Step 2
+                </p>
+                <h3 className="mt-3 text-lg font-semibold text-[#1F2937]">
+                  Submit shipping details
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Enter the recipient name, mobile number, and full shipping
+                  address.
+                </p>
+              </article>
+              <article className="rounded-3xl border border-[#DCE6F1] bg-white p-6 shadow-[0_18px_40px_rgba(14,121,178,0.08)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0E79B2]">
+                  Step 3
+                </p>
+                <h3 className="mt-3 text-lg font-semibold text-[#1F2937]">
+                  Link closes automatically
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Once claimed, the link is immediately closed and cannot be
+                  reused.
+                </p>
+              </article>
+            </div>
+          </section>
         </section>
       </main>
     </div>

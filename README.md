@@ -65,60 +65,27 @@ This project uses a hybrid media strategy:
 5. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
    This table also stores `first_name`, `email`, and `mobile` for each generated link.
 6. Run `supabase/leads.sql` to align `leads` with canonical payload storage and remove legacy summary columns.
-7. Run `supabase/newsletter_campaign_tracking.sql` to align `newsletter_subscribers` and add campaign definitions, enrollments, send history, and subscriber campaign views.
-   This migration also backfills `name` from email for older `newsletter_subscribers` rows, enables RLS on the newsletter campaign tables, restricts campaign views to `service_role`, adds `email_campaign_steps`, and seeds the 4-step `lead_follow_up_journey`.
-8. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/lead-journeys` once daily at `01:00 UTC` for Hobby-safe lead-journey sends.
+7. Run `supabase/email_core.sql` to align `newsletter_subscribers`, create `email_journey_enrollments` and `email_deliveries`, and backfill existing subscriber/journey/send data from the legacy campaign tables when present.
+8. After verifying the app is running on the reset model, run `supabase/email_cleanup.sql` to drop the retired campaign and bucket tables.
+9. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/lead-journeys` once daily at `01:00 UTC` for Hobby-safe lead-journey sends.
    On Vercel Hobby, steps 2-4 are delivered on the first daily batch after they become due rather than at exact hour precision.
 
 ### Blog Email Organization
 
-- `supabase/newsletter_campaign_tracking.sql` now seeds two reusable blog email buckets: `lead_journey` and `weekly_newsletter`.
-- Public blog badges come only from manual `blog_post_email_buckets` assignments.
-- Exact send history still comes from `email_campaigns` and `email_campaign_steps`.
-- Weekly newsletter broadcasts should use one campaign row per send with the key format:
-  `weekly_newsletter_YYYYMMDD_<slug>`
+- Public blog badges are derived from code-defined journey usage plus past weekly broadcast sends.
+- Exact send history now lives in `email_deliveries`.
+- Weekly newsletter broadcasts are one-off sends keyed as `weekly_YYYYMMDD_<slug>`.
 
-Assign a blog post to a bucket by slug:
+Send a weekly newsletter for a blog post:
 
-```sql
-insert into public.blog_post_email_buckets (blog_post_id, bucket_id)
-select
-  post.id,
-  bucket.id
-from public.blog_posts as post
-join public.email_content_buckets as bucket
-  on bucket.key = 'weekly_newsletter'
-where post.slug = 'camera-placement-mistakes-families-make'
-on conflict (blog_post_id, bucket_id) do nothing;
+```bash
+npm run send:weekly-newsletter -- --slug camera-placement-mistakes-families-make
 ```
 
-Create a weekly newsletter broadcast campaign for a blog post:
+Optional flags:
 
-```sql
-insert into public.email_campaigns (
-  key,
-  name,
-  kind,
-  objective_key,
-  status,
-  blog_post_id
-)
-select
-  'weekly_newsletter_20260312_camera-placement-mistakes-families-make',
-  'Weekly Newsletter - March 12, 2026',
-  'broadcast',
-  'weekly_newsletter',
-  'draft',
-  post.id
-from public.blog_posts as post
-where post.slug = 'camera-placement-mistakes-families-make'
-on conflict (key) do update
-set
-  name = excluded.name,
-  status = excluded.status,
-  blog_post_id = excluded.blog_post_id,
-  updated_at = now();
-```
+- `--date YYYY-MM-DD` to force the `send_key` date component.
+- `--limit N` to send to only the first `N` subscribed recipients.
 
 ### Environment variables
 
@@ -145,8 +112,7 @@ set
 
 ### Campaign Unsubscribe Link
 
-- Generated blog campaign HTML includes:
-  `https://safelysecuredhomes.com/unsubscribe?email={{email}}`
-- Replace `{{email}}` with your provider's merge syntax if needed.
-- If the merge value is missing/invalid, `/unsubscribe` shows a manual email fallback form.
-- If you only use anon RLS policies, run `supabase/newsletter_unsubscribe_rpc.sql` so unsubscribe can still mark subscribers as unsubscribed and cancel active enrollments via RPC.
+- Newsletter sends append the unsubscribe footer automatically at send time.
+- The app now uses token-based links in the form:
+  `https://safelysecuredhomes.com/unsubscribe/<token>`
+- `supabase/newsletter_unsubscribe_tokens.sql` is retired by `supabase/email_core.sql`.

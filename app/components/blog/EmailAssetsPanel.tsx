@@ -87,12 +87,20 @@ const legacyCopy = (value: string) => {
 
 const formatKilobytes = (bytes: number) => `${(bytes / 1024).toFixed(1)} KB`;
 
-const formatStatusLabel = (value: string) =>
-  value
-    .split("_")
-    .filter(Boolean)
-    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
-    .join(" ");
+const formatDateTimeLabel = (value: string | null) => {
+  if (!value) return "Unknown";
+
+  const parsed = new Date(value);
+  if (!Number.isFinite(parsed.getTime())) return "Unknown";
+
+  return parsed.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
 
 export default function EmailAssetsPanel({
   emailAssets,
@@ -108,8 +116,7 @@ export default function EmailAssetsPanel({
     useState<Record<AssetKey, Feedback>>(defaultFeedback);
   const resetTimers = useRef(defaultResetTimers());
   const hasCampaignUsage =
-    emailUsage.manualBuckets.length > 0 ||
-    emailUsage.broadcastCampaigns.length > 0 ||
+    emailUsage.broadcastSends.length > 0 ||
     emailUsage.journeySteps.length > 0;
 
   useEffect(() => {
@@ -194,6 +201,7 @@ export default function EmailAssetsPanel({
           <h2 className="text-2xl font-bold text-[#1F2937]">Email Campaign Assets</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
             Internal publishing assets for EmailJS-ready newsletter campaigns.
+            The unsubscribe footer is injected automatically at send time.
           </p>
         </div>
         <button
@@ -218,6 +226,7 @@ export default function EmailAssetsPanel({
               for HTML fragments, and set the EmailJS subject line to
               {" "}
               <code>{"{{subject}}"}</code>.
+              {" "}Newsletter sends also append an unsubscribe footer automatically.
             </p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-[#1F2937]">
               <code className="rounded-full bg-white px-3 py-1">{"{{name}}"}</code>
@@ -240,7 +249,7 @@ export default function EmailAssetsPanel({
 
           <article className="rounded-2xl border border-[#BEE9E8] bg-[#F8FAFC] p-4 sm:p-5">
             <h3 className="text-sm font-bold uppercase tracking-wide text-[#2D3748]">
-              Campaign Usage
+              Email Usage
             </h3>
 
             {!hasCampaignUsage ? (
@@ -251,52 +260,42 @@ export default function EmailAssetsPanel({
               <div className="mt-4 space-y-4">
                 <section className="rounded-xl border border-slate-200 bg-white p-4">
                   <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700">
-                    Assigned Buckets
+                    Weekly Newsletter Sends
                   </h4>
-                  {emailUsage.manualBuckets.length > 0 ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {emailUsage.manualBuckets.map((bucket) => (
-                        <span
-                          key={bucket.key}
-                          className="inline-flex items-center rounded-full border border-[#0E79B2]/20 bg-[#E8F5FB] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#0B5E8B]"
-                        >
-                          {bucket.name}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-sm text-slate-500">
-                      No manual bucket assignments yet.
-                    </p>
-                  )}
-                </section>
-
-                <section className="rounded-xl border border-slate-200 bg-white p-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700">
-                    Weekly Broadcast Campaigns
-                  </h4>
-                  {emailUsage.broadcastCampaigns.length > 0 ? (
+                  {emailUsage.broadcastSends.length > 0 ? (
                     <div className="mt-3 space-y-3">
-                      {emailUsage.broadcastCampaigns.map((campaign) => (
+                      {emailUsage.broadcastSends.map((send) => (
                         <div
-                          key={campaign.id}
+                          key={send.sendKey}
                           className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-3"
                         >
                           <p className="text-sm font-semibold text-[#1F2937]">
-                            {campaign.name}
+                            {send.sendKey}
                           </p>
                           <p className="mt-1 text-xs text-slate-500">
-                            <code>{campaign.key}</code>
+                            Queued: {formatDateTimeLabel(send.queuedAt)}
                           </p>
-                          <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                            Status: {formatStatusLabel(campaign.status)}
-                          </p>
+                          <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                            <span>Recipients: {send.recipientCount}</span>
+                            <span>Sent: {send.sentCount}</span>
+                            {send.failedCount > 0 && (
+                              <span>Failed: {send.failedCount}</span>
+                            )}
+                            {send.queuedCount > 0 && (
+                              <span>Queued: {send.queuedCount}</span>
+                            )}
+                          </div>
+                          {send.processedAt && (
+                            <p className="mt-2 text-xs text-slate-500">
+                              Last processed: {formatDateTimeLabel(send.processedAt)}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
                   ) : (
                     <p className="mt-3 text-sm text-slate-500">
-                      No weekly broadcast campaigns are linked to this post yet.
+                      No weekly newsletter sends have used this post yet.
                     </p>
                   )}
                 </section>
@@ -314,7 +313,7 @@ export default function EmailAssetsPanel({
                         >
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <p className="text-sm font-semibold text-[#1F2937]">
-                              {step.campaignName}
+                              {step.journeyName}
                             </p>
                             <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
                               Step {step.stepOrder}
@@ -325,7 +324,7 @@ export default function EmailAssetsPanel({
                           </p>
                           <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
                             <span>Delay: {step.delayDays} day{step.delayDays === 1 ? "" : "s"}</span>
-                            <span>Status: {formatStatusLabel(step.campaignStatus)}</span>
+                            <span>Journey: {step.journeyKey}</span>
                           </div>
                         </div>
                       ))}

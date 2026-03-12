@@ -31,6 +31,7 @@ export type NewsletterEmailPost = Pick<
 export type NewsletterEmailRecipient = {
   toEmail: string;
   name?: string;
+  unsubscribeUrl: string;
 };
 export type SharedEmailTemplateParams = {
   to_email: string;
@@ -97,6 +98,27 @@ const buildEmailCta = ({ label, url }: { label: string; url: string }) =>
   )}" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">${escapeHtml(
     label,
   )}</a></div>`;
+
+const buildNewsletterUnsubscribeFooter = (unsubscribeUrl: string) => {
+  const resolvedUnsubscribeUrl = resolveAbsoluteUrl(unsubscribeUrl);
+  if (!resolvedUnsubscribeUrl) {
+    throw new Error("A valid unsubscribe URL is required for newsletter emails.");
+  }
+
+  return [
+    '<div style="margin:24px 0 0 0;border-top:1px solid #E2E8F0;padding-top:16px;">',
+    `<p style="margin:0;color:#64748B;font-size:12px;line-height:1.6;">If you no longer want these emails, <a href="${escapeHtml(
+      resolvedUnsubscribeUrl,
+    )}" style="color:#0E79B2;text-decoration:underline;">unsubscribe here</a>.</p>`,
+    "</div>",
+  ].join("");
+};
+
+const buildNewsletterCta = (ctaHtml: string, unsubscribeUrl: string) => {
+  const footer = buildNewsletterUnsubscribeFooter(unsubscribeUrl);
+  const normalizedCtaHtml = ctaHtml.trim();
+  return normalizedCtaHtml ? `${normalizedCtaHtml}${footer}` : footer;
+};
 
 const resolveRecipient = ({
   to_email,
@@ -180,7 +202,7 @@ export function buildNewsletterTemplateParams(
     title: post.title,
     preview_text: post.previewText,
     content: post.content,
-    cta: post.cta,
+    cta: buildNewsletterCta(post.cta, recipient.unsubscribeUrl),
   };
 }
 
@@ -209,8 +231,8 @@ const normalizeSharedTemplateParams = (
  * Usage:
  * await sendEmail("checklist", { to_email, name, checklist_name, checklist_url });
  * await sendEmail("lead", { to_email, name });
- * await sendNewsletterEmail(post, { toEmail: "you@example.com", name: "Lemon" });
- * await sendNewsletterEmailByPostId(postId, { toEmail: "you@example.com", name: "Lemon" });
+ * await sendNewsletterEmail(post, { toEmail: "you@example.com", name: "Lemon", unsubscribeUrl: "https://www.safelysecuredhomes.com/unsubscribe/token" });
+ * await sendNewsletterEmailByPostId(postId, { toEmail: "you@example.com", name: "Lemon", unsubscribeUrl: "https://www.safelysecuredhomes.com/unsubscribe/token" });
  * node --experimental-strip-types --input-type=module -e "import { sendEmail } from './app/lib/email.ts'; await sendEmail('lead', { to_email: 'you@example.com', name: 'Lemon' })"
  */
 export function sendEmail(

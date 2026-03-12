@@ -48,6 +48,12 @@ body {
     line-height: 1.15;
     text-wrap: balance;
   }
+
+  .bonus-location-map {
+    height: 18rem;
+    width: 100%;
+    background: #e2e8f0;
+  }
 }
 
 .safety-range {
@@ -105,4 +111,45 @@ body {
   background: var(--slider-thumb);
   border: none;
   cursor: pointer;
+}
+
+.bonus-location-map .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.15rem 0.35rem;
+}
+
+.bonus-location-map .leaflet-control-attribution,
+.bonus-location-map .leaflet-control-attribution a {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.bonus-location-map .leaflet-pane,
+.bonus-location-map .leaflet-top,
+.bonus-location-map .leaflet-bottom {
+  z-index: 1;
+}
+
+.bonus-location-marker {
+  background: transparent;
+  border: none;
+}
+
+.bonus-location-marker__pin {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background: #0e79b2;
+  border: 4px solid #ffffff;
+  box-shadow: 0 12px 24px rgba(14, 121, 178, 0.3);
+}
+
+.bonus-location-marker__pin::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.95);
 }

@@ -1,7 +1,15 @@
 import "server-only";
 
+import { randomBytes } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { deriveNameFromEmail, normalizeEmail } from "./contactName";
+import {
+  EMAIL_JOURNEY_KEYS,
+  getEmailJourneyDefinition,
+  type EmailJourneyKey,
+} from "./emailJourneys";
+export { EMAIL_JOURNEY_KEYS } from "./emailJourneys";
+export type { EmailJourneyKey } from "./emailJourneys";
 
 export type NewsletterSubscriberStatus =
   | "subscribed"
@@ -9,31 +17,14 @@ export type NewsletterSubscriberStatus =
   | "bounced"
   | "complained";
 
-export type EmailCampaignKind = "broadcast" | "journey";
-export type EmailCampaignStatus = "draft" | "active" | "paused" | "archived";
-export type CampaignEnrollmentStatus =
-  | "active"
-  | "paused"
-  | "completed"
-  | "cancelled";
-export type CampaignAssignmentMethod = "rule" | "manual";
-export type CampaignSendStatus =
-  | "queued"
-  | "sent"
-  | "delivered"
-  | "opened"
-  | "clicked"
-  | "bounced"
-  | "failed";
+export type EmailJourneyEnrollmentStatus = "active" | "completed" | "cancelled";
+export type EmailDeliveryKind = "journey" | "broadcast";
+export type EmailDeliveryStatus = "queued" | "sent" | "failed";
 export type NewsletterAssignmentProfile = "newsletter_signup" | "lead_capture";
 
-export const EMAIL_CAMPAIGN_KEYS = {
-  newsletterWelcomeJourney: "newsletter_welcome_journey",
-  leadFollowUpJourney: "lead_follow_up_journey",
-} as const;
+export const EMAIL_CAMPAIGN_KEYS = EMAIL_JOURNEY_KEYS;
 
-export type EmailCampaignKey =
-  (typeof EMAIL_CAMPAIGN_KEYS)[keyof typeof EMAIL_CAMPAIGN_KEYS];
+export type EmailCampaignKey = EmailJourneyKey;
 
 type SubscriberRow = {
   id: string | null;
@@ -42,72 +33,50 @@ type SubscriberRow = {
   status: NewsletterSubscriberStatus | null;
   subscribed_at: string | null;
   unsubscribed_at: string | null;
+  unsubscribe_token: string | null;
   acquisition_source: string | null;
-  source: string | null;
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
 };
 
-type EmailCampaignRow = {
-  id: string | null;
-  key: string | null;
-  name: string | null;
-  kind: EmailCampaignKind | null;
-  objective_key: string | null;
-  status: EmailCampaignStatus | null;
-  blog_post_id: string | null;
-};
-
-type CampaignEnrollmentRow = {
+type JourneyEnrollmentRow = {
   id: string | null;
   subscriber_id: string | null;
-  campaign_id: string | null;
-  status: CampaignEnrollmentStatus | null;
+  journey_key: string | null;
+  status: EmailJourneyEnrollmentStatus | null;
   entered_at: string | null;
   exited_at: string | null;
+  exit_reason: string | null;
   current_step_key: string | null;
   current_step_order: number | null;
-  assignment_method: CampaignAssignmentMethod | null;
   assignment_reason: string | null;
 };
 
-type EmailCampaignStepRow = {
-  id: string | null;
-  campaign_id: string | null;
-  step_key: string | null;
-  step_order: number | null;
-  delay_days: number | null;
-  blog_post_id: string | null;
-  cta_override_html: string | null;
-  is_active: boolean | null;
+type JourneyEnrollmentDetailRow = JourneyEnrollmentRow & {
+  subscriber: SubscriberRow | SubscriberRow[] | null;
 };
 
-type CampaignSendRow = {
+type EmailDeliveryRow = {
   id: string | null;
   subscriber_id: string | null;
-  campaign_id: string | null;
   enrollment_id: string | null;
+  delivery_kind: EmailDeliveryKind | null;
+  send_key: string | null;
+  journey_key: string | null;
   step_key: string | null;
+  blog_post_id: string | null;
   provider_message_id: string | null;
-  status: CampaignSendStatus | null;
+  status: EmailDeliveryStatus | null;
   queued_at: string | null;
-  sent_at: string | null;
-  delivered_at: string | null;
-  opened_at: string | null;
-  clicked_at: string | null;
-  bounced_at: string | null;
-  failed_at: string | null;
+  processed_at: string | null;
   error_message: string | null;
+  created_at: string | null;
 };
 
-type CampaignMembershipRow = Omit<CampaignEnrollmentRow, "campaign_id"> & {
-  campaign: EmailCampaignRow | EmailCampaignRow[] | null;
-};
-
-type CampaignEnrollmentDetailRow = CampaignEnrollmentRow & {
-  campaign: EmailCampaignRow | EmailCampaignRow[] | null;
-  subscriber: SubscriberRow | SubscriberRow[] | null;
+type BlogPostSlugRow = {
+  id: string | null;
+  slug: string | null;
 };
 
 type SupabaseError = {
@@ -116,20 +85,36 @@ type SupabaseError = {
   message?: string;
 };
 
-type EmailCampaignDefinition = {
-  key: EmailCampaignKey;
-  name: string;
-  kind: EmailCampaignKind;
-  objectiveKey: string;
-  status: EmailCampaignStatus;
-};
-
-type CampaignAssignment = {
-  campaignKey: EmailCampaignKey;
+type JourneyAssignment = {
+  journeyKey: EmailJourneyKey;
   currentStepKey: string;
   currentStepOrder: number | null;
-  assignmentMethod: CampaignAssignmentMethod;
   assignmentReason: string;
+};
+
+type InsertJourneyEnrollmentPayload = {
+  subscriber_id: string;
+  journey_key: string;
+  status: EmailJourneyEnrollmentStatus;
+  entered_at: string;
+  current_step_key: string;
+  current_step_order: number | null;
+  assignment_reason: string;
+};
+
+type InsertEmailDeliveryPayload = {
+  subscriber_id: string;
+  enrollment_id: string | null;
+  delivery_kind: EmailDeliveryKind;
+  send_key: string | null;
+  journey_key: string | null;
+  step_key: string;
+  blog_post_id: string | null;
+  provider_message_id: string | null;
+  status: EmailDeliveryStatus;
+  queued_at: string;
+  processed_at: string | null;
+  error_message: string;
 };
 
 export type SyncNewsletterSubscriberInput = {
@@ -147,86 +132,67 @@ export type SyncNewsletterSubscriberResult = {
   email: string;
   created: boolean;
   reactivated: boolean;
-  campaignKeys: string[];
+  journeyKeys: EmailJourneyKey[];
+  campaignKeys: EmailJourneyKey[];
+  unsubscribeToken: string;
 };
 
-export type EnsureCampaignEnrollmentInput = {
+export type NewsletterSubscriberRecord = {
   subscriberId: string;
-  campaignKey: EmailCampaignKey;
+  email: string;
+  name: string;
+  status: NewsletterSubscriberStatus;
+  unsubscribeToken: string;
+};
+
+export type EnsureJourneyEnrollmentInput = {
+  subscriberId: string;
+  journeyKey: EmailJourneyKey;
   currentStepKey?: string;
   currentStepOrder?: number | null;
-  assignmentMethod?: CampaignAssignmentMethod;
   assignmentReason?: string;
 };
 
-export type EnsureCampaignEnrollmentResult = {
+export type EnsureJourneyEnrollmentResult = {
   enrollmentId: string;
-  campaignId: string;
-  campaignKey: string;
+  journeyKey: EmailJourneyKey;
   created: boolean;
 };
 
-export type SubscriberCampaignMembership = {
-  enrollmentId: string;
-  enrollmentStatus: CampaignEnrollmentStatus;
-  enteredAt: string;
-  exitedAt: string | null;
-  currentStepKey: string;
-  currentStepOrder: number | null;
-  assignmentMethod: CampaignAssignmentMethod;
-  assignmentReason: string;
-  campaignId: string;
-  campaignKey: string;
-  campaignName: string;
-  campaignKind: EmailCampaignKind;
-  campaignStatus: EmailCampaignStatus;
-  campaignObjectiveKey: string;
-};
-
-export type CreateCampaignSendLogInput = {
-  subscriberId: string;
-  campaignId: string;
-  enrollmentId?: string;
-  stepKey?: string;
-  providerMessageId?: string;
-  status?: CampaignSendStatus;
-  errorMessage?: string;
-};
-
-export type EmailCampaignStep = {
-  id: string;
-  campaignId: string;
+export type EmailJourneyStep = {
+  journeyKey: EmailJourneyKey;
   stepKey: string;
   stepOrder: number;
   delayDays: number;
   blogPostId: string;
+  blogPostSlug: string;
   ctaOverrideHtml: string;
-  isActive: boolean;
 };
 
-export type CampaignSendLog = {
+export type EmailDeliveryLog = {
   id: string;
   subscriberId: string;
-  campaignId: string;
   enrollmentId: string | null;
+  deliveryKind: EmailDeliveryKind;
+  sendKey: string;
+  journeyKey: string;
   stepKey: string;
+  blogPostId: string;
   providerMessageId: string;
-  status: CampaignSendStatus;
+  status: EmailDeliveryStatus;
   queuedAt: string | null;
-  sentAt: string | null;
-  deliveredAt: string | null;
-  openedAt: string | null;
-  clickedAt: string | null;
-  bouncedAt: string | null;
-  failedAt: string | null;
+  processedAt: string | null;
   errorMessage: string;
+  createdAt: string | null;
 };
 
-export type ActiveCampaignEnrollment = {
+export type CampaignSendLog = EmailDeliveryLog;
+
+export type ActiveJourneyEnrollment = {
   enrollmentId: string;
-  campaignId: string;
-  campaignKey: string;
-  campaignName: string;
+  journeyKey: EmailJourneyKey;
+  journeyName: string;
+  journeyObjectiveKey: string;
   subscriberId: string;
   subscriberEmail: string;
   subscriberName: string;
@@ -234,8 +200,22 @@ export type ActiveCampaignEnrollment = {
   enteredAt: string;
   currentStepKey: string;
   currentStepOrder: number | null;
-  assignmentMethod: CampaignAssignmentMethod;
   assignmentReason: string;
+};
+
+export type ActiveCampaignEnrollment = ActiveJourneyEnrollment;
+
+export type EnsureEmailDeliveryInput = {
+  subscriberId: string;
+  deliveryKind: EmailDeliveryKind;
+  enrollmentId?: string;
+  sendKey?: string;
+  journeyKey?: string;
+  stepKey?: string;
+  blogPostId?: string;
+  providerMessageId?: string;
+  status?: EmailDeliveryStatus;
+  errorMessage?: string;
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -247,37 +227,13 @@ const supabase =
     : null;
 
 const SUBSCRIBER_SELECT =
-  "id,email,name,status,subscribed_at,unsubscribed_at,acquisition_source,source,utm_source,utm_medium,utm_campaign";
-const CAMPAIGN_SELECT =
-  "id,key,name,kind,objective_key,status,blog_post_id";
-const CAMPAIGN_STEP_SELECT =
-  "id,campaign_id,step_key,step_order,delay_days,blog_post_id,cta_override_html,is_active";
+  "id,email,name,status,subscribed_at,unsubscribed_at,unsubscribe_token,acquisition_source,utm_source,utm_medium,utm_campaign";
 const ENROLLMENT_SELECT =
-  "id,subscriber_id,campaign_id,status,entered_at,exited_at,current_step_key,current_step_order,assignment_method,assignment_reason";
-const ENROLLMENT_WITH_CAMPAIGN_SELECT = `${ENROLLMENT_SELECT},campaign:email_campaigns!campaign_enrollments_campaign_id_fkey(${CAMPAIGN_SELECT})`;
-const ENROLLMENT_WITH_RELATIONS_SELECT = `${ENROLLMENT_SELECT},campaign:email_campaigns!campaign_enrollments_campaign_id_fkey(${CAMPAIGN_SELECT}),subscriber:newsletter_subscribers!campaign_enrollments_subscriber_id_fkey(${SUBSCRIBER_SELECT})`;
-const CAMPAIGN_SEND_SELECT =
-  "id,subscriber_id,campaign_id,enrollment_id,step_key,provider_message_id,status,queued_at,sent_at,delivered_at,opened_at,clicked_at,bounced_at,failed_at,error_message";
-
-const EMAIL_CAMPAIGN_DEFINITIONS: Record<
-  EmailCampaignKey,
-  EmailCampaignDefinition
-> = {
-  [EMAIL_CAMPAIGN_KEYS.newsletterWelcomeJourney]: {
-    key: EMAIL_CAMPAIGN_KEYS.newsletterWelcomeJourney,
-    name: "Newsletter Welcome Journey",
-    kind: "journey",
-    objectiveKey: "welcome",
-    status: "active",
-  },
-  [EMAIL_CAMPAIGN_KEYS.leadFollowUpJourney]: {
-    key: EMAIL_CAMPAIGN_KEYS.leadFollowUpJourney,
-    name: "Lead Follow-up Journey",
-    kind: "journey",
-    objectiveKey: "education",
-    status: "active",
-  },
-};
+  "id,subscriber_id,journey_key,status,entered_at,exited_at,exit_reason,current_step_key,current_step_order,assignment_reason";
+const ENROLLMENT_WITH_SUBSCRIBER_SELECT = `${ENROLLMENT_SELECT},subscriber:newsletter_subscribers!email_journey_enrollments_subscriber_id_fkey(${SUBSCRIBER_SELECT})`;
+const EMAIL_DELIVERY_SELECT =
+  "id,subscriber_id,enrollment_id,delivery_kind,send_key,journey_key,step_key,blog_post_id,provider_message_id,status,queued_at,processed_at,error_message,created_at";
+const NEWSLETTER_UNSUBSCRIBE_TOKEN_BYTES = 18;
 
 const toSafeString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
@@ -287,14 +243,6 @@ const toNullableString = (value: unknown): string | null => {
   return safeValue ? safeValue : null;
 };
 
-const firstNonEmpty = (...values: Array<string | null | undefined>) => {
-  for (const value of values) {
-    const safeValue = toSafeString(value);
-    if (safeValue) return safeValue;
-  }
-  return "";
-};
-
 const isReplaceableName = (value: string | null | undefined) => {
   const normalizedValue = toSafeString(value).toLowerCase();
   return !normalizedValue || normalizedValue === "there";
@@ -302,7 +250,7 @@ const isReplaceableName = (value: string | null | undefined) => {
 
 const requireSupabase = () => {
   if (!supabase) {
-    throw new Error("Supabase not configured for newsletter campaigns.");
+    throw new Error("Supabase not configured for newsletter email flows.");
   }
 
   return supabase;
@@ -313,63 +261,101 @@ const normalizeSubscriberName = (name: string | undefined, email: string) => {
   return safeName || deriveNameFromEmail(email);
 };
 
-const normalizeCampaignStep = (row: EmailCampaignStepRow): EmailCampaignStep | null => {
-  const id = toSafeString(row.id);
-  const campaignId = toSafeString(row.campaign_id);
-  const stepKey = toSafeString(row.step_key);
-  const blogPostId = toSafeString(row.blog_post_id);
+const generateNewsletterUnsubscribeToken = () =>
+  randomBytes(NEWSLETTER_UNSUBSCRIBE_TOKEN_BYTES).toString("hex");
 
-  if (
-    !id ||
-    !campaignId ||
-    !stepKey ||
-    !blogPostId ||
-    row.step_order == null ||
-    row.delay_days == null ||
-    row.is_active == null
-  ) {
+const normalizeSubscriber = (
+  row: SubscriberRow | null | undefined,
+): NewsletterSubscriberRecord | null => {
+  const subscriberId = toSafeString(row?.id);
+  const email = toSafeString(row?.email);
+  const status = row?.status;
+  const unsubscribeToken = toSafeString(row?.unsubscribe_token);
+
+  if (!subscriberId || !email || !status || !unsubscribeToken) {
     return null;
   }
 
   return {
-    id,
-    campaignId,
-    stepKey,
-    stepOrder: row.step_order,
-    delayDays: row.delay_days,
-    blogPostId,
-    ctaOverrideHtml: toSafeString(row.cta_override_html),
-    isActive: row.is_active,
+    subscriberId,
+    email,
+    name: toSafeString(row?.name) || deriveNameFromEmail(email),
+    status,
+    unsubscribeToken,
   };
 };
 
-const normalizeCampaignSendLog = (row: CampaignSendRow): CampaignSendLog | null => {
-  const id = toSafeString(row.id);
-  const subscriberId = toSafeString(row.subscriber_id);
-  const campaignId = toSafeString(row.campaign_id);
-  const stepKey = toSafeString(row.step_key);
-  const status = row.status;
+const normalizeDelivery = (
+  row: EmailDeliveryRow | null | undefined,
+): EmailDeliveryLog | null => {
+  const id = toSafeString(row?.id);
+  const subscriberId = toSafeString(row?.subscriber_id);
+  const deliveryKind = row?.delivery_kind;
+  const status = row?.status;
 
-  if (!id || !subscriberId || !campaignId || !stepKey || !status) {
+  if (!id || !subscriberId || !deliveryKind || !status) {
     return null;
   }
 
   return {
     id,
     subscriberId,
-    campaignId,
-    enrollmentId: toNullableString(row.enrollment_id),
-    stepKey,
-    providerMessageId: toSafeString(row.provider_message_id),
+    enrollmentId: toNullableString(row?.enrollment_id),
+    deliveryKind,
+    sendKey: toSafeString(row?.send_key),
+    journeyKey: toSafeString(row?.journey_key),
+    stepKey: toSafeString(row?.step_key),
+    blogPostId: toSafeString(row?.blog_post_id),
+    providerMessageId: toSafeString(row?.provider_message_id),
     status,
-    queuedAt: toNullableString(row.queued_at),
-    sentAt: toNullableString(row.sent_at),
-    deliveredAt: toNullableString(row.delivered_at),
-    openedAt: toNullableString(row.opened_at),
-    clickedAt: toNullableString(row.clicked_at),
-    bouncedAt: toNullableString(row.bounced_at),
-    failedAt: toNullableString(row.failed_at),
-    errorMessage: toSafeString(row.error_message),
+    queuedAt: toNullableString(row?.queued_at),
+    processedAt: toNullableString(row?.processed_at),
+    errorMessage: toSafeString(row?.error_message),
+    createdAt: toNullableString(row?.created_at),
+  };
+};
+
+const normalizeActiveJourneyEnrollment = (
+  row: JourneyEnrollmentDetailRow | null | undefined,
+): ActiveJourneyEnrollment | null => {
+  const subscriber = Array.isArray(row?.subscriber)
+    ? row?.subscriber[0]
+    : row?.subscriber;
+  const enrollmentId = toSafeString(row?.id);
+  const journeyKey = toSafeString(row?.journey_key) as EmailJourneyKey;
+  const subscriberId = toSafeString(subscriber?.id);
+  const subscriberEmail = toSafeString(subscriber?.email);
+  const subscriberName = toSafeString(subscriber?.name);
+  const subscriberStatus = subscriber?.status;
+  const enteredAt = toSafeString(row?.entered_at);
+
+  if (
+    !enrollmentId ||
+    !journeyKey ||
+    !subscriberId ||
+    !subscriberEmail ||
+    !subscriberName ||
+    !subscriberStatus ||
+    !enteredAt
+  ) {
+    return null;
+  }
+
+  const journeyDefinition = getEmailJourneyDefinition(journeyKey);
+
+  return {
+    enrollmentId,
+    journeyKey,
+    journeyName: journeyDefinition?.name ?? journeyKey,
+    journeyObjectiveKey: journeyDefinition?.objectiveKey ?? "",
+    subscriberId,
+    subscriberEmail,
+    subscriberName,
+    subscriberStatus,
+    enteredAt,
+    currentStepKey: toSafeString(row?.current_step_key),
+    currentStepOrder: row?.current_step_order ?? null,
+    assignmentReason: toSafeString(row?.assignment_reason),
   };
 };
 
@@ -379,6 +365,30 @@ const fetchSubscriberByEmail = async (email: string) => {
     .from("newsletter_subscribers")
     .select(SUBSCRIBER_SELECT)
     .eq("email", email)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as SubscriberRow | null) ?? null;
+};
+
+const fetchSubscriberById = async (subscriberId: string) => {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("newsletter_subscribers")
+    .select(SUBSCRIBER_SELECT)
+    .eq("id", subscriberId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as SubscriberRow | null) ?? null;
+};
+
+const fetchSubscriberByUnsubscribeToken = async (unsubscribeToken: string) => {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("newsletter_subscribers")
+    .select(SUBSCRIBER_SELECT)
+    .eq("unsubscribe_token", unsubscribeToken)
     .maybeSingle();
 
   if (error) throw error;
@@ -413,308 +423,261 @@ const insertSubscriber = async (payload: Record<string, string | null>) => {
   return data as SubscriberRow;
 };
 
-const buildCampaignAssignments = (
-  assignmentProfile: NewsletterAssignmentProfile,
-  acquisitionSource: string,
-): CampaignAssignment[] => {
-  const assignmentSuffix = toSafeString(acquisitionSource) || "direct";
-
-  if (assignmentProfile === "lead_capture") {
-    return [
-      {
-        campaignKey: EMAIL_CAMPAIGN_KEYS.leadFollowUpJourney,
-        currentStepKey: "lead_day_0_story",
-        currentStepOrder: 1,
-        assignmentMethod: "rule",
-        assignmentReason: `lead_capture:${assignmentSuffix}`,
-      },
-    ];
-  }
-
-  return [
-    {
-      campaignKey: EMAIL_CAMPAIGN_KEYS.newsletterWelcomeJourney,
-      currentStepKey: "welcome_start",
-      currentStepOrder: 1,
-      assignmentMethod: "rule",
-      assignmentReason: `newsletter_signup:${assignmentSuffix}`,
-    },
-  ];
-};
-
-const ensureEmailCampaign = async (
-  campaignKey: EmailCampaignKey,
-): Promise<EmailCampaignRow> => {
-  const client = requireSupabase();
-  const definition = EMAIL_CAMPAIGN_DEFINITIONS[campaignKey];
-
-  if (!definition) {
-    throw new Error(`Unknown email campaign "${campaignKey}".`);
-  }
-
-  const { data, error } = await client
-    .from("email_campaigns")
-    .upsert(
-      {
-        key: definition.key,
-        name: definition.name,
-        kind: definition.kind,
-        objective_key: definition.objectiveKey,
-        status: definition.status,
-      },
-      { onConflict: "key" },
-    )
-    .select(CAMPAIGN_SELECT)
-    .single();
-
-  if (error) throw error;
-  return data as EmailCampaignRow;
-};
-
-const fetchActiveEnrollment = async (subscriberId: string, campaignId: string) => {
+const fetchActiveJourneyEnrollment = async (
+  subscriberId: string,
+  journeyKey: EmailJourneyKey,
+) => {
   const client = requireSupabase();
   const { data, error } = await client
-    .from("campaign_enrollments")
+    .from("email_journey_enrollments")
     .select(ENROLLMENT_SELECT)
     .eq("subscriber_id", subscriberId)
-    .eq("campaign_id", campaignId)
+    .eq("journey_key", journeyKey)
     .eq("status", "active")
     .maybeSingle();
 
   if (error) throw error;
-  return (data as CampaignEnrollmentRow | null) ?? null;
+  return (data as JourneyEnrollmentRow | null) ?? null;
 };
 
-const insertEnrollment = async (
-  payload: Record<string, string | number | null>,
+const insertJourneyEnrollment = async (
+  payload: InsertJourneyEnrollmentPayload,
 ) => {
   const client = requireSupabase();
   const { data, error } = await client
-    .from("campaign_enrollments")
+    .from("email_journey_enrollments")
     .insert(payload)
     .select(ENROLLMENT_SELECT)
     .single();
 
   if (error) throw error;
-  return data as CampaignEnrollmentRow;
+  return data as JourneyEnrollmentRow;
 };
 
-const fetchCampaignEnrollmentById = async (enrollmentId: string) => {
+const fetchJourneyEnrollmentById = async (enrollmentId: string) => {
   const client = requireSupabase();
   const { data, error } = await client
-    .from("campaign_enrollments")
-    .select(ENROLLMENT_WITH_RELATIONS_SELECT)
+    .from("email_journey_enrollments")
+    .select(ENROLLMENT_WITH_SUBSCRIBER_SELECT)
     .eq("id", enrollmentId)
     .maybeSingle();
 
   if (error) throw error;
-  return (data as CampaignEnrollmentDetailRow | null) ?? null;
+  return (data as JourneyEnrollmentDetailRow | null) ?? null;
 };
 
-const fetchCampaignSteps = async (campaignId: string) => {
+const fetchEmailDeliveryByEnrollmentStep = async (
+  enrollmentId: string,
+  stepKey: string,
+) => {
   const client = requireSupabase();
   const { data, error } = await client
-    .from("email_campaign_steps")
-    .select(CAMPAIGN_STEP_SELECT)
-    .eq("campaign_id", campaignId)
-    .eq("is_active", true)
-    .order("step_order", { ascending: true, nullsFirst: false });
-
-  if (error) throw error;
-  return ((data as EmailCampaignStepRow[] | null) ?? [])
-    .map((row) => normalizeCampaignStep(row))
-    .filter((row): row is EmailCampaignStep => Boolean(row));
-};
-
-const fetchCampaignSendLogsByEnrollmentId = async (enrollmentId: string) => {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from("campaign_sends")
-    .select(CAMPAIGN_SEND_SELECT)
+    .from("email_deliveries")
+    .select(EMAIL_DELIVERY_SELECT)
     .eq("enrollment_id", enrollmentId)
-    .order("queued_at", { ascending: true, nullsFirst: false });
+    .eq("step_key", stepKey)
+    .maybeSingle();
 
   if (error) throw error;
-  return ((data as CampaignSendRow[] | null) ?? [])
-    .map((row) => normalizeCampaignSendLog(row))
-    .filter((row): row is CampaignSendLog => Boolean(row));
+  return normalizeDelivery((data as EmailDeliveryRow | null) ?? null);
+};
+
+const fetchEmailDeliveryBySendKey = async (
+  sendKey: string,
+  subscriberId: string,
+) => {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("email_deliveries")
+    .select(EMAIL_DELIVERY_SELECT)
+    .eq("send_key", sendKey)
+    .eq("subscriber_id", subscriberId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return normalizeDelivery((data as EmailDeliveryRow | null) ?? null);
+};
+
+const insertEmailDelivery = async (payload: InsertEmailDeliveryPayload) => {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("email_deliveries")
+    .insert(payload)
+    .select(EMAIL_DELIVERY_SELECT)
+    .single();
+
+  if (error) throw error;
+  return normalizeDelivery(data as EmailDeliveryRow);
+};
+
+const resolveJourneySteps = async (
+  journeyKey: EmailJourneyKey,
+): Promise<EmailJourneyStep[]> => {
+  const definition = getEmailJourneyDefinition(journeyKey);
+  if (!definition) return [];
+
+  const client = requireSupabase();
+  const slugs = Array.from(
+    new Set(definition.steps.map((step) => step.blogPostSlug).filter(Boolean)),
+  );
+
+  if (slugs.length === 0) return [];
+
+  const { data, error } = await client
+    .from("blog_posts")
+    .select("id,slug")
+    .in("slug", slugs);
+
+  if (error) throw error;
+
+  const blogPostsBySlug = new Map<string, string>();
+  for (const row of (data as BlogPostSlugRow[] | null) ?? []) {
+    const slug = toSafeString(row.slug);
+    const id = toSafeString(row.id);
+    if (slug && id) {
+      blogPostsBySlug.set(slug, id);
+    }
+  }
+
+  return definition.steps.flatMap((step) => {
+    const blogPostId = blogPostsBySlug.get(step.blogPostSlug);
+    if (!blogPostId) return [];
+
+    return [
+      {
+        journeyKey,
+        stepKey: step.stepKey,
+        stepOrder: step.stepOrder,
+        delayDays: step.delayDays,
+        blogPostId,
+        blogPostSlug: step.blogPostSlug,
+        ctaOverrideHtml: step.ctaOverrideHtml,
+      },
+    ];
+  });
+};
+
+const buildJourneyAssignments = (
+  assignmentProfile: NewsletterAssignmentProfile,
+  acquisitionSource: string,
+): JourneyAssignment[] => {
+  const assignmentSuffix = toSafeString(acquisitionSource) || "direct";
+
+  if (assignmentProfile === "lead_capture") {
+    return [
+      {
+        journeyKey: EMAIL_JOURNEY_KEYS.leadFollowUpJourney,
+        currentStepKey: "lead_day_0_story",
+        currentStepOrder: 1,
+        assignmentReason: `lead_capture:${assignmentSuffix}`,
+      },
+    ];
+  }
+
+  return [];
 };
 
 export const isNewsletterCampaignsConfigured = () => Boolean(supabase);
 
-export async function getCampaignSteps(
-  campaignId: string,
-): Promise<EmailCampaignStep[]> {
-  return fetchCampaignSteps(campaignId);
-}
-
-export async function getCampaignEnrollmentById(
-  enrollmentId: string,
-): Promise<ActiveCampaignEnrollment | null> {
-  const row = await fetchCampaignEnrollmentById(enrollmentId);
-  const campaign = Array.isArray(row?.campaign) ? row?.campaign[0] : row?.campaign;
-  const subscriber = Array.isArray(row?.subscriber)
-    ? row?.subscriber[0]
-    : row?.subscriber;
-
-  const normalizedEnrollmentId = toSafeString(row?.id);
-  const campaignId = toSafeString(campaign?.id);
-  const campaignKey = toSafeString(campaign?.key);
-  const campaignName = toSafeString(campaign?.name);
-  const subscriberId = toSafeString(subscriber?.id);
-  const subscriberEmail = toSafeString(subscriber?.email);
-  const subscriberName = toSafeString(subscriber?.name);
-  const subscriberStatus = subscriber?.status;
-  const enteredAt = toSafeString(row?.entered_at);
-  const assignmentMethod = row?.assignment_method;
-
-  if (
-    !row ||
-    !normalizedEnrollmentId ||
-    !campaignId ||
-    !campaignKey ||
-    !campaignName ||
-    !subscriberId ||
-    !subscriberEmail ||
-    !subscriberName ||
-    !subscriberStatus ||
-    !enteredAt ||
-    !assignmentMethod
-  ) {
-    return null;
-  }
-
-  return {
-    enrollmentId: normalizedEnrollmentId,
-    campaignId,
-    campaignKey,
-    campaignName,
-    subscriberId,
-    subscriberEmail,
-    subscriberName,
-    subscriberStatus,
-    enteredAt,
-    currentStepKey: toSafeString(row.current_step_key),
-    currentStepOrder: row.current_step_order,
-    assignmentMethod,
-    assignmentReason: toSafeString(row.assignment_reason),
-  };
-}
-
-export async function getActiveCampaignEnrollmentForSubscriber(
+export async function getNewsletterSubscriberById(
   subscriberId: string,
-  campaignKey: EmailCampaignKey,
-): Promise<ActiveCampaignEnrollment | null> {
-  const campaign = await ensureEmailCampaign(campaignKey);
-  const campaignId = toSafeString(campaign.id);
+): Promise<NewsletterSubscriberRecord | null> {
+  return normalizeSubscriber(await fetchSubscriberById(toSafeString(subscriberId)));
+}
 
-  if (!campaignId) {
-    throw new Error(`Email campaign "${campaignKey}" is missing an id.`);
-  }
+export async function getNewsletterSubscriberByUnsubscribeToken(
+  unsubscribeToken: string,
+): Promise<NewsletterSubscriberRecord | null> {
+  return normalizeSubscriber(
+    await fetchSubscriberByUnsubscribeToken(
+      toSafeString(unsubscribeToken).toLowerCase(),
+    ),
+  );
+}
 
-  const row = await fetchActiveEnrollment(subscriberId, campaignId);
+export async function getJourneySteps(
+  journeyKey: EmailJourneyKey,
+): Promise<EmailJourneyStep[]> {
+  return resolveJourneySteps(journeyKey);
+}
+
+export const getCampaignSteps = getJourneySteps;
+
+export async function getJourneyEnrollmentById(
+  enrollmentId: string,
+): Promise<ActiveJourneyEnrollment | null> {
+  return normalizeActiveJourneyEnrollment(
+    await fetchJourneyEnrollmentById(toSafeString(enrollmentId)),
+  );
+}
+
+export const getCampaignEnrollmentById = getJourneyEnrollmentById;
+
+export async function getActiveJourneyEnrollmentForSubscriber(
+  subscriberId: string,
+  journeyKey: EmailJourneyKey,
+): Promise<ActiveJourneyEnrollment | null> {
+  const row = await fetchActiveJourneyEnrollment(subscriberId, journeyKey);
   const enrollmentId = toSafeString(row?.id);
   if (!enrollmentId) return null;
 
-  return getCampaignEnrollmentById(enrollmentId);
+  return getJourneyEnrollmentById(enrollmentId);
 }
 
-export async function listActiveCampaignEnrollmentsByCampaignKey(
-  campaignKey: EmailCampaignKey,
-): Promise<ActiveCampaignEnrollment[]> {
+export const getActiveCampaignEnrollmentForSubscriber =
+  getActiveJourneyEnrollmentForSubscriber;
+
+export async function listActiveJourneyEnrollmentsByJourneyKey(
+  journeyKey: EmailJourneyKey,
+): Promise<ActiveJourneyEnrollment[]> {
   const client = requireSupabase();
-  const campaign = await ensureEmailCampaign(campaignKey);
-  const campaignId = toSafeString(campaign.id);
-
-  if (!campaignId) {
-    throw new Error(`Email campaign "${campaignKey}" is missing an id.`);
-  }
-
   const { data, error } = await client
-    .from("campaign_enrollments")
-    .select(ENROLLMENT_WITH_RELATIONS_SELECT)
-    .eq("campaign_id", campaignId)
+    .from("email_journey_enrollments")
+    .select(ENROLLMENT_WITH_SUBSCRIBER_SELECT)
+    .eq("journey_key", journeyKey)
     .eq("status", "active")
     .order("entered_at", { ascending: true, nullsFirst: false });
 
   if (error) throw error;
 
-  return ((data as CampaignEnrollmentDetailRow[] | null) ?? []).flatMap((row) => {
-    const campaignRow = Array.isArray(row.campaign) ? row.campaign[0] : row.campaign;
-    const subscriber = Array.isArray(row.subscriber)
-      ? row.subscriber[0]
-      : row.subscriber;
-
-    const enrollmentId = toSafeString(row.id);
-    const normalizedCampaignId = toSafeString(campaignRow?.id);
-    const normalizedCampaignKey = toSafeString(campaignRow?.key);
-    const campaignName = toSafeString(campaignRow?.name);
-    const normalizedSubscriberId = toSafeString(subscriber?.id);
-    const subscriberEmail = toSafeString(subscriber?.email);
-    const subscriberName = toSafeString(subscriber?.name);
-    const subscriberStatus = subscriber?.status;
-    const enteredAt = toSafeString(row.entered_at);
-    const assignmentMethod = row.assignment_method;
-
-    if (
-      !enrollmentId ||
-      !normalizedCampaignId ||
-      !normalizedCampaignKey ||
-      !campaignName ||
-      !normalizedSubscriberId ||
-      !subscriberEmail ||
-      !subscriberName ||
-      !subscriberStatus ||
-      !enteredAt ||
-      !assignmentMethod
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        enrollmentId,
-        campaignId: normalizedCampaignId,
-        campaignKey: normalizedCampaignKey,
-        campaignName,
-        subscriberId: normalizedSubscriberId,
-        subscriberEmail,
-        subscriberName,
-        subscriberStatus,
-        enteredAt,
-        currentStepKey: toSafeString(row.current_step_key),
-        currentStepOrder: row.current_step_order,
-        assignmentMethod,
-        assignmentReason: toSafeString(row.assignment_reason),
-      },
-    ];
-  });
+  return ((data as JourneyEnrollmentDetailRow[] | null) ?? [])
+    .map((row) => normalizeActiveJourneyEnrollment(row))
+    .filter((row): row is ActiveJourneyEnrollment => Boolean(row));
 }
 
-export async function getCampaignSendLogsByEnrollmentId(
+export const listActiveCampaignEnrollmentsByCampaignKey =
+  listActiveJourneyEnrollmentsByJourneyKey;
+
+export async function getEmailDeliveriesByEnrollmentId(
   enrollmentId: string,
-): Promise<CampaignSendLog[]> {
-  return fetchCampaignSendLogsByEnrollmentId(enrollmentId);
+): Promise<EmailDeliveryLog[]> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("email_deliveries")
+    .select(EMAIL_DELIVERY_SELECT)
+    .eq("enrollment_id", enrollmentId)
+    .order("queued_at", { ascending: true, nullsFirst: false });
+
+  if (error) throw error;
+
+  return ((data as EmailDeliveryRow[] | null) ?? [])
+    .map((row) => normalizeDelivery(row))
+    .filter((row): row is EmailDeliveryLog => Boolean(row));
 }
 
-export async function ensureCampaignEnrollment({
+export const getCampaignSendLogsByEnrollmentId = getEmailDeliveriesByEnrollmentId;
+
+export async function ensureJourneyEnrollment({
   subscriberId,
-  campaignKey,
+  journeyKey,
   currentStepKey,
   currentStepOrder,
-  assignmentMethod = "rule",
   assignmentReason = "",
-}: EnsureCampaignEnrollmentInput): Promise<EnsureCampaignEnrollmentResult> {
-  const campaign = await ensureEmailCampaign(campaignKey);
-  const campaignId = toSafeString(campaign.id);
-
-  if (!campaignId) {
-    throw new Error(`Email campaign "${campaignKey}" is missing an id.`);
-  }
-
-  const activeEnrollment = await fetchActiveEnrollment(subscriberId, campaignId);
+}: EnsureJourneyEnrollmentInput): Promise<EnsureJourneyEnrollmentResult> {
+  const activeEnrollment = await fetchActiveJourneyEnrollment(subscriberId, journeyKey);
   if (activeEnrollment?.id) {
     const updatePayload: Record<string, string | number | null> = {};
+
     if (
       !toSafeString(activeEnrollment.current_step_key) &&
       toSafeString(currentStepKey)
@@ -737,7 +700,7 @@ export async function ensureCampaignEnrollment({
     if (Object.keys(updatePayload).length > 0) {
       const client = requireSupabase();
       const { error } = await client
-        .from("campaign_enrollments")
+        .from("email_journey_enrollments")
         .update(updatePayload)
         .eq("id", activeEnrollment.id);
 
@@ -745,55 +708,56 @@ export async function ensureCampaignEnrollment({
     }
 
     return {
-      enrollmentId: activeEnrollment.id,
-      campaignId,
-      campaignKey,
+      enrollmentId: toSafeString(activeEnrollment.id),
+      journeyKey,
       created: false,
     };
   }
 
   try {
-    const insertedEnrollment = await insertEnrollment({
+    const insertedEnrollment = await insertJourneyEnrollment({
       subscriber_id: subscriberId,
-      campaign_id: campaignId,
+      journey_key: journeyKey,
       status: "active",
       entered_at: new Date().toISOString(),
       current_step_key: toSafeString(currentStepKey),
       current_step_order:
         typeof currentStepOrder === "number" ? currentStepOrder : null,
-      assignment_method: assignmentMethod,
       assignment_reason: toSafeString(assignmentReason),
     });
 
     const enrollmentId = toSafeString(insertedEnrollment.id);
     if (!enrollmentId) {
       throw new Error(
-        `Campaign enrollment for "${campaignKey}" was created without an id.`,
+        `Journey enrollment for "${journeyKey}" was created without an id.`,
       );
     }
 
     return {
       enrollmentId,
-      campaignId,
-      campaignKey,
+      journeyKey,
       created: true,
     };
   } catch (error) {
     const insertError = error as SupabaseError;
     if (insertError.code !== "23505") throw error;
 
-    const existingEnrollment = await fetchActiveEnrollment(subscriberId, campaignId);
+    const existingEnrollment = await fetchActiveJourneyEnrollment(
+      subscriberId,
+      journeyKey,
+    );
     const enrollmentId = toSafeString(existingEnrollment?.id);
     if (!enrollmentId) throw error;
 
     return {
       enrollmentId,
-      campaignId,
-      campaignKey,
+      journeyKey,
       created: false,
     };
   }
 }
+
+export const ensureCampaignEnrollment = ensureJourneyEnrollment;
 
 export async function syncNewsletterSubscriber({
   email,
@@ -826,21 +790,13 @@ export async function syncNewsletterSubscriber({
     reactivated =
       toSafeString(existingSubscriber.status).toLowerCase() !== "subscribed";
 
-    const initialAcquisitionSource = firstNonEmpty(
-      existingSubscriber.acquisition_source,
-      existingSubscriber.source,
-      safeAcquisitionSource,
-    );
     const updatePayload: Record<string, string | null> = {};
 
     if (isReplaceableName(existingSubscriber.name) && resolvedName !== "there") {
       updatePayload.name = resolvedName;
     }
-    if (!toSafeString(existingSubscriber.acquisition_source) && initialAcquisitionSource) {
-      updatePayload.acquisition_source = initialAcquisitionSource;
-    }
-    if (!toSafeString(existingSubscriber.source) && initialAcquisitionSource) {
-      updatePayload.source = initialAcquisitionSource;
+    if (!toSafeString(existingSubscriber.acquisition_source) && safeAcquisitionSource) {
+      updatePayload.acquisition_source = safeAcquisitionSource;
     }
     if (!toSafeString(existingSubscriber.utm_source) && safeUtmSource) {
       updatePayload.utm_source = safeUtmSource;
@@ -854,6 +810,9 @@ export async function syncNewsletterSubscriber({
     if (!existingSubscriber.subscribed_at) {
       updatePayload.subscribed_at = nowIso;
     }
+    if (!toSafeString(existingSubscriber.unsubscribe_token)) {
+      updatePayload.unsubscribe_token = generateNewsletterUnsubscribeToken();
+    }
     if (reactivated) {
       updatePayload.status = "subscribed";
       updatePayload.unsubscribed_at = null;
@@ -866,6 +825,9 @@ export async function syncNewsletterSubscriber({
       status: "subscribed",
       unsubscribed_at: null,
       subscribed_at: existingSubscriber.subscribed_at || nowIso,
+      unsubscribe_token:
+        toSafeString(updatePayload.unsubscribe_token) ||
+        existingSubscriber.unsubscribe_token,
     };
   } else {
     try {
@@ -875,8 +837,8 @@ export async function syncNewsletterSubscriber({
         status: "subscribed",
         subscribed_at: nowIso,
         unsubscribed_at: null,
+        unsubscribe_token: generateNewsletterUnsubscribeToken(),
         acquisition_source: safeAcquisitionSource,
-        source: safeAcquisitionSource,
         utm_source: safeUtmSource,
         utm_medium: safeUtmMedium,
         utm_campaign: safeUtmCampaign,
@@ -891,11 +853,7 @@ export async function syncNewsletterSubscriber({
 
       reactivated =
         toSafeString(existingSubscriber.status).toLowerCase() !== "subscribed";
-      const initialAcquisitionSource = firstNonEmpty(
-        existingSubscriber.acquisition_source,
-        existingSubscriber.source,
-        safeAcquisitionSource,
-      );
+
       const updatePayload: Record<string, string | null> = {};
 
       if (isReplaceableName(existingSubscriber.name) && resolvedName !== "there") {
@@ -903,12 +861,9 @@ export async function syncNewsletterSubscriber({
       }
       if (
         !toSafeString(existingSubscriber.acquisition_source) &&
-        initialAcquisitionSource
+        safeAcquisitionSource
       ) {
-        updatePayload.acquisition_source = initialAcquisitionSource;
-      }
-      if (!toSafeString(existingSubscriber.source) && initialAcquisitionSource) {
-        updatePayload.source = initialAcquisitionSource;
+        updatePayload.acquisition_source = safeAcquisitionSource;
       }
       if (!toSafeString(existingSubscriber.utm_source) && safeUtmSource) {
         updatePayload.utm_source = safeUtmSource;
@@ -922,6 +877,9 @@ export async function syncNewsletterSubscriber({
       if (!existingSubscriber.subscribed_at) {
         updatePayload.subscribed_at = nowIso;
       }
+      if (!toSafeString(existingSubscriber.unsubscribe_token)) {
+        updatePayload.unsubscribe_token = generateNewsletterUnsubscribeToken();
+      }
       if (reactivated) {
         updatePayload.status = "subscribed";
         updatePayload.unsubscribed_at = null;
@@ -934,53 +892,57 @@ export async function syncNewsletterSubscriber({
         status: "subscribed",
         unsubscribed_at: null,
         subscribed_at: existingSubscriber.subscribed_at || nowIso,
+        unsubscribe_token:
+          toSafeString(updatePayload.unsubscribe_token) ||
+          existingSubscriber.unsubscribe_token,
       };
     }
   }
 
   const subscriberId = toSafeString(existingSubscriber?.id);
+  const unsubscribeToken = toSafeString(existingSubscriber?.unsubscribe_token);
   if (!subscriberId) {
     throw new Error(
       `Subscriber "${normalizedSubscriberEmail}" could not be resolved after sync.`,
     );
   }
+  if (!unsubscribeToken) {
+    throw new Error(
+      `Subscriber "${normalizedSubscriberEmail}" is missing an unsubscribe token.`,
+    );
+  }
 
-  const assignments = buildCampaignAssignments(
+  const assignments = buildJourneyAssignments(
     assignmentProfile,
     safeAcquisitionSource,
   );
   const enrollmentResults = await Promise.all(
     assignments.map((assignment) =>
-      ensureCampaignEnrollment({
+      ensureJourneyEnrollment({
         subscriberId,
-        campaignKey: assignment.campaignKey,
+        journeyKey: assignment.journeyKey,
         currentStepKey: assignment.currentStepKey,
         currentStepOrder: assignment.currentStepOrder,
-        assignmentMethod: assignment.assignmentMethod,
         assignmentReason: assignment.assignmentReason,
       }),
     ),
   );
+
+  const journeyKeys = enrollmentResults.map((result) => result.journeyKey);
 
   return {
     subscriberId,
     email: normalizedSubscriberEmail,
     created,
     reactivated,
-    campaignKeys: enrollmentResults.map((result) => result.campaignKey),
+    journeyKeys,
+    campaignKeys: journeyKeys,
+    unsubscribeToken,
   };
 }
 
-export async function unsubscribeNewsletterSubscriberByEmail(email: string) {
+const unsubscribeNewsletterSubscriberById = async (subscriberId: string) => {
   const client = requireSupabase();
-  const normalizedSubscriberEmail = normalizeEmail(email);
-  if (!normalizedSubscriberEmail) {
-    throw new Error("Subscriber email is required to unsubscribe.");
-  }
-
-  const subscriber = await fetchSubscriberByEmail(normalizedSubscriberEmail);
-  if (!subscriber?.id) return;
-
   const nowIso = new Date().toISOString();
 
   const { error: subscriberUpdateError } = await client
@@ -989,138 +951,109 @@ export async function unsubscribeNewsletterSubscriberByEmail(email: string) {
       status: "unsubscribed",
       unsubscribed_at: nowIso,
     })
-    .eq("id", subscriber.id);
+    .eq("id", subscriberId);
 
   if (subscriberUpdateError) throw subscriberUpdateError;
 
   const { error: enrollmentUpdateError } = await client
-    .from("campaign_enrollments")
+    .from("email_journey_enrollments")
     .update({
       status: "cancelled",
       exited_at: nowIso,
       exit_reason: "unsubscribe",
+      current_step_key: "",
+      current_step_order: null,
     })
-    .eq("subscriber_id", subscriber.id)
-    .in("status", ["active", "paused"]);
+    .eq("subscriber_id", subscriberId)
+    .eq("status", "active");
 
   if (enrollmentUpdateError) throw enrollmentUpdateError;
-}
+};
 
-export async function getSubscriberCampaignMembershipsByEmail(
-  email: string,
-  { activeOnly = false }: { activeOnly?: boolean } = {},
-): Promise<SubscriberCampaignMembership[]> {
-  const client = requireSupabase();
-  const normalizedSubscriberEmail = normalizeEmail(email);
-  if (!normalizedSubscriberEmail) return [];
+export async function unsubscribeNewsletterSubscriberByToken(
+  unsubscribeToken: string,
+): Promise<boolean> {
+  const subscriber = await getNewsletterSubscriberByUnsubscribeToken(unsubscribeToken);
+  if (!subscriber) return false;
 
-  const subscriber = await fetchSubscriberByEmail(normalizedSubscriberEmail);
-  if (!subscriber?.id) return [];
-
-  let query = client
-    .from("campaign_enrollments")
-    .select(ENROLLMENT_WITH_CAMPAIGN_SELECT)
-    .eq("subscriber_id", subscriber.id)
-    .order("entered_at", { ascending: false, nullsFirst: false });
-
-  if (activeOnly) {
-    query = query.eq("status", "active");
+  if (subscriber.status === "subscribed") {
+    await unsubscribeNewsletterSubscriberById(subscriber.subscriberId);
   }
 
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return ((data as CampaignMembershipRow[] | null) ?? []).flatMap((row) => {
-    const campaign = Array.isArray(row.campaign) ? row.campaign[0] : row.campaign;
-    const enrollmentId = toSafeString(row.id);
-    const campaignId = toSafeString(campaign?.id);
-    const campaignKey = toSafeString(campaign?.key);
-    const campaignName = toSafeString(campaign?.name);
-    const campaignKind = campaign?.kind;
-    const campaignStatus = campaign?.status;
-    const enrollmentStatus = row.status;
-    const assignmentMethod = row.assignment_method;
-    const enteredAt = toSafeString(row.entered_at);
-
-    if (
-      !enrollmentId ||
-      !campaignId ||
-      !campaignKey ||
-      !campaignName ||
-      !campaignKind ||
-      !campaignStatus ||
-      !enrollmentStatus ||
-      !assignmentMethod ||
-      !enteredAt
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        enrollmentId,
-        enrollmentStatus,
-        enteredAt,
-        exitedAt: row.exited_at,
-        currentStepKey: toSafeString(row.current_step_key),
-        currentStepOrder: row.current_step_order,
-        assignmentMethod,
-        assignmentReason: toSafeString(row.assignment_reason),
-        campaignId,
-        campaignKey,
-        campaignName,
-        campaignKind,
-        campaignStatus,
-        campaignObjectiveKey: toSafeString(campaign.objective_key),
-      },
-    ];
-  });
+  return true;
 }
 
-export async function createCampaignSendLog({
+export async function ensureEmailDelivery({
   subscriberId,
-  campaignId,
+  deliveryKind,
   enrollmentId,
+  sendKey,
+  journeyKey,
   stepKey,
+  blogPostId,
   providerMessageId,
   status = "queued",
   errorMessage,
-}: CreateCampaignSendLogInput) {
-  const client = requireSupabase();
-  const nowIso = new Date().toISOString();
-  const payload = {
-    subscriber_id: subscriberId,
-    campaign_id: campaignId,
-    enrollment_id: toNullableString(enrollmentId),
-    step_key: toSafeString(stepKey),
-    provider_message_id: toNullableString(providerMessageId),
-    status,
-    queued_at: nowIso,
-    sent_at: status === "sent" ? nowIso : null,
-    delivered_at: status === "delivered" ? nowIso : null,
-    opened_at: status === "opened" ? nowIso : null,
-    clicked_at: status === "clicked" ? nowIso : null,
-    bounced_at: status === "bounced" ? nowIso : null,
-    failed_at: status === "failed" ? nowIso : null,
-    error_message: toSafeString(errorMessage),
-  };
+}: EnsureEmailDeliveryInput): Promise<EmailDeliveryLog> {
+  const safeEnrollmentId = toNullableString(enrollmentId);
+  const safeSendKey = toNullableString(sendKey);
+  const safeStepKey = toSafeString(stepKey);
 
-  const hasEnrollmentStepKey =
-    Boolean(toNullableString(enrollmentId)) && Boolean(toSafeString(stepKey));
+  if (safeEnrollmentId && safeStepKey) {
+    const existing = await fetchEmailDeliveryByEnrollmentStep(
+      safeEnrollmentId,
+      safeStepKey,
+    );
+    if (existing) return existing;
+  } else if (safeSendKey) {
+    const existing = await fetchEmailDeliveryBySendKey(safeSendKey, subscriberId);
+    if (existing) return existing;
+  }
 
-  const query = hasEnrollmentStepKey
-    ? client
-        .from("campaign_sends")
-        .upsert(payload, { onConflict: "enrollment_id,step_key" })
-    : client.from("campaign_sends").insert(payload);
+  try {
+    const insertedDelivery = await insertEmailDelivery({
+      subscriber_id: subscriberId,
+      enrollment_id: safeEnrollmentId,
+      delivery_kind: deliveryKind,
+      send_key: safeSendKey,
+      journey_key: toNullableString(journeyKey),
+      step_key: safeStepKey,
+      blog_post_id: toNullableString(blogPostId),
+      provider_message_id: toNullableString(providerMessageId),
+      status,
+      queued_at: new Date().toISOString(),
+      processed_at: status === "queued" ? null : new Date().toISOString(),
+      error_message: toSafeString(errorMessage),
+    });
 
-  const { data, error } = await query.select("id").single();
+    if (!insertedDelivery) {
+      throw new Error("Email delivery log insert returned no record.");
+    }
 
-  if (error) throw error;
-  return { id: toSafeString((data as { id?: string | null } | null)?.id) };
+    return insertedDelivery;
+  } catch (error) {
+    const insertError = error as SupabaseError;
+    if (insertError.code !== "23505") throw error;
+
+    if (safeEnrollmentId && safeStepKey) {
+      const existing = await fetchEmailDeliveryByEnrollmentStep(
+        safeEnrollmentId,
+        safeStepKey,
+      );
+      if (existing) return existing;
+    }
+    if (safeSendKey) {
+      const existing = await fetchEmailDeliveryBySendKey(safeSendKey, subscriberId);
+      if (existing) return existing;
+    }
+
+    throw error;
+  }
 }
 
-export async function setCampaignEnrollmentNextStep(
+export const createCampaignSendLog = ensureEmailDelivery;
+
+export async function setJourneyEnrollmentNextStep(
   enrollmentId: string,
   {
     stepKey,
@@ -1132,7 +1065,7 @@ export async function setCampaignEnrollmentNextStep(
 ) {
   const client = requireSupabase();
   const { error } = await client
-    .from("campaign_enrollments")
+    .from("email_journey_enrollments")
     .update({
       current_step_key: toSafeString(stepKey),
       current_step_order: stepOrder,
@@ -1142,13 +1075,15 @@ export async function setCampaignEnrollmentNextStep(
   if (error) throw error;
 }
 
-export async function completeCampaignEnrollment(
+export const setCampaignEnrollmentNextStep = setJourneyEnrollmentNextStep;
+
+export async function completeJourneyEnrollment(
   enrollmentId: string,
   exitReason: string,
 ) {
   const client = requireSupabase();
   const { error } = await client
-    .from("campaign_enrollments")
+    .from("email_journey_enrollments")
     .update({
       status: "completed",
       exited_at: new Date().toISOString(),
@@ -1161,43 +1096,65 @@ export async function completeCampaignEnrollment(
   if (error) throw error;
 }
 
-export async function updateCampaignSendLogStatus(
-  sendId: string,
-  status: CampaignSendStatus,
+export const completeCampaignEnrollment = completeJourneyEnrollment;
+
+export async function updateEmailDeliveryStatus(
+  deliveryId: string,
+  status: EmailDeliveryStatus,
   {
     providerMessageId,
     errorMessage,
-    occurredAt,
+    processedAt,
   }: {
     providerMessageId?: string;
     errorMessage?: string;
-    occurredAt?: string;
+    processedAt?: string;
   } = {},
 ) {
   const client = requireSupabase();
-  const timestamp = toSafeString(occurredAt) || new Date().toISOString();
   const payload: Record<string, string | null> = {
     status,
+    processed_at:
+      status === "queued"
+        ? null
+        : toSafeString(processedAt) || new Date().toISOString(),
   };
 
   if (providerMessageId) {
     payload.provider_message_id = providerMessageId;
   }
-  if (errorMessage) {
-    payload.error_message = errorMessage;
+  if (errorMessage !== undefined) {
+    payload.error_message = toSafeString(errorMessage);
   }
 
-  if (status === "sent") payload.sent_at = timestamp;
-  if (status === "delivered") payload.delivered_at = timestamp;
-  if (status === "opened") payload.opened_at = timestamp;
-  if (status === "clicked") payload.clicked_at = timestamp;
-  if (status === "bounced") payload.bounced_at = timestamp;
-  if (status === "failed") payload.failed_at = timestamp;
-
   const { error } = await client
-    .from("campaign_sends")
+    .from("email_deliveries")
     .update(payload)
-    .eq("id", sendId);
+    .eq("id", deliveryId);
 
   if (error) throw error;
+}
+
+export const updateCampaignSendLogStatus = updateEmailDeliveryStatus;
+
+export async function listSubscribedNewsletterRecipients(
+  { limit }: { limit?: number } = {},
+): Promise<NewsletterSubscriberRecord[]> {
+  const client = requireSupabase();
+  let query = client
+    .from("newsletter_subscribers")
+    .select(SUBSCRIBER_SELECT)
+    .eq("status", "subscribed")
+    .order("subscribed_at", { ascending: true, nullsFirst: false });
+
+  if (typeof limit === "number" && Number.isFinite(limit) && limit > 0) {
+    query = query.limit(Math.floor(limit));
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return ((data as SubscriberRow[] | null) ?? [])
+    .map((row) => normalizeSubscriber(row))
+    .filter((row): row is NewsletterSubscriberRecord => Boolean(row));
 }

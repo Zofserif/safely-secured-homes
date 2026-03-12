@@ -1,66 +1,108 @@
-import { createClient } from "@supabase/supabase-js";
-import { unsubscribeNewsletterSubscriberByEmail } from "./newsletterCampaigns";
+import "server-only";
 
-type NewsletterUnsubscribeStatus =
-  | "success"
-  | "invalid_email"
+import {
+  getNewsletterSubscriberByUnsubscribeToken,
+  isNewsletterCampaignsConfigured,
+  type NewsletterSubscriberStatus,
+  unsubscribeNewsletterSubscriberByToken,
+} from "./newsletterCampaigns";
+import { siteUrl } from "./site";
+
+export type NewsletterUnsubscribeLookupStatus =
+  | "valid"
+  | "invalid_token"
   | "not_configured"
   | "error";
 
-type NewsletterUnsubscribeResult = {
-  status: NewsletterUnsubscribeStatus;
+export type NewsletterUnsubscribeSubmitStatus =
+  | "success"
+  | "invalid_token"
+  | "not_configured"
+  | "error";
+
+export type NewsletterUnsubscribeLookupResult = {
+  status: NewsletterUnsubscribeLookupStatus;
+  subscriberStatus?: NewsletterSubscriberStatus;
+  token?: string;
 };
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export type NewsletterUnsubscribeSubmitResult = {
+  status: NewsletterUnsubscribeSubmitStatus;
+  token?: string;
+};
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const NEWSLETTER_UNSUBSCRIBE_TOKEN_PATTERN = /^[a-f0-9]{36}$/;
 
-const supabaseServiceRole =
-  supabaseUrl && serviceRoleKey
-    ? createClient(supabaseUrl, serviceRoleKey)
-    : null;
+export const normalizeNewsletterUnsubscribeToken = (value: string) =>
+  value.trim().toLowerCase();
 
-const supabaseAnon =
-  supabaseUrl && anonKey ? createClient(supabaseUrl, anonKey) : null;
+export const isValidNewsletterUnsubscribeToken = (value: string) =>
+  NEWSLETTER_UNSUBSCRIBE_TOKEN_PATTERN.test(
+    normalizeNewsletterUnsubscribeToken(value),
+  );
 
-export const normalizeEmail = (value: string) => value.trim().toLowerCase();
-
-export const isValidEmailAddress = (value: string) => EMAIL_REGEX.test(value);
-
-export async function unsubscribeNewsletterSubscriber(
-  rawEmail: string,
-): Promise<NewsletterUnsubscribeResult> {
-  const email = normalizeEmail(rawEmail);
-  if (!isValidEmailAddress(email)) {
-    return { status: "invalid_email" };
+export const createNewsletterUnsubscribeUrl = (
+  rawToken: string,
+  baseUrl = siteUrl,
+) => {
+  const token = normalizeNewsletterUnsubscribeToken(rawToken);
+  if (!isValidNewsletterUnsubscribeToken(token)) {
+    throw new Error("A valid unsubscribe token is required.");
   }
 
-  if (supabaseServiceRole) {
-    try {
-      await unsubscribeNewsletterSubscriberByEmail(email);
-    } catch (error) {
-      console.error("Newsletter unsubscribe failed:", error);
-      return { status: "error" };
+  return new URL(`/unsubscribe/${encodeURIComponent(token)}`, `${baseUrl}/`).toString();
+};
+
+export async function getNewsletterUnsubscribeLookup(
+  rawToken: string,
+): Promise<NewsletterUnsubscribeLookupResult> {
+  const token = normalizeNewsletterUnsubscribeToken(rawToken);
+  if (!isValidNewsletterUnsubscribeToken(token)) {
+    return { status: "invalid_token" };
+  }
+
+  if (!isNewsletterCampaignsConfigured()) {
+    return { status: "not_configured" };
+  }
+
+  try {
+    const subscriber = await getNewsletterSubscriberByUnsubscribeToken(token);
+    if (!subscriber) {
+      return { status: "invalid_token" };
     }
 
-    return { status: "success" };
+    return {
+      status: "valid",
+      subscriberStatus: subscriber.status,
+      token: subscriber.unsubscribeToken,
+    };
+  } catch (error) {
+    console.error("Newsletter unsubscribe token lookup failed:", error);
+    return { status: "error" };
+  }
+}
+
+export async function submitNewsletterUnsubscribe(
+  rawToken: string,
+): Promise<NewsletterUnsubscribeSubmitResult> {
+  const token = normalizeNewsletterUnsubscribeToken(rawToken);
+  if (!isValidNewsletterUnsubscribeToken(token)) {
+    return { status: "invalid_token" };
   }
 
-  if (supabaseAnon) {
-    const { error } = await supabaseAnon.rpc("unsubscribe_newsletter_subscriber", {
-      input_email: email,
-    });
+  if (!isNewsletterCampaignsConfigured()) {
+    return { status: "not_configured" };
+  }
 
-    if (error) {
-      console.error("Newsletter unsubscribe RPC failed:", error);
-      return { status: "error" };
+  try {
+    const unsubscribed = await unsubscribeNewsletterSubscriberByToken(token);
+    if (!unsubscribed) {
+      return { status: "invalid_token" };
     }
 
-    return { status: "success" };
+    return { status: "success", token };
+  } catch (error) {
+    console.error("Newsletter unsubscribe failed:", error);
+    return { status: "error", token };
   }
-
-  console.warn("Supabase env vars missing; skipping newsletter unsubscribe.");
-  return { status: "not_configured" };
 }

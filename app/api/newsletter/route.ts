@@ -74,6 +74,7 @@ export async function POST(req: Request) {
       subscriberId: result.subscriberId,
       created: result.created,
       reactivated: result.reactivated,
+      journeys: result.journeyKeys,
       campaigns: result.campaignKeys,
     });
   } catch (error) {

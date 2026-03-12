@@ -1,5 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import type { BlogEmailAssetSource } from "./blogPostContent";
+import {
+  WEEKLY_NEWSLETTER_BADGE,
+  getEmailJourneyStepReferencesByPostSlug,
+} from "./emailJourneys";
 
 export type {
   BlogEmailAssetDiagnostics,
@@ -19,27 +23,27 @@ export type BlogPostEmailBucket = {
   name: string;
 };
 
-export type BlogPostEmailUsageBroadcastCampaign = {
-  id: string;
-  key: string;
-  name: string;
-  status: string;
+export type BlogPostEmailUsageBroadcastSend = {
+  sendKey: string;
+  queuedAt: string;
+  processedAt: string | null;
+  recipientCount: number;
+  sentCount: number;
+  failedCount: number;
+  queuedCount: number;
 };
 
 export type BlogPostEmailUsageJourneyStep = {
   id: string;
-  campaignId: string;
-  campaignKey: string;
-  campaignName: string;
-  campaignStatus: string;
+  journeyKey: string;
+  journeyName: string;
   stepKey: string;
   stepOrder: number;
   delayDays: number;
 };
 
 export type BlogPostEmailUsage = {
-  manualBuckets: BlogPostEmailBucket[];
-  broadcastCampaigns: BlogPostEmailUsageBroadcastCampaign[];
+  broadcastSends: BlogPostEmailUsageBroadcastSend[];
   journeySteps: BlogPostEmailUsageJourneyStep[];
 };
 
@@ -63,32 +67,13 @@ type BlogPostRow = {
   updated_at: string | null;
 };
 
-type EmailContentBucketRow = {
-  id: string | null;
-  key: string | null;
-  name: string | null;
-  display_order: number | null;
-};
-
-type BlogPostEmailBucketAssignmentRow = {
+type EmailDeliveryUsageRow = {
   blog_post_id: string | null;
-  bucket_id: string | null;
-};
-
-type EmailCampaignRow = {
-  id: string | null;
-  key: string | null;
-  name: string | null;
-  status: string | null;
-  created_at: string | null;
-};
-
-type EmailCampaignStepRow = {
-  id: string | null;
-  campaign_id: string | null;
-  step_key: string | null;
-  step_order: number | null;
-  delay_days: number | null;
+  send_key: string | null;
+  status: "queued" | "sent" | "failed" | null;
+  queued_at: string | null;
+  processed_at: string | null;
+  subscriber_id: string | null;
 };
 
 type SupabaseError = {
@@ -102,34 +87,6 @@ type BlogPostBase = BlogEmailAssetSource & {
   slug: string;
   createdAt: string;
   updatedAt: string;
-};
-
-type EmailContentBucket = {
-  id: string;
-  key: string;
-  name: string;
-  displayOrder: number;
-};
-
-type BlogPostEmailBucketAssignment = {
-  blogPostId: string;
-  bucketId: string;
-};
-
-type EmailCampaignUsage = {
-  id: string;
-  key: string;
-  name: string;
-  status: string;
-  createdAt: string | null;
-};
-
-type EmailCampaignStepUsage = {
-  id: string;
-  campaignId: string;
-  stepKey: string;
-  stepOrder: number;
-  delayDays: number;
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -151,19 +108,12 @@ const BLOG_POST_REQUIRED_COLUMNS = [
   "created_at",
   "updated_at",
 ];
-const EMAIL_BUCKETS_TABLE = "email_content_buckets";
-const BLOG_POST_EMAIL_BUCKETS_TABLE = "blog_post_email_buckets";
-const EMAIL_CAMPAIGNS_TABLE = "email_campaigns";
-const EMAIL_CAMPAIGN_STEPS_TABLE = "email_campaign_steps";
-const EMAIL_BUCKET_SELECT = "id,key,name,display_order";
-const EMAIL_BUCKET_ASSIGNMENT_SELECT = "blog_post_id,bucket_id";
-const EMAIL_CAMPAIGN_USAGE_SELECT = "id,key,name,status,created_at";
-const EMAIL_CAMPAIGN_STEP_USAGE_SELECT =
-  "id,campaign_id,step_key,step_order,delay_days";
+const EMAIL_DELIVERIES_TABLE = "email_deliveries";
+const EMAIL_DELIVERY_USAGE_SELECT =
+  "blog_post_id,send_key,status,queued_at,processed_at,subscriber_id";
 
 let hasWarnedMissingBlogPostSchema = false;
-let hasWarnedMissingEmailBucketSchema = false;
-let hasWarnedMissingCampaignTrackingSchema = false;
+let hasWarnedMissingEmailCoreSchema = false;
 
 const isMissingTableError = (error: SupabaseError | null | undefined) =>
   error?.code === "PGRST205" || error?.code === "42P01";
@@ -197,27 +147,15 @@ const isMissingBlogPostSchemaError = (
   );
 };
 
-const isMissingEmailBucketSchemaError = (
+const isMissingEmailCoreSchemaError = (
   error: SupabaseError | null | undefined,
 ) =>
   isMissingSchemaError(error, [
-    EMAIL_BUCKETS_TABLE,
-    BLOG_POST_EMAIL_BUCKETS_TABLE,
-    "bucket_id",
-    "display_order",
-  ]);
-
-const isMissingCampaignTrackingSchemaError = (
-  error: SupabaseError | null | undefined,
-) =>
-  isMissingSchemaError(error, [
-    EMAIL_CAMPAIGNS_TABLE,
-    EMAIL_CAMPAIGN_STEPS_TABLE,
-    "blog_post_id",
-    "objective_key",
-    "campaign_id",
-    "step_order",
-    "delay_days",
+    EMAIL_DELIVERIES_TABLE,
+    "delivery_kind",
+    "send_key",
+    "journey_key",
+    "processed_at",
   ]);
 
 const warnMissingBlogPostSchema = () => {
@@ -228,19 +166,11 @@ const warnMissingBlogPostSchema = () => {
   );
 };
 
-const warnMissingEmailBucketSchema = () => {
-  if (hasWarnedMissingEmailBucketSchema) return;
-  hasWarnedMissingEmailBucketSchema = true;
+const warnMissingEmailCoreSchema = () => {
+  if (hasWarnedMissingEmailCoreSchema) return;
+  hasWarnedMissingEmailCoreSchema = true;
   console.warn(
-    'Supabase email bucket schema is missing. Run supabase/newsletter_campaign_tracking.sql to add "email_content_buckets" and "blog_post_email_buckets".',
-  );
-};
-
-const warnMissingCampaignTrackingSchema = () => {
-  if (hasWarnedMissingCampaignTrackingSchema) return;
-  hasWarnedMissingCampaignTrackingSchema = true;
-  console.warn(
-    'Supabase campaign tracking schema is missing. Run supabase/newsletter_campaign_tracking.sql to add "email_campaigns" and "email_campaign_steps".',
+    'Supabase email schema is missing. Run supabase/email_core.sql before using blog email usage helpers.',
   );
 };
 
@@ -253,28 +183,10 @@ const distinctValues = (values: string[]) =>
 const sortByCreatedDateDesc = <T extends { createdAt: string }>(a: T, b: T) =>
   new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 
-const sortEmailContentBuckets = (a: EmailContentBucket, b: EmailContentBucket) =>
-  a.displayOrder - b.displayOrder ||
-  a.name.localeCompare(b.name) ||
-  a.key.localeCompare(b.key);
-
-const toBlogPostEmailBucket = (
-  bucket: EmailContentBucket,
-): BlogPostEmailBucket => ({
-  key: bucket.key,
-  name: bucket.name,
-});
-
 const createEmptyBlogPostEmailUsage = (): BlogPostEmailUsage => ({
-  manualBuckets: [],
-  broadcastCampaigns: [],
+  broadcastSends: [],
   journeySteps: [],
 });
-
-const dedupeAndSortEmailContentBuckets = (buckets: EmailContentBucket[]) =>
-  Array.from(new Map(buckets.map((bucket) => [bucket.id, bucket])).values()).sort(
-    sortEmailContentBuckets,
-  );
 
 const normalizeBlogPostBase = (row: BlogPostRow): BlogPostBase | null => {
   const id = parseOptionalText(row.id);
@@ -298,273 +210,159 @@ const normalizeBlogPostBase = (row: BlogPostRow): BlogPostBase | null => {
   };
 };
 
-const normalizeEmailContentBucket = (
-  row: EmailContentBucketRow,
-): EmailContentBucket | null => {
-  const id = parseOptionalText(row.id);
-  const key = parseOptionalText(row.key);
-  const name = parseOptionalText(row.name);
+const sortBuckets = (a: BlogPostEmailBucket, b: BlogPostEmailBucket) =>
+  a.name.localeCompare(b.name) || a.key.localeCompare(b.key);
 
-  if (!id || !key || !name) return null;
+const buildDerivedEmailBuckets = ({
+  slug,
+  hasBroadcastSends,
+}: {
+  slug: string;
+  hasBroadcastSends: boolean;
+}): BlogPostEmailBucket[] => {
+  const buckets = new Map<string, BlogPostEmailBucket>();
 
-  return {
-    id,
-    key,
-    name,
-    displayOrder:
-      typeof row.display_order === "number" ? row.display_order : Number.MAX_SAFE_INTEGER,
-  };
-};
-
-const normalizeBlogPostEmailBucketAssignment = (
-  row: BlogPostEmailBucketAssignmentRow,
-): BlogPostEmailBucketAssignment | null => {
-  const blogPostId = parseOptionalText(row.blog_post_id);
-  const bucketId = parseOptionalText(row.bucket_id);
-
-  if (!blogPostId || !bucketId) return null;
-
-  return {
-    blogPostId,
-    bucketId,
-  };
-};
-
-const normalizeEmailCampaignUsage = (
-  row: EmailCampaignRow,
-): EmailCampaignUsage | null => {
-  const id = parseOptionalText(row.id);
-  const key = parseOptionalText(row.key);
-  const name = parseOptionalText(row.name);
-  const status = parseOptionalText(row.status);
-
-  if (!id || !key || !name || !status) return null;
-
-  return {
-    id,
-    key,
-    name,
-    status,
-    createdAt: row.created_at || null,
-  };
-};
-
-const normalizeEmailCampaignStepUsage = (
-  row: EmailCampaignStepRow,
-): EmailCampaignStepUsage | null => {
-  const id = parseOptionalText(row.id);
-  const campaignId = parseOptionalText(row.campaign_id);
-  const stepKey = parseOptionalText(row.step_key);
-
-  if (
-    !id ||
-    !campaignId ||
-    !stepKey ||
-    typeof row.step_order !== "number" ||
-    typeof row.delay_days !== "number"
-  ) {
-    return null;
+  for (const reference of getEmailJourneyStepReferencesByPostSlug(slug)) {
+    buckets.set(reference.badge.key, reference.badge);
   }
 
-  return {
-    id,
-    campaignId,
-    stepKey,
-    stepOrder: row.step_order,
-    delayDays: row.delay_days,
-  };
+  if (hasBroadcastSends) {
+    buckets.set(WEEKLY_NEWSLETTER_BADGE.key, WEEKLY_NEWSLETTER_BADGE);
+  }
+
+  return Array.from(buckets.values()).sort(sortBuckets);
 };
 
 const attachEmailBuckets = (
   post: BlogPostBase,
-  bucketsByPostId: Map<string, EmailContentBucket[]>,
+  broadcastPostIds: Set<string>,
 ): BlogPost => ({
   ...post,
-  emailBuckets: (bucketsByPostId.get(post.id) ?? []).map(toBlogPostEmailBucket),
+  emailBuckets: buildDerivedEmailBuckets({
+    slug: post.slug,
+    hasBroadcastSends: broadcastPostIds.has(post.id),
+  }),
 });
 
-const fetchManualEmailBucketsByPostIds = async (postIds: string[]) => {
-  const bucketsByPostId = new Map<string, EmailContentBucket[]>();
-  if (!supabase) return bucketsByPostId;
+const fetchBroadcastPostIds = async (postIds: string[]) => {
+  const broadcastPostIds = new Set<string>();
+  if (!supabase) return broadcastPostIds;
 
   const normalizedPostIds = distinctValues(postIds);
-  if (normalizedPostIds.length === 0) return bucketsByPostId;
+  if (normalizedPostIds.length === 0) return broadcastPostIds;
 
-  const { data: assignmentData, error: assignmentError } = await supabase
-    .from(BLOG_POST_EMAIL_BUCKETS_TABLE)
-    .select(EMAIL_BUCKET_ASSIGNMENT_SELECT)
+  const { data, error } = await supabase
+    .from(EMAIL_DELIVERIES_TABLE)
+    .select("blog_post_id")
+    .eq("delivery_kind", "broadcast")
     .in("blog_post_id", normalizedPostIds);
 
-  if (assignmentError) {
-    if (isMissingEmailBucketSchemaError(assignmentError as SupabaseError | null)) {
-      warnMissingEmailBucketSchema();
-      return bucketsByPostId;
+  if (error) {
+    if (isMissingEmailCoreSchemaError(error as SupabaseError | null)) {
+      warnMissingEmailCoreSchema();
+      return broadcastPostIds;
     }
-    console.error("Failed to fetch blog post email bucket assignments:", assignmentError);
-    return bucketsByPostId;
+    console.error("Failed to fetch broadcast post ids:", error);
+    return broadcastPostIds;
   }
 
-  const assignments = ((assignmentData as BlogPostEmailBucketAssignmentRow[] | null) ?? [])
-    .map((row) => normalizeBlogPostEmailBucketAssignment(row))
-    .filter((assignment): assignment is BlogPostEmailBucketAssignment =>
-      Boolean(assignment),
-    );
-
-  const bucketIds = distinctValues(assignments.map((assignment) => assignment.bucketId));
-  if (bucketIds.length === 0) return bucketsByPostId;
-
-  const { data: bucketData, error: bucketError } = await supabase
-    .from(EMAIL_BUCKETS_TABLE)
-    .select(EMAIL_BUCKET_SELECT)
-    .in("id", bucketIds);
-
-  if (bucketError) {
-    if (isMissingEmailBucketSchemaError(bucketError as SupabaseError | null)) {
-      warnMissingEmailBucketSchema();
-      return bucketsByPostId;
+  for (const row of (data as Array<{ blog_post_id?: string | null }> | null) ?? []) {
+    const blogPostId = parseOptionalText(row.blog_post_id);
+    if (blogPostId) {
+      broadcastPostIds.add(blogPostId);
     }
-    console.error("Failed to fetch email content buckets:", bucketError);
-    return bucketsByPostId;
   }
 
-  const bucketsById = new Map<string, EmailContentBucket>();
-  for (const row of (bucketData as EmailContentBucketRow[] | null) ?? []) {
-    const bucket = normalizeEmailContentBucket(row);
-    if (!bucket) continue;
-    bucketsById.set(bucket.id, bucket);
-  }
-
-  for (const assignment of assignments) {
-    const bucket = bucketsById.get(assignment.bucketId);
-    if (!bucket) continue;
-
-    const existingBuckets = bucketsByPostId.get(assignment.blogPostId) ?? [];
-    existingBuckets.push(bucket);
-    bucketsByPostId.set(assignment.blogPostId, existingBuckets);
-  }
-
-  for (const [postId, buckets] of Array.from(bucketsByPostId.entries())) {
-    bucketsByPostId.set(postId, dedupeAndSortEmailContentBuckets(buckets));
-  }
-
-  return bucketsByPostId;
+  return broadcastPostIds;
 };
 
 const enrichPostsWithEmailBuckets = async (posts: BlogPostBase[]) => {
-  const bucketsByPostId = await fetchManualEmailBucketsByPostIds(
-    posts.map((post) => post.id),
-  );
-
-  return posts.map((post) => attachEmailBuckets(post, bucketsByPostId));
+  const broadcastPostIds = await fetchBroadcastPostIds(posts.map((post) => post.id));
+  return posts.map((post) => attachEmailBuckets(post, broadcastPostIds));
 };
 
-const fetchBroadcastCampaignsByPostId = async (
+const fetchBroadcastSendsByPostId = async (
   postId: string,
-): Promise<BlogPostEmailUsageBroadcastCampaign[]> => {
+): Promise<BlogPostEmailUsageBroadcastSend[]> => {
   if (!supabase) return [];
 
   const { data, error } = await supabase
-    .from(EMAIL_CAMPAIGNS_TABLE)
-    .select(EMAIL_CAMPAIGN_USAGE_SELECT)
-    .eq("kind", "broadcast")
-    .eq("objective_key", "weekly_newsletter")
+    .from(EMAIL_DELIVERIES_TABLE)
+    .select(EMAIL_DELIVERY_USAGE_SELECT)
     .eq("blog_post_id", postId)
-    .order("created_at", { ascending: false, nullsFirst: false });
+    .eq("delivery_kind", "broadcast")
+    .order("queued_at", { ascending: false, nullsFirst: false });
 
   if (error) {
-    if (isMissingCampaignTrackingSchemaError(error as SupabaseError | null)) {
-      warnMissingCampaignTrackingSchema();
+    if (isMissingEmailCoreSchemaError(error as SupabaseError | null)) {
+      warnMissingEmailCoreSchema();
       return [];
     }
-    console.error("Failed to fetch blog post broadcast campaigns:", error);
+    console.error("Failed to fetch broadcast sends for blog post:", error);
     return [];
   }
 
-  return ((data as EmailCampaignRow[] | null) ?? [])
-    .map((row) => normalizeEmailCampaignUsage(row))
-    .filter((campaign): campaign is EmailCampaignUsage => Boolean(campaign))
-    .map((campaign) => ({
-      id: campaign.id,
-      key: campaign.key,
-      name: campaign.name,
-      status: campaign.status,
-    }));
+  const groupedBroadcasts = new Map<string, BlogPostEmailUsageBroadcastSend>();
+
+  for (const row of (data as EmailDeliveryUsageRow[] | null) ?? []) {
+    const sendKey = parseOptionalText(row.send_key);
+    if (!sendKey) continue;
+
+    const queuedAt = row.queued_at || new Date().toISOString();
+    const current = groupedBroadcasts.get(sendKey) ?? {
+      sendKey,
+      queuedAt,
+      processedAt: row.processed_at || null,
+      recipientCount: 0,
+      sentCount: 0,
+      failedCount: 0,
+      queuedCount: 0,
+    };
+
+    current.recipientCount += 1;
+    if (row.status === "sent") current.sentCount += 1;
+    if (row.status === "failed") current.failedCount += 1;
+    if (row.status === "queued") current.queuedCount += 1;
+
+    if (new Date(queuedAt).getTime() > new Date(current.queuedAt).getTime()) {
+      current.queuedAt = queuedAt;
+    }
+
+    if (
+      row.processed_at &&
+      (!current.processedAt ||
+        new Date(row.processed_at).getTime() >
+          new Date(current.processedAt).getTime())
+    ) {
+      current.processedAt = row.processed_at;
+    }
+
+    groupedBroadcasts.set(sendKey, current);
+  }
+
+  return Array.from(groupedBroadcasts.values()).sort(
+    (a, b) => new Date(b.queuedAt).getTime() - new Date(a.queuedAt).getTime(),
+  );
 };
 
-const fetchJourneyStepsByPostId = async (
-  postId: string,
-): Promise<BlogPostEmailUsageJourneyStep[]> => {
-  if (!supabase) return [];
-
-  const { data: stepData, error: stepError } = await supabase
-    .from(EMAIL_CAMPAIGN_STEPS_TABLE)
-    .select(EMAIL_CAMPAIGN_STEP_USAGE_SELECT)
-    .eq("blog_post_id", postId)
-    .eq("is_active", true)
-    .order("step_order", { ascending: true, nullsFirst: false });
-
-  if (stepError) {
-    if (isMissingCampaignTrackingSchemaError(stepError as SupabaseError | null)) {
-      warnMissingCampaignTrackingSchema();
-      return [];
-    }
-    console.error("Failed to fetch blog post journey steps:", stepError);
-    return [];
-  }
-
-  const steps = ((stepData as EmailCampaignStepRow[] | null) ?? [])
-    .map((row) => normalizeEmailCampaignStepUsage(row))
-    .filter((step): step is EmailCampaignStepUsage => Boolean(step));
-
-  const campaignIds = distinctValues(steps.map((step) => step.campaignId));
-  if (campaignIds.length === 0) return [];
-
-  const { data: campaignData, error: campaignError } = await supabase
-    .from(EMAIL_CAMPAIGNS_TABLE)
-    .select(EMAIL_CAMPAIGN_USAGE_SELECT)
-    .eq("kind", "journey")
-    .in("id", campaignIds);
-
-  if (campaignError) {
-    if (isMissingCampaignTrackingSchemaError(campaignError as SupabaseError | null)) {
-      warnMissingCampaignTrackingSchema();
-      return [];
-    }
-    console.error("Failed to fetch journey campaign details for blog post:", campaignError);
-    return [];
-  }
-
-  const campaignsById = new Map<string, EmailCampaignUsage>();
-  for (const row of (campaignData as EmailCampaignRow[] | null) ?? []) {
-    const campaign = normalizeEmailCampaignUsage(row);
-    if (!campaign) continue;
-    campaignsById.set(campaign.id, campaign);
-  }
-
-  return steps
-    .map((step) => {
-      const campaign = campaignsById.get(step.campaignId);
-      if (!campaign) return null;
-
-      return {
-        id: step.id,
-        campaignId: campaign.id,
-        campaignKey: campaign.key,
-        campaignName: campaign.name,
-        campaignStatus: campaign.status,
-        stepKey: step.stepKey,
-        stepOrder: step.stepOrder,
-        delayDays: step.delayDays,
-      };
-    })
-    .filter((step): step is BlogPostEmailUsageJourneyStep => Boolean(step))
+const fetchJourneyStepsByPostSlug = (
+  postSlug: string,
+): BlogPostEmailUsageJourneyStep[] =>
+  getEmailJourneyStepReferencesByPostSlug(postSlug)
+    .map((reference) => ({
+      id: `${reference.journeyKey}:${reference.stepKey}`,
+      journeyKey: reference.journeyKey,
+      journeyName: reference.journeyName,
+      stepKey: reference.stepKey,
+      stepOrder: reference.stepOrder,
+      delayDays: reference.delayDays,
+    }))
     .sort(
       (a, b) =>
-        a.campaignName.localeCompare(b.campaignName) ||
+        a.journeyName.localeCompare(b.journeyName) ||
         a.stepOrder - b.stepOrder ||
         a.stepKey.localeCompare(b.stepKey),
     );
-};
 
 export const getBlogPosts = async (): Promise<BlogPost[]> => {
   if (!supabase) {
@@ -632,8 +430,8 @@ export const getBlogPostBySlug = async (
   const post = normalizeBlogPostBase(data as BlogPostRow);
   if (!post) return undefined;
 
-  const bucketsByPostId = await fetchManualEmailBucketsByPostIds([post.id]);
-  return attachEmailBuckets(post, bucketsByPostId);
+  const broadcastPostIds = await fetchBroadcastPostIds([post.id]);
+  return attachEmailBuckets(post, broadcastPostIds);
 };
 
 export const getBlogPostById = async (
@@ -671,8 +469,8 @@ export const getBlogPostById = async (
   const post = normalizeBlogPostBase(data as BlogPostRow);
   if (!post) return undefined;
 
-  const bucketsByPostId = await fetchManualEmailBucketsByPostIds([post.id]);
-  return attachEmailBuckets(post, bucketsByPostId);
+  const broadcastPostIds = await fetchBroadcastPostIds([post.id]);
+  return attachEmailBuckets(post, broadcastPostIds);
 };
 
 export const getBlogPostEmailUsage = async (
@@ -686,17 +484,16 @@ export const getBlogPostEmailUsage = async (
   const normalizedPostId = postId.trim();
   if (!normalizedPostId) return createEmptyBlogPostEmailUsage();
 
-  const [manualBucketsByPostId, broadcastCampaigns, journeySteps] = await Promise.all([
-    fetchManualEmailBucketsByPostIds([normalizedPostId]),
-    fetchBroadcastCampaignsByPostId(normalizedPostId),
-    fetchJourneyStepsByPostId(normalizedPostId),
+  const post = await getBlogPostById(normalizedPostId);
+  if (!post) return createEmptyBlogPostEmailUsage();
+
+  const [broadcastSends, journeySteps] = await Promise.all([
+    fetchBroadcastSendsByPostId(post.id),
+    Promise.resolve(fetchJourneyStepsByPostSlug(post.slug)),
   ]);
 
   return {
-    manualBuckets: (manualBucketsByPostId.get(normalizedPostId) ?? []).map(
-      toBlogPostEmailBucket,
-    ),
-    broadcastCampaigns,
+    broadcastSends,
     journeySteps,
   };
 };

@@ -1,15 +1,15 @@
 import "server-only";
 
 import {
-  completeCampaignEnrollment,
-  EMAIL_CAMPAIGN_KEYS,
-  getCampaignEnrollmentById,
-  getCampaignSendLogsByEnrollmentId,
-  getCampaignSteps,
-  listActiveCampaignEnrollmentsByCampaignKey,
-  setCampaignEnrollmentNextStep,
-  type CampaignSendLog,
-  type EmailCampaignStep,
+  completeJourneyEnrollment,
+  EMAIL_JOURNEY_KEYS,
+  getEmailDeliveriesByEnrollmentId,
+  getJourneyEnrollmentById,
+  getJourneySteps,
+  listActiveJourneyEnrollmentsByJourneyKey,
+  setJourneyEnrollmentNextStep,
+  type EmailDeliveryLog,
+  type EmailJourneyStep,
 } from "./newsletterCampaigns";
 import { sendTrackedEnrollmentNewsletterCampaignEmailByPostId } from "./newsletterCampaignEmail";
 
@@ -17,7 +17,7 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const QUEUED_RETRY_WINDOW_MS = 10 * 60 * 1000;
 
 type LeadJourneySkipReason =
-  | "campaign_mismatch"
+  | "journey_mismatch"
   | "enrollment_missing"
   | "not_due"
   | "no_steps"
@@ -61,19 +61,15 @@ export type ProcessDueLeadJourneyStepsResult = {
   results: LeadJourneyProcessResult[];
 };
 
-const isFinalizedSendStatus = (status: CampaignSendLog["status"]) =>
-  status === "sent" ||
-  status === "delivered" ||
-  status === "opened" ||
-  status === "clicked" ||
-  status === "bounced";
+const isFinalizedSendStatus = (status: EmailDeliveryLog["status"]) =>
+  status === "sent";
 
 const resolveDueAt = (enteredAt: string, delayDays: number) =>
   new Date(new Date(enteredAt).getTime() + delayDays * DAY_IN_MS);
 
 const findNextPendingStep = (
-  steps: EmailCampaignStep[],
-  sendLogsByStepKey: Map<string, CampaignSendLog>,
+  steps: EmailJourneyStep[],
+  sendLogsByStepKey: Map<string, EmailDeliveryLog>,
 ) => {
   for (const step of steps) {
     const sendLog = sendLogsByStepKey.get(step.stepKey);
@@ -91,7 +87,7 @@ export async function processLeadJourneyEnrollment(
   enrollmentId: string,
   nowIso = new Date().toISOString(),
 ): Promise<LeadJourneyProcessResult> {
-  const enrollment = await getCampaignEnrollmentById(enrollmentId);
+  const enrollment = await getJourneyEnrollmentById(enrollmentId);
   if (!enrollment) {
     return {
       action: "skipped",
@@ -100,11 +96,11 @@ export async function processLeadJourneyEnrollment(
     };
   }
 
-  if (enrollment.campaignKey !== EMAIL_CAMPAIGN_KEYS.leadFollowUpJourney) {
+  if (enrollment.journeyKey !== EMAIL_JOURNEY_KEYS.leadFollowUpJourney) {
     return {
       action: "skipped",
       enrollmentId,
-      reason: "campaign_mismatch",
+      reason: "journey_mismatch",
     };
   }
 
@@ -116,7 +112,7 @@ export async function processLeadJourneyEnrollment(
     };
   }
 
-  const steps = await getCampaignSteps(enrollment.campaignId);
+  const steps = await getJourneySteps(enrollment.journeyKey);
   if (steps.length === 0) {
     return {
       action: "skipped",
@@ -125,15 +121,15 @@ export async function processLeadJourneyEnrollment(
     };
   }
 
-  const sendLogs = await getCampaignSendLogsByEnrollmentId(enrollment.enrollmentId);
-  const sendLogsByStepKey = new Map<string, CampaignSendLog>();
+  const sendLogs = await getEmailDeliveriesByEnrollmentId(enrollment.enrollmentId);
+  const sendLogsByStepKey = new Map<string, EmailDeliveryLog>();
   for (const sendLog of sendLogs) {
     sendLogsByStepKey.set(sendLog.stepKey, sendLog);
   }
 
   const nextPending = findNextPendingStep(steps, sendLogsByStepKey);
   if (!nextPending) {
-    await completeCampaignEnrollment(enrollment.enrollmentId, "journey_finished");
+    await completeJourneyEnrollment(enrollment.enrollmentId, "journey_finished");
     return {
       action: "completed",
       enrollmentId: enrollment.enrollmentId,
@@ -149,7 +145,7 @@ export async function processLeadJourneyEnrollment(
     enrollment.currentStepKey !== step.stepKey ||
     enrollment.currentStepOrder !== step.stepOrder
   ) {
-    await setCampaignEnrollmentNextStep(enrollment.enrollmentId, {
+    await setJourneyEnrollmentNextStep(enrollment.enrollmentId, {
       stepKey: step.stepKey,
       stepOrder: step.stepOrder,
     });
@@ -181,7 +177,7 @@ export async function processLeadJourneyEnrollment(
 
   try {
     const sendResult = await sendTrackedEnrollmentNewsletterCampaignEmailByPostId({
-      campaignId: enrollment.campaignId,
+      journeyKey: enrollment.journeyKey,
       subscriberId: enrollment.subscriberId,
       enrollmentId: enrollment.enrollmentId,
       recipientEmail: enrollment.subscriberEmail,
@@ -197,12 +193,12 @@ export async function processLeadJourneyEnrollment(
     const nextStep = currentIndex === -1 ? null : steps[currentIndex + 1] ?? null;
 
     if (nextStep) {
-      await setCampaignEnrollmentNextStep(enrollment.enrollmentId, {
+      await setJourneyEnrollmentNextStep(enrollment.enrollmentId, {
         stepKey: nextStep.stepKey,
         stepOrder: nextStep.stepOrder,
       });
     } else {
-      await completeCampaignEnrollment(enrollment.enrollmentId, "journey_finished");
+      await completeJourneyEnrollment(enrollment.enrollmentId, "journey_finished");
     }
 
     return {
@@ -228,8 +224,8 @@ export async function processDueLeadJourneySteps({
   limit?: number;
   nowIso?: string;
 } = {}): Promise<ProcessDueLeadJourneyStepsResult> {
-  const activeEnrollments = await listActiveCampaignEnrollmentsByCampaignKey(
-    EMAIL_CAMPAIGN_KEYS.leadFollowUpJourney,
+  const activeEnrollments = await listActiveJourneyEnrollmentsByJourneyKey(
+    EMAIL_JOURNEY_KEYS.leadFollowUpJourney,
   );
   const selectedEnrollments = activeEnrollments.slice(0, Math.max(0, limit));
   const results: LeadJourneyProcessResult[] = [];

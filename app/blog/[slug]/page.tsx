@@ -96,8 +96,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const emailUsage = showInternalEmailAssets
     ? await getBlogPostEmailUsage(post.id)
     : {
-        manualBuckets: [],
-        broadcastCampaigns: [],
+        broadcastSends: [],
         journeySteps: [],
       };
 

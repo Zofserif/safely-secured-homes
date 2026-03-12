@@ -11,8 +11,8 @@ import {
 import { clampSafetyScore } from "../../lib/safetyScale.js";
 import { processLeadJourneyEnrollment } from "../../lib/leadJourney";
 import {
-  EMAIL_CAMPAIGN_KEYS,
-  getActiveCampaignEnrollmentForSubscriber,
+  EMAIL_JOURNEY_KEYS,
+  getActiveJourneyEnrollmentForSubscriber,
   syncNewsletterSubscriber,
 } from "../../lib/newsletterCampaigns";
 import type { FormData, LeadTier } from "../../lib/types";
@@ -49,11 +49,13 @@ type LeadCreateBody = {
     utm_medium: string;
     utm_campaign: string;
     allow_external_emails: boolean | null;
+    has_bonus: boolean;
   };
 };
 
 type LeadPayload = {
   source: string;
+  has_bonus: boolean;
   location: LeadLocation;
   contact: LeadContact;
   answers: LeadAnswers;
@@ -103,6 +105,9 @@ const toOptionalHeaderValue = (value: string | null): string | null => {
 
 const toNullableBoolean = (value: unknown): boolean | null =>
   typeof value === "boolean" ? value : null;
+
+const toBoolean = (value: unknown): boolean =>
+  typeof value === "boolean" ? value : false;
 
 const toFiniteNumber = (value: unknown): number =>
   typeof value === "number" && Number.isFinite(value) ? value : 0;
@@ -199,6 +204,7 @@ const sanitizeLeadCreateBody = (value: unknown): LeadCreateBody | null => {
       utm_medium: toSafeString(rawMeta.utm_medium),
       utm_campaign: toSafeString(rawMeta.utm_campaign),
       allow_external_emails: toNullableBoolean(rawMeta.allow_external_emails),
+      has_bonus: toBoolean(rawMeta.has_bonus),
     },
   };
 };
@@ -241,6 +247,7 @@ const buildLeadPayload = (
 
   return {
     source: input.meta.source,
+    has_bonus: input.meta.has_bonus,
     location,
     contact: input.contact,
     answers: input.answers,
@@ -326,9 +333,9 @@ export async function POST(req: Request) {
         : leadBody.meta.allow_external_emails === true;
 
     if (allowExternalEmails) {
-      const activeLeadEnrollment = await getActiveCampaignEnrollmentForSubscriber(
+      const activeLeadEnrollment = await getActiveJourneyEnrollmentForSubscriber(
         newsletterSyncResult.subscriberId,
-        EMAIL_CAMPAIGN_KEYS.leadFollowUpJourney,
+        EMAIL_JOURNEY_KEYS.leadFollowUpJourney,
       );
 
       if (activeLeadEnrollment) {

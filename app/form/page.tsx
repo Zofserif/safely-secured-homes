@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AppShell from "../components/AppShell";
+import { parseHasBonusQueryValue } from "../lib/bonusFlag";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 
 export const metadata: Metadata = {
@@ -50,6 +51,17 @@ export default async function FormPage({
     typeof resolvedSearchParams.source === "string"
       ? resolvedSearchParams.source
       : undefined;
+  const hasBonus =
+    typeof resolvedSearchParams.has_bonus === "string"
+      ? parseHasBonusQueryValue(resolvedSearchParams.has_bonus)
+      : false;
   const formMode = source === "newsletter" ? "newsletter" : "default";
-  return <AppShell initialView="form" formMode={formMode} source={source} />;
+  return (
+    <AppShell
+      initialView="form"
+      formMode={formMode}
+      source={source}
+      hasBonus={hasBonus}
+    />
+  );
 }

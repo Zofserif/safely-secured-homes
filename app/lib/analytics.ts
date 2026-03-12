@@ -284,6 +284,7 @@ export const trackFunnelCtaClicked = (
     cta_location: string;
     target_path?: string;
     target_url?: string;
+    has_bonus?: boolean;
     scarcity_state?: string;
     reports_remaining?: number;
     reports_limit?: number;

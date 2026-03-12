@@ -9,6 +9,7 @@
     "lint": "eslint",
     "backfill:blog-posts": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/backfill-blog-posts-html.mts",
     "create:bonus-link": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/create-bonus-link.mts",
+    "send:weekly-newsletter": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/send-weekly-newsletter.mts",
     "verify:camera-scoring": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-results-scoring.mts",
     "verify:results-scoring": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-results-scoring.mts",
     "verify:lead-scoring": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-results-scoring.mts"
@@ -18,17 +19,20 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.88.0",
     "framer-motion": "^12.23.25",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.556.0",
     "next": "16.0.10",
     "posthog-js": "^1.306.2",
     "posthog-node": "^5.17.2",
     "react": "19.2.1",
     "react-dom": "19.2.1",
+    "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

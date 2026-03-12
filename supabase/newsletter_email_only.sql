@@ -1,3 +1,6 @@
+-- Retired by supabase/email_core.sql.
+-- Keep this file only for reference while older environments are being cut over.
+
 -- Converts newsletter_subscribers to name-only capture.
 -- Run this in Supabase SQL editor.
 

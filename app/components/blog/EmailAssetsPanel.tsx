@@ -299,7 +299,7 @@ export default function EmailAssetsPanel({
                       column to populate this field.
                     </div>
                   ) : (
-                    <pre className="mt-4 max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white p-4 text-xs leading-relaxed whitespace-pre-wrap break-words text-slate-700">
+                    <pre className="mt-4 max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white p-4 text-xs leading-relaxed whitespace-pre-wrap wrap-break-word text-slate-700">
                       {value}
                     </pre>
                   )

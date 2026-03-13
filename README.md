@@ -38,6 +38,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 ## Analytics (PostHog)
 
 - Analytics is enabled only when `NEXT_PUBLIC_VERCEL_ENV=production`.
+- Set `NEXT_PUBLIC_POSTHOG_HOST=/ingest` in production so browser requests stay same-origin and flow through the Next.js rewrite proxy instead of calling `us.i.posthog.com` directly.
 - Local development and preview deployments do not send PostHog events by default.
 - In local development, you can use:
   - `window.sshDebug.posthogOn()`
@@ -96,6 +97,7 @@ Optional flags:
 ### Environment variables
 
 - `NEXT_PUBLIC_GA4_MEASUREMENT_ID`: GA4 measurement ID (for example `G-XXXXXXXXXX`). When set, GA4 is initialized and lead/checklist/consult events are dual-written alongside PostHog.
+- `NEXT_PUBLIC_POSTHOG_HOST`: optional PostHog API host override. Recommended value: `/ingest` so analytics requests use the app's same-origin proxy; external PostHog hosts remain supported when explicitly needed.
 - `NEXT_PUBLIC_EMAILJS_TEMPLATE_ID`: shared EmailJS template ID used by lead, checklist, and newsletter sends.
   The EmailJS template should render from the common fields `to_email`, `name`, `subject`, `title`, `preview_text`, `content`, and `cta`.
   App-generated emails append the shared branded footer and unsubscribe link inside `cta`.

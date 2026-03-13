@@ -1,6 +1,7 @@
 import posthog from "posthog-js";
 
 const POSTHOG_DEBUG_STORAGE_KEY = "ssh_debug_posthog_enabled";
+const DEFAULT_POSTHOG_HOST = "/ingest";
 const IS_LOCAL_DEV = process.env.NODE_ENV !== "production";
 const IS_PRODUCTION_DEPLOYMENT =
   process.env.NEXT_PUBLIC_VERCEL_ENV === "production";
@@ -57,12 +58,13 @@ export function initPostHog() {
   }
 
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-  const host = process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com";
 
   if (!key) {
     console.warn("PostHog key missing; skipping analytics init.");
     return;
   }
+
+  const host = process.env.NEXT_PUBLIC_POSTHOG_HOST?.trim() || DEFAULT_POSTHOG_HOST;
 
   if (!initialized) {
     posthog.init(key, {

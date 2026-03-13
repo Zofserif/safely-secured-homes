@@ -188,7 +188,7 @@ export default function HomeHeroSection({
             1-Hour Bonus Active
           </p>
           <p className="text-sm font-bold leading-snug text-[#2D3748] sm:text-base">
-            Free bonus: 5 practical home security upgrades you can do today.
+            Free Bonus: A Panatag Home's Mug
           </p>
           <p className="mt-1 text-xs font-semibold text-[#2D3748] sm:text-sm">
             {scarcity.bonusEndsAt === null

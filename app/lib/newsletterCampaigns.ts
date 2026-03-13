@@ -3,11 +3,8 @@ import "server-only";
 import { randomBytes } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { deriveNameFromEmail, normalizeEmail } from "./contactName";
-import {
-  EMAIL_JOURNEY_KEYS,
-  getEmailJourneyDefinition,
-  type EmailJourneyKey,
-} from "./emailJourneys";
+import { getEmailJourneyDefinition } from "./emailJourneyStore";
+import { EMAIL_JOURNEY_KEYS, type EmailJourneyKey } from "./emailJourneys";
 export { EMAIL_JOURNEY_KEYS } from "./emailJourneys";
 export type { EmailJourneyKey } from "./emailJourneys";
 
@@ -74,11 +71,6 @@ type EmailDeliveryRow = {
   created_at: string | null;
 };
 
-type BlogPostSlugRow = {
-  id: string | null;
-  slug: string | null;
-};
-
 type SupabaseError = {
   code?: string;
   details?: string;
@@ -87,8 +79,6 @@ type SupabaseError = {
 
 type JourneyAssignment = {
   journeyKey: EmailJourneyKey;
-  currentStepKey: string;
-  currentStepOrder: number | null;
   assignmentReason: string;
 };
 
@@ -157,6 +147,19 @@ export type EnsureJourneyEnrollmentResult = {
   enrollmentId: string;
   journeyKey: EmailJourneyKey;
   created: boolean;
+};
+
+export type AssignJourneyEnrollmentInput = {
+  subscriberId: string;
+  journeyKey: EmailJourneyKey;
+  assignmentReason?: string;
+};
+
+export type AssignJourneyEnrollmentResult = {
+  enrollmentId: string;
+  journeyKey: EmailJourneyKey;
+  created: boolean;
+  replacedEnrollmentId: string | null;
 };
 
 export type EmailJourneyStep = {
@@ -341,13 +344,11 @@ const normalizeActiveJourneyEnrollment = (
     return null;
   }
 
-  const journeyDefinition = getEmailJourneyDefinition(journeyKey);
-
   return {
     enrollmentId,
     journeyKey,
-    journeyName: journeyDefinition?.name ?? journeyKey,
-    journeyObjectiveKey: journeyDefinition?.objectiveKey ?? "",
+    journeyName: journeyKey,
+    journeyObjectiveKey: "",
     subscriberId,
     subscriberEmail,
     subscriberName,
@@ -423,21 +424,66 @@ const insertSubscriber = async (payload: Record<string, string | null>) => {
   return data as SubscriberRow;
 };
 
+const fetchJourneyEnrollmentRows = async ({
+  subscriberId,
+  journeyKey,
+  status = "active",
+}: {
+  subscriberId: string;
+  journeyKey?: EmailJourneyKey;
+  status?: EmailJourneyEnrollmentStatus;
+}) => {
+  const client = requireSupabase();
+  let query = client
+    .from("email_journey_enrollments")
+    .select(ENROLLMENT_SELECT)
+    .eq("subscriber_id", subscriberId)
+    .eq("status", status)
+    .order("entered_at", { ascending: false, nullsFirst: false });
+
+  if (toSafeString(journeyKey)) {
+    query = query.eq("journey_key", toSafeString(journeyKey));
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data as JourneyEnrollmentRow[] | null) ?? [];
+};
+
 const fetchActiveJourneyEnrollment = async (
   subscriberId: string,
   journeyKey: EmailJourneyKey,
 ) => {
+  const rows = await fetchJourneyEnrollmentRows({
+    subscriberId,
+    journeyKey,
+    status: "active",
+  });
+  return rows[0] ?? null;
+};
+
+const fetchAnyActiveJourneyEnrollment = async (subscriberId: string) => {
+  const rows = await fetchJourneyEnrollmentRows({
+    subscriberId,
+    status: "active",
+  });
+  return rows[0] ?? null;
+};
+
+const updateJourneyEnrollment = async (
+  enrollmentId: string,
+  payload: Record<string, string | number | null>,
+) => {
   const client = requireSupabase();
-  const { data, error } = await client
+  if (Object.keys(payload).length === 0) return;
+
+  const { error } = await client
     .from("email_journey_enrollments")
-    .select(ENROLLMENT_SELECT)
-    .eq("subscriber_id", subscriberId)
-    .eq("journey_key", journeyKey)
-    .eq("status", "active")
-    .maybeSingle();
+    .update(payload)
+    .eq("id", enrollmentId);
 
   if (error) throw error;
-  return (data as JourneyEnrollmentRow | null) ?? null;
 };
 
 const insertJourneyEnrollment = async (
@@ -452,6 +498,19 @@ const insertJourneyEnrollment = async (
 
   if (error) throw error;
   return data as JourneyEnrollmentRow;
+};
+
+const cancelJourneyEnrollmentRecord = async (
+  enrollmentId: string,
+  exitReason: string,
+) => {
+  await updateJourneyEnrollment(enrollmentId, {
+    status: "cancelled",
+    exited_at: new Date().toISOString(),
+    exit_reason: toSafeString(exitReason),
+    current_step_key: "",
+    current_step_order: null,
+  });
 };
 
 const fetchJourneyEnrollmentById = async (enrollmentId: string) => {
@@ -513,48 +572,22 @@ const insertEmailDelivery = async (payload: InsertEmailDeliveryPayload) => {
 const resolveJourneySteps = async (
   journeyKey: EmailJourneyKey,
 ): Promise<EmailJourneyStep[]> => {
-  const definition = getEmailJourneyDefinition(journeyKey);
+  const definition = await getEmailJourneyDefinition(journeyKey, {
+    includeInactiveSteps: true,
+  });
   if (!definition) return [];
 
-  const client = requireSupabase();
-  const slugs = Array.from(
-    new Set(definition.steps.map((step) => step.blogPostSlug).filter(Boolean)),
-  );
-
-  if (slugs.length === 0) return [];
-
-  const { data, error } = await client
-    .from("blog_posts")
-    .select("id,slug")
-    .in("slug", slugs);
-
-  if (error) throw error;
-
-  const blogPostsBySlug = new Map<string, string>();
-  for (const row of (data as BlogPostSlugRow[] | null) ?? []) {
-    const slug = toSafeString(row.slug);
-    const id = toSafeString(row.id);
-    if (slug && id) {
-      blogPostsBySlug.set(slug, id);
-    }
-  }
-
-  return definition.steps.flatMap((step) => {
-    const blogPostId = blogPostsBySlug.get(step.blogPostSlug);
-    if (!blogPostId) return [];
-
-    return [
-      {
-        journeyKey,
-        stepKey: step.stepKey,
-        stepOrder: step.stepOrder,
-        delayDays: step.delayDays,
-        blogPostId,
-        blogPostSlug: step.blogPostSlug,
-        ctaOverrideHtml: step.ctaOverrideHtml,
-      },
-    ];
-  });
+  return definition.steps
+    .filter((step) => step.isActive && step.blogPostId && step.blogPostSlug)
+    .map((step) => ({
+      journeyKey,
+      stepKey: step.stepKey,
+      stepOrder: step.stepOrder,
+      delayDays: step.delayDays,
+      blogPostId: step.blogPostId,
+      blogPostSlug: step.blogPostSlug,
+      ctaOverrideHtml: step.ctaOverrideHtml,
+    }));
 };
 
 const buildJourneyAssignments = (
@@ -567,8 +600,6 @@ const buildJourneyAssignments = (
     return [
       {
         journeyKey: EMAIL_JOURNEY_KEYS.leadFollowUpJourney,
-        currentStepKey: "lead_day_0_story",
-        currentStepOrder: 1,
         assignmentReason: `lead_capture:${assignmentSuffix}`,
       },
     ];
@@ -627,22 +658,46 @@ export async function getActiveJourneyEnrollmentForSubscriber(
 export const getActiveCampaignEnrollmentForSubscriber =
   getActiveJourneyEnrollmentForSubscriber;
 
-export async function listActiveJourneyEnrollmentsByJourneyKey(
-  journeyKey: EmailJourneyKey,
+export async function getAnyActiveJourneyEnrollmentForSubscriber(
+  subscriberId: string,
+): Promise<ActiveJourneyEnrollment | null> {
+  const row = await fetchAnyActiveJourneyEnrollment(subscriberId);
+  const enrollmentId = toSafeString(row?.id);
+  if (!enrollmentId) return null;
+
+  return getJourneyEnrollmentById(enrollmentId);
+}
+
+export async function listActiveJourneyEnrollments(
+  {
+    journeyKey,
+  }: {
+    journeyKey?: EmailJourneyKey;
+  } = {},
 ): Promise<ActiveJourneyEnrollment[]> {
   const client = requireSupabase();
-  const { data, error } = await client
+  let query = client
     .from("email_journey_enrollments")
     .select(ENROLLMENT_WITH_SUBSCRIBER_SELECT)
-    .eq("journey_key", journeyKey)
     .eq("status", "active")
     .order("entered_at", { ascending: true, nullsFirst: false });
 
+  if (toSafeString(journeyKey)) {
+    query = query.eq("journey_key", toSafeString(journeyKey));
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
 
   return ((data as JourneyEnrollmentDetailRow[] | null) ?? [])
     .map((row) => normalizeActiveJourneyEnrollment(row))
     .filter((row): row is ActiveJourneyEnrollment => Boolean(row));
+}
+
+export async function listActiveJourneyEnrollmentsByJourneyKey(
+  journeyKey: EmailJourneyKey,
+): Promise<ActiveJourneyEnrollment[]> {
+  return listActiveJourneyEnrollments({ journeyKey });
 }
 
 export const listActiveCampaignEnrollmentsByCampaignKey =
@@ -667,6 +722,161 @@ export async function getEmailDeliveriesByEnrollmentId(
 
 export const getCampaignSendLogsByEnrollmentId = getEmailDeliveriesByEnrollmentId;
 
+const resolveInitialJourneyStep = async ({
+  journeyKey,
+  requestedStepKey,
+  requestedStepOrder,
+}: {
+  journeyKey: EmailJourneyKey;
+  requestedStepKey?: string;
+  requestedStepOrder?: number | null;
+}) => {
+  const definition = await getEmailJourneyDefinition(journeyKey, {
+    includeInactiveSteps: true,
+  });
+  if (!definition) {
+    throw new Error(`Journey "${journeyKey}" was not found.`);
+  }
+  if (definition.status !== "active") {
+    throw new Error(`Journey "${journeyKey}" is not active.`);
+  }
+
+  const steps = await resolveJourneySteps(journeyKey);
+  if (steps.length === 0) {
+    throw new Error(
+      `Journey "${journeyKey}" must have at least one active step before it can be assigned.`,
+    );
+  }
+
+  const normalizedRequestedStepKey = toSafeString(requestedStepKey);
+  const requestedStep = normalizedRequestedStepKey
+    ? steps.find((step) => step.stepKey === normalizedRequestedStepKey)
+    : null;
+  const initialStep = requestedStep ?? steps[0];
+
+  return {
+    stepKey: initialStep.stepKey,
+    stepOrder:
+      requestedStep && typeof requestedStepOrder === "number"
+        ? requestedStepOrder
+        : initialStep.stepOrder,
+  };
+};
+
+export async function assignJourneyEnrollment({
+  subscriberId,
+  journeyKey,
+  assignmentReason = "",
+}: AssignJourneyEnrollmentInput): Promise<AssignJourneyEnrollmentResult> {
+  const normalizedSubscriberId = toSafeString(subscriberId);
+  const normalizedJourneyKey = toSafeString(journeyKey);
+  if (!normalizedSubscriberId) {
+    throw new Error("Subscriber id is required.");
+  }
+  if (!normalizedJourneyKey) {
+    throw new Error("Journey key is required.");
+  }
+
+  const initialStep = await resolveInitialJourneyStep({
+    journeyKey: normalizedJourneyKey,
+  });
+
+  const activeEnrollments = await fetchJourneyEnrollmentRows({
+    subscriberId: normalizedSubscriberId,
+    status: "active",
+  });
+  const sameJourneyEnrollment =
+    activeEnrollments.find(
+      (enrollment) =>
+        toSafeString(enrollment.journey_key) === normalizedJourneyKey,
+    ) ?? null;
+
+  let replacedEnrollmentId: string | null = null;
+
+  for (const enrollment of activeEnrollments) {
+    const enrollmentId = toSafeString(enrollment.id);
+    if (!enrollmentId) continue;
+    if (sameJourneyEnrollment?.id && enrollmentId === sameJourneyEnrollment.id) {
+      continue;
+    }
+
+    replacedEnrollmentId = replacedEnrollmentId || enrollmentId;
+    await cancelJourneyEnrollmentRecord(
+      enrollmentId,
+      `reassigned:${normalizedJourneyKey}`,
+    );
+  }
+
+  if (sameJourneyEnrollment?.id) {
+    const updatePayload: Record<string, string | number | null> = {};
+
+    if (!toSafeString(sameJourneyEnrollment.current_step_key)) {
+      updatePayload.current_step_key = initialStep.stepKey;
+    }
+    if (sameJourneyEnrollment.current_step_order == null) {
+      updatePayload.current_step_order = initialStep.stepOrder;
+    }
+    if (
+      !toSafeString(sameJourneyEnrollment.assignment_reason) &&
+      toSafeString(assignmentReason)
+    ) {
+      updatePayload.assignment_reason = toSafeString(assignmentReason);
+    }
+
+    await updateJourneyEnrollment(toSafeString(sameJourneyEnrollment.id), updatePayload);
+
+    return {
+      enrollmentId: toSafeString(sameJourneyEnrollment.id),
+      journeyKey: normalizedJourneyKey,
+      created: false,
+      replacedEnrollmentId,
+    };
+  }
+
+  try {
+    const insertedEnrollment = await insertJourneyEnrollment({
+      subscriber_id: normalizedSubscriberId,
+      journey_key: normalizedJourneyKey,
+      status: "active",
+      entered_at: new Date().toISOString(),
+      current_step_key: initialStep.stepKey,
+      current_step_order: initialStep.stepOrder,
+      assignment_reason: toSafeString(assignmentReason),
+    });
+
+    const enrollmentId = toSafeString(insertedEnrollment.id);
+    if (!enrollmentId) {
+      throw new Error(
+        `Journey enrollment for "${normalizedJourneyKey}" was created without an id.`,
+      );
+    }
+
+    return {
+      enrollmentId,
+      journeyKey: normalizedJourneyKey,
+      created: true,
+      replacedEnrollmentId,
+    };
+  } catch (error) {
+    const insertError = error as SupabaseError;
+    if (insertError.code !== "23505") throw error;
+
+    const existingEnrollment = await fetchActiveJourneyEnrollment(
+      normalizedSubscriberId,
+      normalizedJourneyKey,
+    );
+    const enrollmentId = toSafeString(existingEnrollment?.id);
+    if (!enrollmentId) throw error;
+
+    return {
+      enrollmentId,
+      journeyKey: normalizedJourneyKey,
+      created: false,
+      replacedEnrollmentId,
+    };
+  }
+}
+
 export async function ensureJourneyEnrollment({
   subscriberId,
   journeyKey,
@@ -674,87 +884,37 @@ export async function ensureJourneyEnrollment({
   currentStepOrder,
   assignmentReason = "",
 }: EnsureJourneyEnrollmentInput): Promise<EnsureJourneyEnrollmentResult> {
+  const initialStep = await resolveInitialJourneyStep({
+    journeyKey,
+    requestedStepKey: currentStepKey,
+    requestedStepOrder: currentStepOrder,
+  });
+
+  const result = await assignJourneyEnrollment({
+    subscriberId,
+    journeyKey,
+    assignmentReason,
+  });
+
   const activeEnrollment = await fetchActiveJourneyEnrollment(subscriberId, journeyKey);
   if (activeEnrollment?.id) {
     const updatePayload: Record<string, string | number | null> = {};
 
-    if (
-      !toSafeString(activeEnrollment.current_step_key) &&
-      toSafeString(currentStepKey)
-    ) {
-      updatePayload.current_step_key = toSafeString(currentStepKey);
+    if (!toSafeString(activeEnrollment.current_step_key)) {
+      updatePayload.current_step_key = initialStep.stepKey;
     }
-    if (
-      activeEnrollment.current_step_order == null &&
-      typeof currentStepOrder === "number"
-    ) {
-      updatePayload.current_step_order = currentStepOrder;
-    }
-    if (
-      !toSafeString(activeEnrollment.assignment_reason) &&
-      toSafeString(assignmentReason)
-    ) {
-      updatePayload.assignment_reason = toSafeString(assignmentReason);
+    if (activeEnrollment.current_step_order == null) {
+      updatePayload.current_step_order = initialStep.stepOrder;
     }
 
-    if (Object.keys(updatePayload).length > 0) {
-      const client = requireSupabase();
-      const { error } = await client
-        .from("email_journey_enrollments")
-        .update(updatePayload)
-        .eq("id", activeEnrollment.id);
-
-      if (error) throw error;
-    }
-
-    return {
-      enrollmentId: toSafeString(activeEnrollment.id),
-      journeyKey,
-      created: false,
-    };
+    await updateJourneyEnrollment(toSafeString(activeEnrollment.id), updatePayload);
   }
 
-  try {
-    const insertedEnrollment = await insertJourneyEnrollment({
-      subscriber_id: subscriberId,
-      journey_key: journeyKey,
-      status: "active",
-      entered_at: new Date().toISOString(),
-      current_step_key: toSafeString(currentStepKey),
-      current_step_order:
-        typeof currentStepOrder === "number" ? currentStepOrder : null,
-      assignment_reason: toSafeString(assignmentReason),
-    });
-
-    const enrollmentId = toSafeString(insertedEnrollment.id);
-    if (!enrollmentId) {
-      throw new Error(
-        `Journey enrollment for "${journeyKey}" was created without an id.`,
-      );
-    }
-
-    return {
-      enrollmentId,
-      journeyKey,
-      created: true,
-    };
-  } catch (error) {
-    const insertError = error as SupabaseError;
-    if (insertError.code !== "23505") throw error;
-
-    const existingEnrollment = await fetchActiveJourneyEnrollment(
-      subscriberId,
-      journeyKey,
-    );
-    const enrollmentId = toSafeString(existingEnrollment?.id);
-    if (!enrollmentId) throw error;
-
-    return {
-      enrollmentId,
-      journeyKey,
-      created: false,
-    };
-  }
+  return {
+    enrollmentId: result.enrollmentId,
+    journeyKey: result.journeyKey,
+    created: result.created,
+  };
 }
 
 export const ensureCampaignEnrollment = ensureJourneyEnrollment;
@@ -918,11 +1078,9 @@ export async function syncNewsletterSubscriber({
   );
   const enrollmentResults = await Promise.all(
     assignments.map((assignment) =>
-      ensureJourneyEnrollment({
+      assignJourneyEnrollment({
         subscriberId,
         journeyKey: assignment.journeyKey,
-        currentStepKey: assignment.currentStepKey,
-        currentStepOrder: assignment.currentStepOrder,
         assignmentReason: assignment.assignmentReason,
       }),
     ),
@@ -1077,26 +1235,35 @@ export async function setJourneyEnrollmentNextStep(
 
 export const setCampaignEnrollmentNextStep = setJourneyEnrollmentNextStep;
 
+const finalizeJourneyEnrollment = async (
+  enrollmentId: string,
+  status: "completed" | "cancelled",
+  exitReason: string,
+): Promise<void> => {
+  await updateJourneyEnrollment(enrollmentId, {
+    status,
+    exited_at: new Date().toISOString(),
+    exit_reason: toSafeString(exitReason),
+    current_step_key: "",
+    current_step_order: null,
+  });
+};
+
 export async function completeJourneyEnrollment(
   enrollmentId: string,
   exitReason: string,
 ) {
-  const client = requireSupabase();
-  const { error } = await client
-    .from("email_journey_enrollments")
-    .update({
-      status: "completed",
-      exited_at: new Date().toISOString(),
-      exit_reason: toSafeString(exitReason),
-      current_step_key: "",
-      current_step_order: null,
-    })
-    .eq("id", enrollmentId);
-
-  if (error) throw error;
+  await finalizeJourneyEnrollment(enrollmentId, "completed", exitReason);
 }
 
 export const completeCampaignEnrollment = completeJourneyEnrollment;
+
+export async function cancelJourneyEnrollment(
+  enrollmentId: string,
+  exitReason: string,
+) {
+  await finalizeJourneyEnrollment(enrollmentId, "cancelled", exitReason);
+}
 
 export async function updateEmailDeliveryStatus(
   deliveryId: string,
@@ -1141,20 +1308,36 @@ export async function listSubscribedNewsletterRecipients(
   { limit }: { limit?: number } = {},
 ): Promise<NewsletterSubscriberRecord[]> {
   const client = requireSupabase();
-  let query = client
+  const { data: activeEnrollmentData, error: activeEnrollmentError } = await client
+    .from("email_journey_enrollments")
+    .select("subscriber_id")
+    .eq("status", "active");
+
+  if (activeEnrollmentError) throw activeEnrollmentError;
+
+  const suppressedSubscriberIds = new Set(
+    ((activeEnrollmentData as Array<{ subscriber_id?: string | null }> | null) ?? [])
+      .map((row) => toSafeString(row.subscriber_id))
+      .filter(Boolean),
+  );
+
+  const query = client
     .from("newsletter_subscribers")
     .select(SUBSCRIBER_SELECT)
     .eq("status", "subscribed")
     .order("subscribed_at", { ascending: true, nullsFirst: false });
 
-  if (typeof limit === "number" && Number.isFinite(limit) && limit > 0) {
-    query = query.limit(Math.floor(limit));
-  }
-
   const { data, error } = await query;
   if (error) throw error;
 
-  return ((data as SubscriberRow[] | null) ?? [])
+  const eligibleRecipients = ((data as SubscriberRow[] | null) ?? [])
     .map((row) => normalizeSubscriber(row))
-    .filter((row): row is NewsletterSubscriberRecord => Boolean(row));
+    .filter((row): row is NewsletterSubscriberRecord => Boolean(row))
+    .filter((row) => !suppressedSubscriberIds.has(row.subscriberId));
+
+  if (typeof limit === "number" && Number.isFinite(limit) && limit > 0) {
+    return eligibleRecipients.slice(0, Math.floor(limit));
+  }
+
+  return eligibleRecipients;
 }

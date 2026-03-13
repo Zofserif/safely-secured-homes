@@ -1,9 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import type { BlogEmailAssetSource } from "./blogPostContent";
 import {
-  WEEKLY_NEWSLETTER_BADGE,
-  getEmailJourneyStepReferencesByPostSlug,
-} from "./emailJourneys";
+  isMissingEmailJourneySchemaError,
+  listEmailJourneyStepReferencesByPostIds,
+} from "./emailJourneyStore";
+import { WEEKLY_NEWSLETTER_BADGE } from "./emailJourneys";
 
 export type {
   BlogEmailAssetDiagnostics,
@@ -44,9 +45,11 @@ export type BlogPostEmailUsageJourneyStep = {
   id: string;
   journeyKey: string;
   journeyName: string;
+  journeyStatus: string;
   stepKey: string;
   stepOrder: number;
   delayDays: number;
+  isStepActive: boolean;
 };
 
 export type BlogPostEmailUsage = {
@@ -130,6 +133,7 @@ const EMAIL_DELIVERY_USAGE_SELECT =
 
 let hasWarnedMissingBlogPostSchema = false;
 let hasWarnedMissingEmailCoreSchema = false;
+let hasWarnedMissingEmailJourneySchema = false;
 
 const isMissingTableError = (error: SupabaseError | null | undefined) =>
   error?.code === "PGRST205" || error?.code === "42P01";
@@ -167,9 +171,7 @@ const isMissingBlogVisibilitySchemaError = (
   error: SupabaseError | null | undefined,
 ) => isMissingSchemaError(error, BLOG_POST_VISIBILITY_COLUMNS);
 
-const isMissingEmailCoreSchemaError = (
-  error: SupabaseError | null | undefined,
-) =>
+const isMissingEmailCoreSchemaError = (error: SupabaseError | null | undefined) =>
   isMissingSchemaError(error, [
     EMAIL_DELIVERIES_TABLE,
     "delivery_kind",
@@ -191,6 +193,14 @@ const warnMissingEmailCoreSchema = () => {
   hasWarnedMissingEmailCoreSchema = true;
   console.warn(
     'Supabase email schema is missing. Run supabase/email_core.sql before using blog email usage helpers.',
+  );
+};
+
+const warnMissingEmailJourneySchema = () => {
+  if (hasWarnedMissingEmailJourneySchema) return;
+  hasWarnedMissingEmailJourneySchema = true;
+  console.warn(
+    'Supabase email journey schema is missing. Run supabase/email_core.sql before using DB-backed journey mappings.',
   );
 };
 
@@ -246,15 +256,17 @@ const sortBuckets = (a: BlogPostEmailBucket, b: BlogPostEmailBucket) =>
   a.name.localeCompare(b.name) || a.key.localeCompare(b.key);
 
 const buildDerivedEmailBuckets = ({
-  slug,
+  journeyReferences,
   hasBroadcastSends,
 }: {
-  slug: string;
+  journeyReferences: Awaited<
+    ReturnType<typeof listEmailJourneyStepReferencesByPostIds>
+  >;
   hasBroadcastSends: boolean;
 }): BlogPostEmailBucket[] => {
   const buckets = new Map<string, BlogPostEmailBucket>();
 
-  for (const reference of getEmailJourneyStepReferencesByPostSlug(slug)) {
+  for (const reference of journeyReferences) {
     buckets.set(reference.badge.key, reference.badge);
   }
 
@@ -268,10 +280,13 @@ const buildDerivedEmailBuckets = ({
 const attachEmailBuckets = (
   post: BlogPostBase,
   broadcastPostIds: Set<string>,
+  journeyReferencesByPostId: Map<string, Awaited<
+    ReturnType<typeof listEmailJourneyStepReferencesByPostIds>
+  >>,
 ): BlogPost => ({
   ...post,
   emailBuckets: buildDerivedEmailBuckets({
-    slug: post.slug,
+    journeyReferences: journeyReferencesByPostId.get(post.id) ?? [],
     hasBroadcastSends: broadcastPostIds.has(post.id),
   }),
 });
@@ -308,9 +323,53 @@ const fetchBroadcastPostIds = async (postIds: string[]) => {
   return broadcastPostIds;
 };
 
+const groupJourneyReferencesByPostId = (
+  references: Awaited<ReturnType<typeof listEmailJourneyStepReferencesByPostIds>>,
+) => {
+  const journeyReferencesByPostId = new Map<
+    string,
+    Awaited<ReturnType<typeof listEmailJourneyStepReferencesByPostIds>>
+  >();
+
+  for (const reference of references) {
+    const existing = journeyReferencesByPostId.get(reference.blogPostId) ?? [];
+    existing.push(reference);
+    journeyReferencesByPostId.set(reference.blogPostId, existing);
+  }
+
+  return journeyReferencesByPostId;
+};
+
+const fetchActiveJourneyReferencesByPostIds = async (postIds: string[]) => {
+  const normalizedPostIds = distinctValues(postIds);
+  if (normalizedPostIds.length === 0) return [];
+
+  try {
+    return await listEmailJourneyStepReferencesByPostIds(normalizedPostIds, {
+      activeJourneysOnly: true,
+      activeStepsOnly: true,
+    });
+  } catch (error) {
+    if (isMissingEmailJourneySchemaError(error as SupabaseError | null)) {
+      warnMissingEmailJourneySchema();
+      return [];
+    }
+
+    console.error("Failed to fetch active journey references for blog posts:", error);
+    return [];
+  }
+};
+
 const enrichPostsWithEmailBuckets = async (posts: BlogPostBase[]) => {
-  const broadcastPostIds = await fetchBroadcastPostIds(posts.map((post) => post.id));
-  return posts.map((post) => attachEmailBuckets(post, broadcastPostIds));
+  const [broadcastPostIds, journeyReferences] = await Promise.all([
+    fetchBroadcastPostIds(posts.map((post) => post.id)),
+    fetchActiveJourneyReferencesByPostIds(posts.map((post) => post.id)),
+  ]);
+  const journeyReferencesByPostId = groupJourneyReferencesByPostId(journeyReferences);
+
+  return posts.map((post) =>
+    attachEmailBuckets(post, broadcastPostIds, journeyReferencesByPostId),
+  );
 };
 
 const fetchBroadcastSendsByPostId = async (
@@ -377,24 +436,35 @@ const fetchBroadcastSendsByPostId = async (
   );
 };
 
-const fetchJourneyStepsByPostSlug = (
-  postSlug: string,
-): BlogPostEmailUsageJourneyStep[] =>
-  getEmailJourneyStepReferencesByPostSlug(postSlug)
-    .map((reference) => ({
+const fetchJourneyStepsByPostId = async (
+  postId: string,
+): Promise<BlogPostEmailUsageJourneyStep[]> => {
+  try {
+    return (
+      await listEmailJourneyStepReferencesByPostIds([postId], {
+        activeJourneysOnly: false,
+        activeStepsOnly: false,
+      })
+    ).map((reference) => ({
       id: `${reference.journeyKey}:${reference.stepKey}`,
       journeyKey: reference.journeyKey,
       journeyName: reference.journeyName,
+      journeyStatus: reference.journeyStatus,
       stepKey: reference.stepKey,
       stepOrder: reference.stepOrder,
       delayDays: reference.delayDays,
-    }))
-    .sort(
-      (a, b) =>
-        a.journeyName.localeCompare(b.journeyName) ||
-        a.stepOrder - b.stepOrder ||
-        a.stepKey.localeCompare(b.stepKey),
-    );
+      isStepActive: reference.isStepActive,
+    }));
+  } catch (error) {
+    if (isMissingEmailJourneySchemaError(error as SupabaseError | null)) {
+      warnMissingEmailJourneySchema();
+      return [];
+    }
+
+    console.error("Failed to fetch journey usage for blog post:", error);
+    return [];
+  }
+};
 
 const fetchPublishedBlogRows = async (): Promise<BlogPostRow[] | null> => {
   if (!supabase) return null;
@@ -570,8 +640,15 @@ export const getBlogPostBySlug = async (
   const post = normalizeBlogPostBase(row);
   if (!post || post.status !== "published") return undefined;
 
-  const broadcastPostIds = await fetchBroadcastPostIds([post.id]);
-  return attachEmailBuckets(post, broadcastPostIds);
+  const [broadcastPostIds, journeyReferences] = await Promise.all([
+    fetchBroadcastPostIds([post.id]),
+    fetchActiveJourneyReferencesByPostIds([post.id]),
+  ]);
+  return attachEmailBuckets(
+    post,
+    broadcastPostIds,
+    groupJourneyReferencesByPostId(journeyReferences),
+  );
 };
 
 export const getBlogPostById = async (
@@ -591,8 +668,15 @@ export const getBlogPostById = async (
   const post = normalizeBlogPostBase(row);
   if (!post) return undefined;
 
-  const broadcastPostIds = await fetchBroadcastPostIds([post.id]);
-  return attachEmailBuckets(post, broadcastPostIds);
+  const [broadcastPostIds, journeyReferences] = await Promise.all([
+    fetchBroadcastPostIds([post.id]),
+    fetchActiveJourneyReferencesByPostIds([post.id]),
+  ]);
+  return attachEmailBuckets(
+    post,
+    broadcastPostIds,
+    groupJourneyReferencesByPostId(journeyReferences),
+  );
 };
 
 export const getBlogPostEmailUsage = async (
@@ -611,7 +695,7 @@ export const getBlogPostEmailUsage = async (
 
   const [broadcastSends, journeySteps] = await Promise.all([
     fetchBroadcastSendsByPostId(post.id),
-    Promise.resolve(fetchJourneyStepsByPostSlug(post.slug)),
+    fetchJourneyStepsByPostId(post.id),
   ]);
 
   return {

@@ -337,9 +337,9 @@ export default function BonusClaimPageClient({
     pageState === "opening"
       ? "Preparing your one-time bonus claim."
       : pageState === "claimable"
-        ? "Claim your free Safely Secured Homes mug."
+        ? "Claim your Free Bonus: A Panatag Home's Mug."
         : pageState === "complete"
-          ? "Your free bonus is on its way."
+          ? "Your free mug is on its way."
           : pageState === "claimed"
             ? "This bonus link has already been claimed."
             : pageState === "expired"
@@ -352,7 +352,7 @@ export default function BonusClaimPageClient({
       : pageState === "claimable"
         ? "Your one-time shipping window is active. Enter your shipping details before the timer runs out."
         : pageState === "complete"
-          ? "We received your shipping details for the one-time bonus shipment."
+          ? "We received your shipping details for your mug shipment."
           : pageState === "claimed"
             ? "This one-time shipment was already used, so the link is now closed."
             : pageState === "expired"
@@ -361,11 +361,11 @@ export default function BonusClaimPageClient({
 
   const heroTitle =
     pageState === "opening" || pageState === "claimable"
-      ? "Free bonus mug with one-time shipping."
+      ? "Free Bonus: A Panatag Home's Mug with one-time shipping."
       : pageState === "complete"
-        ? "Bonus claim confirmed."
+        ? "Mug claim confirmed."
         : pageState === "claimed"
-          ? "Bonus shipment already claimed."
+          ? "Mug shipment already claimed."
           : pageState === "expired"
             ? "Claim window closed."
             : "Bonus link unavailable.";
@@ -399,7 +399,7 @@ export default function BonusClaimPageClient({
   const summaryTitle = claimedState
     ? "Shipping details received."
     : effectiveStatus.status === "claimed"
-      ? "This bonus shipment was already claimed."
+      ? "This mug shipment was already claimed."
       : effectiveStatus.status === "expired"
         ? "The one-hour claim window has ended."
         : "We could not activate this bonus link.";
@@ -733,7 +733,7 @@ export default function BonusClaimPageClient({
       )}
 
       <div className="mt-6 rounded-3xl border border-[#DCE6F1] bg-[#F8FBFD] p-5 text-left text-sm leading-relaxed text-slate-600">
-        Need help with this bonus shipment? Contact Safely Secured Homes directly
+        Need help with this mug shipment? Contact Safely Secured Homes directly
         so the team can verify whether a replacement link is appropriate.
       </div>
     </div>
@@ -758,7 +758,7 @@ export default function BonusClaimPageClient({
         <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 sm:gap-10">
           <div className="max-w-3xl mx-auto text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
-              One-time bonus shipment
+              One-time mug shipment
             </p>
             <h1 className="mt-4 text-3xl font-bold leading-tight text-[#2D3748] sm:text-4xl lg:text-5xl">
               {headingText}

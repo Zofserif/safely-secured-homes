@@ -81,8 +81,8 @@ export default function HomeSimpleStepsSection({
             Ready to see your plan?
           </p>
           <p className="text-slate-700 text-lg font-semibold mb-2">
-            Get your personalized plan plus the free bonus checklist before this
-            cycle closes.
+            Get your personalized plan plus the Free Bonus: A Panatag Home's
+            Mug before this cycle closes.
           </p>
           <p className="text-slate-600 mb-4">{ctaSupportText}</p>
 

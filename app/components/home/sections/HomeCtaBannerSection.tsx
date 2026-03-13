@@ -44,8 +44,8 @@ export default function HomeCtaBannerSection({
                 Claim your free Panatag home plan before this cycle closes.
               </h2>
               <p className="text-slate-300 text-base sm:text-lg mb-5">
-                Get your personalized recommendation plus your free bonus checklist
-                with zero pressure.
+                Get your personalized recommendation plus the Free Bonus: A
+                Panatag Home's Mug with zero pressure.
               </p>
 
               {scarcity.show && (

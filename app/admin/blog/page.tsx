@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import AdminSectionNav from "../../components/admin/AdminSectionNav";
 import {
   deriveAdminNewsletterState,
   getAdminBlogPostById,
@@ -10,6 +11,7 @@ import {
 import { requireAdminSession } from "../../lib/adminAuth";
 import { getBlogPostEmailUsage } from "../../lib/blogPosts";
 import {
+  deleteDraftBlogPostAction,
   logoutAdminAction,
   publishBlogPostAction,
   saveDraftBlogPostAction,
@@ -123,6 +125,8 @@ export default async function AdminBlogPage({
   const resolvedSearchParams = await searchParams;
   const postIdParam = readSearchParam(resolvedSearchParams.post);
   const isCreatingNew = readSearchParam(resolvedSearchParams.new) === "1";
+  const isConfirmDeleteRequested =
+    readSearchParam(resolvedSearchParams.confirmDelete) === "1";
   const flashMessage = readSearchParam(resolvedSearchParams.flash);
   const errorMessage = readSearchParam(resolvedSearchParams.error);
 
@@ -180,6 +184,18 @@ export default async function AdminBlogPage({
           : newsletterState === "sent"
             ? "Newsletter Sent"
             : "Send Newsletter";
+  const draftButtonLabel =
+    selectedPost?.status === "published" ? "Unpublish Post" : "Save Draft";
+  const isDraftDeleteConfirmation =
+    isConfirmDeleteRequested && selectedPost?.status === "draft";
+  const hasDeleteUsageWarning =
+    selectedUsage.broadcastSends.length > 0 || selectedUsage.journeySteps.length > 0;
+  const draftDeleteHref = selectedPost
+    ? `/admin/blog?post=${encodeURIComponent(selectedPost.id)}&confirmDelete=1`
+    : "/admin/blog";
+  const draftEditorHref = selectedPost
+    ? `/admin/blog?post=${encodeURIComponent(selectedPost.id)}`
+    : "/admin/blog";
 
   return (
     <main className="min-h-screen bg-[#F8F6F2] px-4 py-6 text-[#1F2937] sm:px-6 lg:px-8">
@@ -196,6 +212,7 @@ export default async function AdminBlogPage({
               Create drafts, publish blog posts, and explicitly send published
               posts to newsletter subscribers.
             </p>
+            <AdminSectionNav current="blog" />
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -307,6 +324,13 @@ export default async function AdminBlogPage({
                     save. Subject and preview text are optional and will default
                     from the title/body when omitted.
                   </p>
+                  {selectedPost?.status === "published" ? (
+                    <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800">
+                      Unpublishing removes this post from <code>/blog</code> and
+                      keeps it here as a draft so you can revise or republish it
+                      later.
+                    </p>
+                  ) : null}
                   {!selectedPost ? (
                     <p className="mt-3 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm leading-relaxed text-sky-800">
                       This blank editor is ready for a new draft. Use the
@@ -439,7 +463,7 @@ export default async function AdminBlogPage({
                     formAction={saveDraftBlogPostAction}
                     className="rounded-full border border-slate-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
                   >
-                    Save Draft
+                    {draftButtonLabel}
                   </button>
                   <button
                     type="submit"
@@ -450,6 +474,73 @@ export default async function AdminBlogPage({
                   </button>
                 </div>
               </form>
+
+              {selectedPost?.status === "draft" ? (
+                <div className="mt-8 rounded-[1.75rem] border border-rose-200 bg-rose-50/70 p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
+                        Danger Zone
+                      </p>
+                      <h3 className="mt-2 text-xl font-bold text-rose-950">
+                        Delete Draft
+                      </h3>
+                      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-rose-900/80">
+                        Permanently delete this draft when you no longer need it.
+                        Published posts are not deletable here.
+                      </p>
+                    </div>
+
+                    {!isDraftDeleteConfirmation ? (
+                      <Link
+                        href={draftDeleteHref}
+                        className="rounded-full border border-rose-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-rose-700 transition hover:border-rose-400 hover:bg-rose-100"
+                      >
+                        Delete Draft
+                      </Link>
+                    ) : null}
+                  </div>
+
+                  {isDraftDeleteConfirmation ? (
+                    <div className="mt-5 rounded-[1.5rem] border border-rose-300 bg-white px-5 py-5">
+                      <h4 className="text-base font-bold text-rose-950">
+                        Confirm draft deletion
+                      </h4>
+                      <p className="mt-2 text-sm leading-relaxed text-rose-900/80">
+                        This permanently deletes <strong>{selectedPost.title}</strong>{" "}
+                        and cannot be undone.
+                      </p>
+
+                      {hasDeleteUsageWarning ? (
+                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800">
+                          This draft has related email activity or journey
+                          references. Deletion may be blocked until those
+                          references are removed.
+                        </div>
+                      ) : null}
+
+                      <div className="mt-5 flex flex-wrap gap-3">
+                        <form action={deleteDraftBlogPostAction}>
+                          <input type="hidden" name="postId" value={selectedPost.id} />
+                          <button
+                            type="submit"
+                            className="rounded-full bg-rose-700 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-rose-800"
+                          >
+                            Confirm Delete
+                          </button>
+                        </form>
+
+                        <Link
+                          href={draftEditorHref}
+                          className="rounded-full border border-slate-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+                        >
+                          Cancel
+                        </Link>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
             <div className="rounded-[2rem] border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
@@ -531,6 +622,63 @@ export default async function AdminBlogPage({
               ) : (
                 <div className="mt-6 rounded-3xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-500">
                   No broadcast sends recorded for this post yet.
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-[2rem] border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold">Journey Usage</h2>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                    This shows which DB-backed journeys currently reference this
+                    post. Use the journey editor to change the connected blog post
+                    or the step timing.
+                  </p>
+                </div>
+              </div>
+
+              {selectedUsage.journeySteps.length > 0 ? (
+                <div className="mt-6 space-y-4">
+                  {selectedUsage.journeySteps.map((step) => (
+                    <div
+                      key={step.id}
+                      className="rounded-3xl border border-slate-200 bg-slate-50 px-5 py-5"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-lg font-bold text-slate-900">
+                              {step.journeyName}
+                            </h3>
+                            <span className="rounded-full bg-slate-200 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-700">
+                              {step.journeyStatus}
+                            </span>
+                            {!step.isStepActive ? (
+                              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700">
+                                step inactive
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-2 text-sm text-slate-600">
+                            Step {step.stepOrder} • {step.stepKey} • Delay {step.delayDays} day
+                            {step.delayDays === 1 ? "" : "s"}
+                          </p>
+                        </div>
+
+                        <Link
+                          href={`/admin/journeys?journey=${encodeURIComponent(step.journeyKey)}`}
+                          className="rounded-full border border-[#0E79B2] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#0E79B2] transition hover:bg-[#0E79B2] hover:text-white"
+                        >
+                          Edit Journey
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-6 rounded-3xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-500">
+                  No journey steps currently reference this post.
                 </div>
               )}
             </div>

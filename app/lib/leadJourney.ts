@@ -1,14 +1,16 @@
 import "server-only";
 
+import { getEmailJourneyDefinition } from "./emailJourneyStore";
 import {
   completeJourneyEnrollment,
   EMAIL_JOURNEY_KEYS,
   getEmailDeliveriesByEnrollmentId,
   getJourneyEnrollmentById,
   getJourneySteps,
-  listActiveJourneyEnrollmentsByJourneyKey,
+  listActiveJourneyEnrollments,
   setJourneyEnrollmentNextStep,
   type EmailDeliveryLog,
+  type EmailJourneyKey,
   type EmailJourneyStep,
 } from "./newsletterCampaigns";
 import { sendTrackedEnrollmentNewsletterCampaignEmailByPostId } from "./newsletterCampaignEmail";
@@ -16,15 +18,16 @@ import { sendTrackedEnrollmentNewsletterCampaignEmailByPostId } from "./newslett
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const QUEUED_RETRY_WINDOW_MS = 10 * 60 * 1000;
 
-type LeadJourneySkipReason =
+type JourneyProcessSkipReason =
   | "journey_mismatch"
+  | "journey_not_active"
   | "enrollment_missing"
   | "not_due"
   | "no_steps"
   | "queued_recently"
   | "subscriber_not_subscribed";
 
-export type LeadJourneyProcessResult =
+export type JourneyProcessResult =
   | {
       action: "completed";
       enrollmentId: string;
@@ -45,12 +48,12 @@ export type LeadJourneyProcessResult =
   | {
       action: "skipped";
       enrollmentId: string;
-      reason: LeadJourneySkipReason;
+      reason: JourneyProcessSkipReason;
       stepKey?: string;
       dueAt?: string;
     };
 
-export type ProcessDueLeadJourneyStepsResult = {
+export type ProcessDueJourneyStepsResult = {
   processedAt: string;
   counts: {
     sent: number;
@@ -58,7 +61,7 @@ export type ProcessDueLeadJourneyStepsResult = {
     completed: number;
     failed: number;
   };
-  results: LeadJourneyProcessResult[];
+  results: JourneyProcessResult[];
 };
 
 const isFinalizedSendStatus = (status: EmailDeliveryLog["status"]) =>
@@ -83,10 +86,11 @@ const findNextPendingStep = (
   return null;
 };
 
-export async function processLeadJourneyEnrollment(
+export async function processJourneyEnrollment(
   enrollmentId: string,
   nowIso = new Date().toISOString(),
-): Promise<LeadJourneyProcessResult> {
+  expectedJourneyKey?: EmailJourneyKey,
+): Promise<JourneyProcessResult> {
   const enrollment = await getJourneyEnrollmentById(enrollmentId);
   if (!enrollment) {
     return {
@@ -96,7 +100,10 @@ export async function processLeadJourneyEnrollment(
     };
   }
 
-  if (enrollment.journeyKey !== EMAIL_JOURNEY_KEYS.leadFollowUpJourney) {
+  if (
+    expectedJourneyKey &&
+    enrollment.journeyKey !== expectedJourneyKey
+  ) {
     return {
       action: "skipped",
       enrollmentId,
@@ -109,6 +116,17 @@ export async function processLeadJourneyEnrollment(
       action: "skipped",
       enrollmentId,
       reason: "subscriber_not_subscribed",
+    };
+  }
+
+  const definition = await getEmailJourneyDefinition(enrollment.journeyKey, {
+    includeInactiveSteps: false,
+  });
+  if (!definition || definition.status !== "active") {
+    return {
+      action: "skipped",
+      enrollmentId: enrollment.enrollmentId,
+      reason: "journey_not_active",
     };
   }
 
@@ -217,21 +235,29 @@ export async function processLeadJourneyEnrollment(
   }
 }
 
-export async function processDueLeadJourneySteps({
+export async function processDueJourneySteps({
   limit = 200,
   nowIso = new Date().toISOString(),
+  journeyKey,
 }: {
   limit?: number;
   nowIso?: string;
-} = {}): Promise<ProcessDueLeadJourneyStepsResult> {
-  const activeEnrollments = await listActiveJourneyEnrollmentsByJourneyKey(
-    EMAIL_JOURNEY_KEYS.leadFollowUpJourney,
-  );
+  journeyKey?: EmailJourneyKey;
+} = {}): Promise<ProcessDueJourneyStepsResult> {
+  const activeEnrollments = await listActiveJourneyEnrollments({
+    journeyKey,
+  });
   const selectedEnrollments = activeEnrollments.slice(0, Math.max(0, limit));
-  const results: LeadJourneyProcessResult[] = [];
+  const results: JourneyProcessResult[] = [];
 
   for (const enrollment of selectedEnrollments) {
-    results.push(await processLeadJourneyEnrollment(enrollment.enrollmentId, nowIso));
+    results.push(
+      await processJourneyEnrollment(
+        enrollment.enrollmentId,
+        nowIso,
+        journeyKey,
+      ),
+    );
   }
 
   return {
@@ -244,4 +270,32 @@ export async function processDueLeadJourneySteps({
     },
     results,
   };
+}
+
+export type LeadJourneyProcessResult = JourneyProcessResult;
+export type ProcessDueLeadJourneyStepsResult = ProcessDueJourneyStepsResult;
+
+export async function processLeadJourneyEnrollment(
+  enrollmentId: string,
+  nowIso = new Date().toISOString(),
+) {
+  return processJourneyEnrollment(
+    enrollmentId,
+    nowIso,
+    EMAIL_JOURNEY_KEYS.leadFollowUpJourney,
+  );
+}
+
+export async function processDueLeadJourneySteps({
+  limit = 200,
+  nowIso = new Date().toISOString(),
+}: {
+  limit?: number;
+  nowIso?: string;
+} = {}) {
+  return processDueJourneySteps({
+    limit,
+    nowIso,
+    journeyKey: EMAIL_JOURNEY_KEYS.leadFollowUpJourney,
+  });
 }

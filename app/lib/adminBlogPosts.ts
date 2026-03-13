@@ -405,6 +405,38 @@ export async function saveAdminBlogPost(
   return savedPost;
 }
 
+export async function deleteAdminDraftBlogPost(
+  postId: string,
+): Promise<AdminBlogPost> {
+  const client = requireSupabase();
+  const post = await getAdminBlogPostById(postId);
+
+  if (!post) {
+    throw new Error("Blog post not found.");
+  }
+
+  if (post.status !== "draft") {
+    throw new Error("Only draft posts can be deleted.");
+  }
+
+  const { error } = await client.from(BLOG_TABLE).delete().eq("id", post.id);
+
+  if (error) {
+    assertAdminSchemaError(error as SupabaseError | null);
+
+    const deleteError = error as SupabaseError;
+    if (deleteError.code === "23503") {
+      throw new Error(
+        "This draft is still referenced by an email journey and cannot be deleted.",
+      );
+    }
+
+    throw error;
+  }
+
+  return post;
+}
+
 async function persistNewsletterSendKey(postId: string, sendKey: string) {
   const client = requireSupabase();
   const { error } = await client

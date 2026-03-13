@@ -312,6 +312,216 @@ to public
 using (auth.role() = 'service_role')
 with check (auth.role() = 'service_role');
 
+create table if not exists public.email_journeys (
+  key text primary key,
+  name text not null,
+  objective_key text not null default '',
+  badge_key text not null default '',
+  badge_name text not null default '',
+  status text not null default 'draft',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'email_journeys_status_check'
+  ) then
+    alter table public.email_journeys
+      add constraint email_journeys_status_check
+      check (status in ('draft', 'active', 'paused', 'archived'));
+  end if;
+end
+$$;
+
+drop trigger if exists set_email_journeys_updated_at
+  on public.email_journeys;
+create trigger set_email_journeys_updated_at
+before update on public.email_journeys
+for each row execute function public.set_updated_at_timestamp();
+
+alter table if exists public.email_journeys enable row level security;
+
+drop policy if exists "Service role manages email journeys"
+  on public.email_journeys;
+create policy "Service role manages email journeys"
+on public.email_journeys
+for all
+to public
+using (auth.role() = 'service_role')
+with check (auth.role() = 'service_role');
+
+create table if not exists public.email_journey_steps (
+  id uuid primary key default gen_random_uuid(),
+  journey_key text not null references public.email_journeys (key) on delete cascade,
+  step_key text not null,
+  step_order integer not null,
+  delay_days integer not null default 0,
+  blog_post_id uuid not null references public.blog_posts (id) on delete restrict,
+  cta_override_html text not null default '',
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'email_journey_steps_delay_days_check'
+  ) then
+    alter table public.email_journey_steps
+      add constraint email_journey_steps_delay_days_check
+      check (delay_days >= 0);
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'email_journey_steps_journey_step_key'
+  ) then
+    alter table public.email_journey_steps
+      add constraint email_journey_steps_journey_step_key
+      unique (journey_key, step_key);
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'email_journey_steps_journey_step_order_key'
+  ) then
+    alter table public.email_journey_steps
+      add constraint email_journey_steps_journey_step_order_key
+      unique (journey_key, step_order);
+  end if;
+end
+$$;
+
+create index if not exists email_journey_steps_journey_active_order_idx
+  on public.email_journey_steps (journey_key, is_active, step_order);
+
+drop trigger if exists set_email_journey_steps_updated_at
+  on public.email_journey_steps;
+create trigger set_email_journey_steps_updated_at
+before update on public.email_journey_steps
+for each row execute function public.set_updated_at_timestamp();
+
+alter table if exists public.email_journey_steps enable row level security;
+
+drop policy if exists "Service role manages email journey steps"
+  on public.email_journey_steps;
+create policy "Service role manages email journey steps"
+on public.email_journey_steps
+for all
+to public
+using (auth.role() = 'service_role')
+with check (auth.role() = 'service_role');
+
+insert into public.email_journeys (
+  key,
+  name,
+  objective_key,
+  badge_key,
+  badge_name,
+  status
+)
+values
+  (
+    'lead_follow_up_journey',
+    'Lead Follow-up Journey',
+    'education',
+    'lead_journey',
+    'Lead Journey',
+    'active'
+  ),
+  (
+    'smart_home_journey',
+    'Smart Home Journey',
+    'smart_home',
+    'smart_home_journey',
+    'Smart Home Journey',
+    'draft'
+  )
+on conflict (key) do update
+set
+  name = excluded.name,
+  objective_key = excluded.objective_key,
+  badge_key = excluded.badge_key,
+  badge_name = excluded.badge_name,
+  status = excluded.status,
+  updated_at = now();
+
+insert into public.email_journey_steps (
+  journey_key,
+  step_key,
+  step_order,
+  delay_days,
+  blog_post_id,
+  cta_override_html,
+  is_active
+)
+select
+  'lead_follow_up_journey',
+  seed.step_key,
+  seed.step_order,
+  seed.delay_days,
+  blog_post.id,
+  seed.cta_override_html,
+  true
+from (
+  values
+    (
+      'lead_day_0_story',
+      1,
+      0,
+      'camera-placement-mistakes-families-make',
+      '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_0" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Book a Free Site Visit</a></div>'
+    ),
+    (
+      'lead_day_3_lighting',
+      2,
+      3,
+      'smart-lighting-rules-for-safer-nights',
+      '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_3" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Book a Free Site Visit</a></div>'
+    ),
+    (
+      'lead_day_6_routine',
+      3,
+      6,
+      'weekly-security-routine-15-minutes',
+      '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_6" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Book a Free Site Visit</a></div>'
+    ),
+    (
+      'lead_day_10_site_visit',
+      4,
+      10,
+      'what-happens-during-a-home-security-site-visit',
+      '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_10" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Book a Free Site Visit</a></div>'
+    )
+) as seed(step_key, step_order, delay_days, slug, cta_override_html)
+join public.blog_posts as blog_post
+  on blog_post.slug = seed.slug
+on conflict (journey_key, step_key) do update
+set
+  step_order = excluded.step_order,
+  delay_days = excluded.delay_days,
+  blog_post_id = excluded.blog_post_id,
+  cta_override_html = excluded.cta_override_html,
+  is_active = excluded.is_active,
+  updated_at = now();
+
 create table if not exists public.email_journey_enrollments (
   id uuid primary key default gen_random_uuid(),
   subscriber_id uuid not null references public.newsletter_subscribers (id) on delete cascade,
@@ -341,8 +551,34 @@ begin
 end
 $$;
 
-create unique index if not exists email_journey_enrollments_one_active_per_journey_idx
-  on public.email_journey_enrollments (subscriber_id, journey_key)
+with ranked_active_enrollments as (
+  select
+    id,
+    row_number() over (
+      partition by subscriber_id
+      order by entered_at desc nulls last, created_at desc nulls last, id desc
+    ) as enrollment_rank
+  from public.email_journey_enrollments
+  where status = 'active'
+)
+update public.email_journey_enrollments as enrollment
+set
+  status = 'cancelled',
+  exited_at = coalesce(enrollment.exited_at, now()),
+  exit_reason = case
+    when coalesce(btrim(enrollment.exit_reason), '') = ''
+      then 'superseded_by_single_active_journey'
+    else enrollment.exit_reason
+  end,
+  current_step_key = '',
+  current_step_order = null
+from ranked_active_enrollments as ranked
+where ranked.id = enrollment.id
+  and ranked.enrollment_rank > 1;
+
+drop index if exists email_journey_enrollments_one_active_per_journey_idx;
+create unique index if not exists email_journey_enrollments_one_active_idx
+  on public.email_journey_enrollments (subscriber_id)
   where status = 'active';
 
 create index if not exists email_journey_enrollments_subscriber_status_idx

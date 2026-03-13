@@ -67,16 +67,17 @@ This project uses a hybrid media strategy:
 6. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
    This table also stores `first_name`, `email`, and `mobile` for each generated link.
 7. Run `supabase/leads.sql` to align `leads` with canonical payload storage and remove legacy summary columns.
-8. Run `supabase/email_core.sql` to align `newsletter_subscribers`, create `email_journey_enrollments` and `email_deliveries`, and backfill existing subscriber/journey/send data from the legacy campaign tables when present.
+8. Run `supabase/email_core.sql` to align `newsletter_subscribers`, create `email_journeys`, `email_journey_steps`, `email_journey_enrollments`, and `email_deliveries`, seed the lead and smart-home journeys, and backfill existing subscriber/journey/send data from the legacy campaign tables when present.
 9. After verifying the app is running on the reset model, run `supabase/email_cleanup.sql` to drop the retired campaign and bucket tables.
-10. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/lead-journeys` once daily at `01:00 UTC` for Hobby-safe lead-journey sends.
+10. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/email-journeys` once daily at `01:00 UTC` for Hobby-safe journey sends.
    On Vercel Hobby, steps 2-4 are delivered on the first daily batch after they become due rather than at exact hour precision.
 
 ### Blog Email Organization
 
-- Public blog badges are derived from code-defined journey usage plus past weekly broadcast sends.
+- Public blog badges are derived from DB-backed active journey usage plus past weekly broadcast sends.
 - Exact send history now lives in `email_deliveries`.
 - Weekly newsletter broadcasts are one-off sends keyed as `weekly_YYYYMMDD_<slug>`.
+- Weekly newsletter sends automatically skip subscribers who are currently in an active journey.
 
 Send a weekly newsletter for a blog post:
 
@@ -98,14 +99,14 @@ Optional flags:
   The EmailJS template should render from the common fields `to_email`, `name`, `subject`, `title`, `preview_text`, `content`, and `cta`.
 - `ADMIN_PASSWORD`: password used by `/admin/login`.
 - `ADMIN_SESSION_SECRET`: server-only secret used to sign the admin session cookie.
-- `EMAILJS_PRIVATE_KEY`: optional server-only EmailJS private key used for cron and server-side campaign sends.
+- `EMAILJS_PRIVATE_KEY`: optional server-only EmailJS private key used for cron and server-side journey/newsletter sends.
   If omitted, the app still uses the public EmailJS key and template for browser-safe sends.
 - `NEXT_PUBLIC_SHOW_INTERNAL_EMAIL_ASSETS`: set to `true` to display the internal blog email-assets panel. Default behavior is hidden.
 - `NEXT_PUBLIC_WHATSAPP_PREFILL_MESSAGE`: optional message prefilled in WhatsApp CTA links. Defaults to a home-security consultation intent message.
 - `REPORT_CYCLE_ANCHOR_ISO`: ISO-8601 UTC timestamp that anchors 72-hour complimentary-plan cycles in `/api/reports-remaining`.
   Initial anchor value: `2026-02-26T09:42:57Z`.
   Changing this value re-anchors all future 72-hour cycles.
-- `CRON_SECRET`: bearer token expected by `GET /api/cron/lead-journeys` in production.
+- `CRON_SECRET`: bearer token expected by `GET /api/cron/email-journeys` in production.
   Vercel cron should send this value in the `Authorization: Bearer ...` header.
   This project uses a daily Hobby-safe cron schedule of `0 1 * * *`, which is about `09:00 PHT`.
 - `NTFY_TOPIC_URL`: server-side ntfy publish URL for lead alerts (for example `https://ntfy.sh/your-topic`).

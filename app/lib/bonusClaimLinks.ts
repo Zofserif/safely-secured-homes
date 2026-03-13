@@ -7,6 +7,7 @@ export const BONUS_LINK_MOBILE_REGEX = /^09\d{9}$/;
 
 export type BonusClaimLinkRow = {
   link_key: string;
+  source_key: string | null;
   recipient_name: string | null;
   recipient_email: string | null;
   note: string | null;
@@ -114,4 +115,3 @@ export const resolveBonusLinkStatus = (
 
   return { status: "invalid" };
 };
-

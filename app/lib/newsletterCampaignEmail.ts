@@ -8,7 +8,15 @@ import {
   updateEmailDeliveryStatus,
   type EmailJourneyKey,
 } from "./newsletterCampaigns";
+import { getOrCreateBonusLinkBySourceKey } from "./bonusClaimLinksServer";
 import { sendNewsletterEmail } from "./email";
+import { getLatestLeadHasBonusByEmail } from "./leadBonusEligibility";
+import {
+  buildLeadDay0BonusCtaHtml,
+  buildLeadDay0BonusLinkNote,
+  buildLeadDay0BonusLinkSourceKey,
+  isLeadDay0JourneyEmail,
+} from "./leadJourneyDay0Cta";
 import { createNewsletterUnsubscribeUrl } from "./newsletterSubscribers";
 
 type SendTrackedEnrollmentNewsletterEmailInput = {
@@ -50,6 +58,41 @@ const resolveProviderMessageId = (value: unknown) => {
 
 const resolveRecipientName = (email: string, recipientName?: string) =>
   toSafeString(recipientName) || deriveNameFromEmail(email);
+
+const resolveTrackedEnrollmentCtaHtml = async ({
+  journeyKey,
+  stepKey,
+  recipientEmail,
+  recipientName,
+  deliveryId,
+  defaultCtaHtml,
+}: {
+  journeyKey: EmailJourneyKey;
+  stepKey: string;
+  recipientEmail: string;
+  recipientName?: string;
+  deliveryId: string;
+  defaultCtaHtml: string;
+}) => {
+  if (!isLeadDay0JourneyEmail(journeyKey, stepKey)) {
+    return defaultCtaHtml;
+  }
+
+  const hasBonus = await getLatestLeadHasBonusByEmail(recipientEmail);
+  if (!hasBonus) {
+    return defaultCtaHtml;
+  }
+
+  const sourceKey = buildLeadDay0BonusLinkSourceKey(deliveryId);
+  const bonusLink = await getOrCreateBonusLinkBySourceKey({
+    sourceKey,
+    recipientName: resolveRecipientName(recipientEmail, recipientName),
+    recipientEmail,
+    note: buildLeadDay0BonusLinkNote(sourceKey),
+  });
+
+  return buildLeadDay0BonusCtaHtml(bonusLink.url);
+};
 
 export async function sendTrackedEnrollmentNewsletterCampaignEmailByPostId({
   journeyKey,
@@ -95,10 +138,20 @@ export async function sendTrackedEnrollmentNewsletterCampaignEmailByPostId({
   }
 
   try {
+    const defaultCtaHtml = toSafeString(ctaOverrideHtml) || post.cta;
+    const resolvedCtaHtml = await resolveTrackedEnrollmentCtaHtml({
+      journeyKey,
+      stepKey,
+      recipientEmail: normalizedRecipientEmail,
+      recipientName,
+      deliveryId: delivery.id,
+      defaultCtaHtml,
+    });
+
     const sendResult = await sendNewsletterEmail(
       {
         ...post,
-        cta: toSafeString(ctaOverrideHtml) || post.cta,
+        cta: resolvedCtaHtml,
       },
       {
         toEmail: normalizedRecipientEmail,

@@ -487,7 +487,7 @@ from (
       1,
       0,
       'camera-placement-mistakes-families-make',
-      '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_0" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Book a Free Site Visit</a></div>'
+      '<p style="margin:24px 0 0 0;color:#1F2937;font-size:16px;line-height:1.6;">P.S. Just remember &#39;Troy to Call&#39; for any home-related safety consult. <a href="https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_0_no_bonus" target="_blank" style="color:#0E79B2;font-weight:700;text-decoration:underline;">Click here for your FREE Home Call Consult.</a></p>'
     ),
     (
       'lead_day_3_lighting',

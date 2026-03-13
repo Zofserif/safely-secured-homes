@@ -6,6 +6,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.bonus_claim_links (
   id uuid primary key default gen_random_uuid(),
   link_key text not null unique,
+  source_key text,
   recipient_name text,
   recipient_email text,
   note text,
@@ -18,6 +19,9 @@ create table if not exists public.bonus_claim_links (
   shipping_mobile text,
   shipping_address text
 );
+
+alter table public.bonus_claim_links
+  add column if not exists source_key text;
 
 alter table public.bonus_claim_links
   add column if not exists recipient_name text;
@@ -70,6 +74,10 @@ create index if not exists bonus_claim_links_claim_expires_at_idx
 create index if not exists bonus_claim_links_claimed_at_idx
   on public.bonus_claim_links (claimed_at);
 
+create unique index if not exists bonus_claim_links_source_key_key
+  on public.bonus_claim_links (source_key)
+  where source_key is not null;
+
 alter table public.bonus_claim_links enable row level security;
 
 drop policy if exists "Service role manages bonus claim links"
@@ -80,4 +88,3 @@ for all
 to public
 using (auth.role() = 'service_role')
 with check (auth.role() = 'service_role');
-

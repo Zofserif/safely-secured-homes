@@ -18,6 +18,7 @@ const BONUS_LINK_INSERT_RETRY_COUNT = 3;
 
 export const BONUS_CLAIM_LINK_SELECT = [
   "link_key",
+  "source_key",
   "recipient_name",
   "recipient_email",
   "note",
@@ -62,6 +63,22 @@ const generateBonusLinkKey = () =>
 const toBonusClaimLinkRow = (value: unknown): BonusClaimLinkRow | null =>
   value ? (value as unknown as BonusClaimLinkRow) : null;
 
+type CreatedBonusLinkRow = {
+  link_key: string;
+  source_key: string | null;
+  created_at: string | null;
+};
+
+const toCreatedBonusLinkResult = (
+  row: Pick<CreatedBonusLinkRow, "link_key" | "source_key" | "created_at">,
+  baseUrl = siteUrl,
+) => ({
+  key: row.link_key,
+  url: createBonusLinkUrl(row.link_key, baseUrl),
+  createdAt: row.created_at,
+  sourceKey: row.source_key,
+});
+
 const fetchBonusLinkRow = async (
   key: string,
 ): Promise<BonusClaimLinkRow | null> => {
@@ -70,6 +87,23 @@ const fetchBonusLinkRow = async (
     .from("bonus_claim_links")
     .select(BONUS_CLAIM_LINK_SELECT)
     .eq("link_key", key)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return toBonusClaimLinkRow(data);
+};
+
+const fetchBonusLinkRowBySourceKey = async (
+  sourceKey: string,
+): Promise<BonusClaimLinkRow | null> => {
+  const client = getBonusLinksClient();
+  const { data, error } = await client
+    .from("bonus_claim_links")
+    .select(BONUS_CLAIM_LINK_SELECT)
+    .eq("source_key", sourceKey)
     .maybeSingle();
 
   if (error) {
@@ -110,15 +144,11 @@ export async function createBonusLink({
           : null,
         note: safeNote,
       })
-      .select("link_key,created_at")
+      .select("link_key,source_key,created_at")
       .maybeSingle();
 
     if (!error && data) {
-      return {
-        key: data.link_key,
-        url: createBonusLinkUrl(data.link_key, baseUrl),
-        createdAt: data.created_at,
-      };
+      return toCreatedBonusLinkResult(data as CreatedBonusLinkRow, baseUrl);
     }
 
     if (error?.code !== "23505") {
@@ -127,6 +157,67 @@ export async function createBonusLink({
   }
 
   throw new Error("Failed to generate a unique bonus link key.");
+}
+
+export async function getOrCreateBonusLinkBySourceKey({
+  sourceKey,
+  recipientName,
+  recipientEmail,
+  note,
+  baseUrl,
+}: {
+  sourceKey: string;
+  recipientName?: string | null;
+  recipientEmail?: string | null;
+  note?: string | null;
+  baseUrl?: string;
+}) {
+  const safeSourceKey = toOptionalText(sourceKey);
+  if (!safeSourceKey) {
+    throw new Error("A source key is required to reuse bonus links.");
+  }
+
+  const existingLink = await fetchBonusLinkRowBySourceKey(safeSourceKey);
+  if (existingLink) {
+    return toCreatedBonusLinkResult(existingLink, baseUrl);
+  }
+
+  const client = getBonusLinksClient();
+  const safeRecipientName = toOptionalText(recipientName);
+  const safeRecipientEmail = toOptionalText(recipientEmail);
+  const safeNote = toOptionalText(note);
+
+  for (let attempt = 0; attempt < BONUS_LINK_INSERT_RETRY_COUNT; attempt += 1) {
+    const linkKey = generateBonusLinkKey();
+    const { data, error } = await client
+      .from("bonus_claim_links")
+      .insert({
+        link_key: linkKey,
+        source_key: safeSourceKey,
+        recipient_name: safeRecipientName,
+        recipient_email: safeRecipientEmail
+          ? normalizeEmail(safeRecipientEmail)
+          : null,
+        note: safeNote,
+      })
+      .select("link_key,source_key,created_at")
+      .maybeSingle();
+
+    if (!error && data) {
+      return toCreatedBonusLinkResult(data as CreatedBonusLinkRow, baseUrl);
+    }
+
+    if (error?.code !== "23505") {
+      throw new Error(error?.message ?? "Failed to create bonus link.");
+    }
+
+    const createdBySourceKey = await fetchBonusLinkRowBySourceKey(safeSourceKey);
+    if (createdBySourceKey) {
+      return toCreatedBonusLinkResult(createdBySourceKey, baseUrl);
+    }
+  }
+
+  throw new Error("Failed to generate or reuse a source-keyed bonus link.");
 }
 
 export async function getBonusLinkStatusByKey(

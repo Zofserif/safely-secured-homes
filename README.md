@@ -70,7 +70,8 @@ This project uses a hybrid media strategy:
    This table also stores `first_name`, `email`, and `mobile` for each generated link.
 8. Run `supabase/leads.sql` to align `leads` with canonical payload storage and remove legacy summary columns.
 9. Run `supabase/email_core.sql` to align `newsletter_subscribers`, create `email_journeys`, `email_journey_steps`, `email_journey_enrollments`, and `email_deliveries`, seed the lead and smart-home journeys, and backfill existing subscriber/journey/send data from the legacy campaign tables when present.
-10. After verifying the app is running on the reset model, run `supabase/email_cleanup.sql` to drop the retired campaign and bucket tables.
+10. After verifying the app is running on the reset model, run `supabase/email_cleanup_precheck.sql`, complete the manual smoke checks in `supabase/email_cleanup_runbook.md`, run `supabase/email_cleanup.sql`, then run `supabase/email_cleanup_postcheck.sql` to confirm the retired campaign and bucket tables are gone and the canonical counts are unchanged.
+    Do not run `supabase/newsletter_campaign_tracking.sql` again in that cleaned project.
 11. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/email-journeys` once daily at `01:00 UTC` for Hobby-safe journey sends.
    On Vercel Hobby, steps 2-4 are delivered on the first daily batch after they become due rather than at exact hour precision.
 

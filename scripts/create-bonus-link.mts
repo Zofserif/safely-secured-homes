@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { normalizeSiteUrl } from "../app/lib/seo";
+
+const seoModule = (await import(
+  new URL("../app/lib/seo.ts", import.meta.url).href
+)) as typeof import("../app/lib/seo");
+
+const { normalizeSiteUrl } = seoModule;
 
 const ENV_FILES = [".env.local", ".env"];
 

@@ -6,4 +6,4 @@ export {
   SAFETY_TOTAL_MAX_SCORE,
   clampSafetyScore,
   normalizeSafetyScore,
-} from "./safetyScale.ts";
+} from "./safetyScale";

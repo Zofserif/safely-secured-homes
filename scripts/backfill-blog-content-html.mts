@@ -1,7 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { renderBlogContentHtml } from "../app/lib/blogPostContent.ts";
+
+const blogPostContentModule = (await import(
+  new URL("../app/lib/blogPostContent.ts", import.meta.url).href
+)) as typeof import("../app/lib/blogPostContent");
+
+const { renderBlogContentHtml } = blogPostContentModule;
 
 type BlogContentBackfillRow = {
   id: string | null;

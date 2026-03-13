@@ -1,1 +1,1 @@
-export * from "./formOptions.ts";
+export * from "./formOptions";

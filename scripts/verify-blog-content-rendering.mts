@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
-import {
-  convertStoredBlogContentHtmlToMarkdown,
-  renderBlogContentHtml,
-} from "../app/lib/blogPostContent.ts";
+
+const blogPostContentModule = (await import(
+  new URL("../app/lib/blogPostContent.ts", import.meta.url).href
+)) as typeof import("../app/lib/blogPostContent");
+
+const { convertStoredBlogContentHtmlToMarkdown, renderBlogContentHtml } =
+  blogPostContentModule;
 
 const signatureMarkdown = "Troy\nFounder, Safely Secured Homes";
 assert.equal(

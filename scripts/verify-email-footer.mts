@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import {
+
+const emailFooterModule = (await import(
+  new URL("../app/lib/emailFooter.ts", import.meta.url).href
+)) as typeof import("../app/lib/emailFooter");
+
+const {
   EMAIL_FOOTER_ADDRESS,
   EMAIL_FOOTER_HOME_URL,
   EMAIL_FOOTER_LOGO_URL,
   buildEmailCtaWithFooter,
   buildSharedEmailFooter,
-} from "../app/lib/emailFooter.ts";
+} = emailFooterModule;
 
 const unsubscribeUrl =
   "https://www.safelysecuredhomes.com/unsubscribe/0123456789abcdef0123456789abcdef0123";

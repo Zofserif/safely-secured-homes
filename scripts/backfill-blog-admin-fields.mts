@@ -1,10 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import {
-  convertStoredBlogContentHtmlToMarkdown,
-  parseStoredBlogCtaHtml,
-} from "../app/lib/blogPostContent";
+
+const blogPostContentModule = (await import(
+  new URL("../app/lib/blogPostContent.ts", import.meta.url).href
+)) as typeof import("../app/lib/blogPostContent");
+
+const { convertStoredBlogContentHtmlToMarkdown, parseStoredBlogCtaHtml } =
+  blogPostContentModule;
 
 const ENV_FILES = [".env.local", ".env"];
 

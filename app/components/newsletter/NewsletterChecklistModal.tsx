@@ -84,21 +84,30 @@ export default function NewsletterChecklistModal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      const responseData = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        setError(errorData?.error || "Newsletter signup failed.");
+        setError(responseData?.error || "Newsletter signup failed.");
         setStatus("error");
         return;
       }
 
       let checklistSent = false;
+      const unsubscribeUrl =
+        typeof responseData?.unsubscribeUrl === "string"
+          ? responseData.unsubscribeUrl.trim()
+          : "";
       try {
+        if (!unsubscribeUrl) {
+          throw new Error("Newsletter signup response did not include an unsubscribe URL.");
+        }
+
         await sendEmail("checklist", {
           to_email: payload.email,
           name,
           checklist_name: "Panatag Home Checklist",
           checklist_url: panatagChecklistUrl,
+          unsubscribe_url: unsubscribeUrl,
         });
         checklistSent = true;
       } catch (emailError) {

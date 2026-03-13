@@ -7,6 +7,7 @@ import {
   isNewsletterCampaignsConfigured,
   syncNewsletterSubscriber,
 } from "../../lib/newsletterCampaigns";
+import { createNewsletterUnsubscribeUrl } from "../../lib/newsletterSubscribers";
 
 const toSafeString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
@@ -76,6 +77,7 @@ export async function POST(req: Request) {
       reactivated: result.reactivated,
       journeys: result.journeyKeys,
       campaigns: result.campaignKeys,
+      unsubscribeUrl: createNewsletterUnsubscribeUrl(result.unsubscribeToken),
     });
   } catch (error) {
     console.error("Newsletter sync failed:", error);

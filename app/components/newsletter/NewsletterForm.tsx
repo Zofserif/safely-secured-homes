@@ -45,26 +45,35 @@ export default function NewsletterForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      const responseData = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        if (response.status === 400 && errorData?.code === "23502") {
+        if (response.status === 400 && responseData?.code === "23502") {
           setSubmitError("Please fill in all required fields.");
           setStatus("error");
           return;
         }
-        setSubmitError(errorData?.error || "Newsletter signup failed.");
+        setSubmitError(responseData?.error || "Newsletter signup failed.");
         setStatus("error");
         return;
       }
 
       let checklistSent = false;
+      const unsubscribeUrl =
+        typeof responseData?.unsubscribeUrl === "string"
+          ? responseData.unsubscribeUrl.trim()
+          : "";
       try {
+        if (!unsubscribeUrl) {
+          throw new Error("Newsletter signup response did not include an unsubscribe URL.");
+        }
+
         await sendEmail("checklist", {
           to_email: payload.email,
           name,
           checklist_name: "Panatag Home Checklist",
           checklist_url: panatagChecklistUrl,
+          unsubscribe_url: unsubscribeUrl,
         });
         checklistSent = true;
       } catch (emailError) {

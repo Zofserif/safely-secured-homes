@@ -1,5 +1,6 @@
 import { getBlogPostById, type BlogPost } from "./blogPosts";
 import { deriveNameFromEmail, normalizeEmail } from "./contactName";
+import { buildEmailCtaWithFooter } from "./emailFooter";
 import { panatagChecklistUrl, siteUrl } from "./site";
 
 const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "";
@@ -51,6 +52,7 @@ export type EmailSendResponse = {
 export type LeadEmailInput = {
   to_email: string;
   name?: string;
+  unsubscribe_url: string;
 };
 
 export type ChecklistEmailInput = {
@@ -58,6 +60,7 @@ export type ChecklistEmailInput = {
   name?: string;
   checklist_name?: string;
   checklist_url?: string;
+  unsubscribe_url: string;
 };
 
 const escapeHtml = (value: string) =>
@@ -99,27 +102,6 @@ const buildEmailCta = ({ label, url }: { label: string; url: string }) =>
     label,
   )}</a></div>`;
 
-const buildNewsletterUnsubscribeFooter = (unsubscribeUrl: string) => {
-  const resolvedUnsubscribeUrl = resolveAbsoluteUrl(unsubscribeUrl);
-  if (!resolvedUnsubscribeUrl) {
-    throw new Error("A valid unsubscribe URL is required for newsletter emails.");
-  }
-
-  return [
-    '<div style="margin:24px 0 0 0;border-top:1px solid #E2E8F0;padding-top:16px;">',
-    `<p style="margin:0;color:#64748B;font-size:12px;line-height:1.6;">If you no longer want these emails, <a href="${escapeHtml(
-      resolvedUnsubscribeUrl,
-    )}" style="color:#0E79B2;text-decoration:underline;">unsubscribe here</a>.</p>`,
-    "</div>",
-  ].join("");
-};
-
-const buildNewsletterCta = (ctaHtml: string, unsubscribeUrl: string) => {
-  const footer = buildNewsletterUnsubscribeFooter(unsubscribeUrl);
-  const normalizedCtaHtml = ctaHtml.trim();
-  return normalizedCtaHtml ? `${normalizedCtaHtml}${footer}` : footer;
-};
-
 const resolveRecipient = ({
   to_email,
   name,
@@ -138,7 +120,7 @@ const resolveRecipient = ({
   };
 };
 
-const buildLeadTemplateParams = (
+export const buildLeadTemplateParams = (
   input: LeadEmailInput,
 ): SharedEmailTemplateParams => {
   const recipient = resolveRecipient(input);
@@ -150,16 +132,19 @@ const buildLeadTemplateParams = (
     title: DEFAULT_LEAD_TITLE,
     preview_text: DEFAULT_LEAD_PREVIEW_TEXT,
     content: DEFAULT_LEAD_CONTENT,
-    cta: scheduleCallUrl
-      ? buildEmailCta({
-          label: DEFAULT_LEAD_CTA_LABEL,
-          url: scheduleCallUrl,
-        })
-      : "",
+    cta: buildEmailCtaWithFooter(
+      scheduleCallUrl
+        ? buildEmailCta({
+            label: DEFAULT_LEAD_CTA_LABEL,
+            url: scheduleCallUrl,
+          })
+        : "",
+      input.unsubscribe_url,
+    ),
   };
 };
 
-const buildChecklistTemplateParams = (
+export const buildChecklistTemplateParams = (
   input: ChecklistEmailInput,
 ): SharedEmailTemplateParams => {
   const recipient = resolveRecipient(input);
@@ -178,12 +163,15 @@ const buildChecklistTemplateParams = (
         ? "<p>Use the button below to open or download your copy.</p>"
         : "<p>Your checklist is ready and will be shared with you shortly.</p>",
     ].join(""),
-    cta: checklistUrl
-      ? buildEmailCta({
-          label: `Download ${checklistName}`,
-          url: checklistUrl,
-        })
-      : "",
+    cta: buildEmailCtaWithFooter(
+      checklistUrl
+        ? buildEmailCta({
+            label: `Download ${checklistName}`,
+            url: checklistUrl,
+          })
+        : "",
+      input.unsubscribe_url,
+    ),
   };
 };
 
@@ -202,7 +190,7 @@ export function buildNewsletterTemplateParams(
     title: post.title,
     preview_text: post.previewText,
     content: post.content,
-    cta: buildNewsletterCta(post.cta, recipient.unsubscribeUrl),
+    cta: buildEmailCtaWithFooter(post.cta, recipient.unsubscribeUrl),
   };
 }
 
@@ -229,11 +217,11 @@ const normalizeSharedTemplateParams = (
 
 /**
  * Usage:
- * await sendEmail("checklist", { to_email, name, checklist_name, checklist_url });
- * await sendEmail("lead", { to_email, name });
+ * await sendEmail("checklist", { to_email, name, checklist_name, checklist_url, unsubscribe_url: "https://www.safelysecuredhomes.com/unsubscribe/token" });
+ * await sendEmail("lead", { to_email, name, unsubscribe_url: "https://www.safelysecuredhomes.com/unsubscribe/token" });
  * await sendNewsletterEmail(post, { toEmail: "you@example.com", name: "Lemon", unsubscribeUrl: "https://www.safelysecuredhomes.com/unsubscribe/token" });
  * await sendNewsletterEmailByPostId(postId, { toEmail: "you@example.com", name: "Lemon", unsubscribeUrl: "https://www.safelysecuredhomes.com/unsubscribe/token" });
- * node --experimental-strip-types --input-type=module -e "import { sendEmail } from './app/lib/email.ts'; await sendEmail('lead', { to_email: 'you@example.com', name: 'Lemon' })"
+ * node --experimental-strip-types --input-type=module -e "import { sendEmail } from './app/lib/email.ts'; await sendEmail('lead', { to_email: 'you@example.com', name: 'Lemon', unsubscribe_url: 'https://www.safelysecuredhomes.com/unsubscribe/token' })"
  */
 export function sendEmail(
   templateKind: "lead",

@@ -201,7 +201,8 @@ export default function EmailAssetsPanel({
           <h2 className="text-2xl font-bold text-[#1F2937]">Email Campaign Assets</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
             Internal publishing assets for EmailJS-ready newsletter campaigns.
-            The unsubscribe footer is injected automatically at send time.
+            The shared branded footer and unsubscribe link are injected
+            automatically at send time.
           </p>
         </div>
         <button
@@ -226,7 +227,8 @@ export default function EmailAssetsPanel({
               for HTML fragments, and set the EmailJS subject line to
               {" "}
               <code>{"{{subject}}"}</code>.
-              {" "}Newsletter sends also append an unsubscribe footer automatically.
+              {" "}App-generated emails also append the shared branded footer and
+              unsubscribe link automatically.
             </p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-[#1F2937]">
               <code className="rounded-full bg-white px-3 py-1">{"{{name}}"}</code>

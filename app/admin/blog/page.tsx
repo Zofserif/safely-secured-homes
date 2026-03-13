@@ -413,6 +413,10 @@ export default async function AdminBlogPage({
                     rows={18}
                     className="mt-2 min-h-[22rem] w-full rounded-[1.5rem] border border-slate-300 bg-white px-4 py-3 font-mono text-sm outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
                   />
+                  <span className="mt-2 block text-sm leading-relaxed text-slate-500">
+                    Single line breaks are preserved in the blog post and email
+                    output. Use a blank line to start a new paragraph.
+                  </span>
                 </label>
 
                 <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">

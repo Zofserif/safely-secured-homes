@@ -161,9 +161,10 @@ const parseInlineMarkdownForHtml = (value: string) => {
 const flushParagraphBlock = (paragraphLines: string[], blocks: string[]) => {
   if (paragraphLines.length === 0) return;
 
-  const paragraphContent = parseInlineMarkdownForHtml(
-    paragraphLines.join(" ").trim(),
-  );
+  const paragraphContent = paragraphLines
+    .map((line) => parseInlineMarkdownForHtml(line))
+    .join("<br />")
+    .trim();
   blocks.push(`<p>${paragraphContent}</p>`);
   paragraphLines.length = 0;
 };
@@ -436,7 +437,12 @@ const convertInlineHtmlToMarkdown = (value: string): string => {
     (_match, content: string) => `\`${stripHtmlTags(content).trim()}\``,
   );
   normalized = stripHtmlTags(normalized);
-  return normalized.replace(/\s+/g, " ").trim();
+  return normalized
+    .replace(/\r\n/g, "\n")
+    .replace(/[^\S\n]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 };
 
 export const convertStoredBlogContentHtmlToMarkdown = (htmlContent: string) => {

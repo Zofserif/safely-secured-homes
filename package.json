@@ -7,10 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "backfill:blog-content-html": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/backfill-blog-content-html.mts",
     "backfill:blog-posts": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/backfill-blog-posts-html.mts",
     "backfill:blog-admin-fields": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/backfill-blog-admin-fields.mts",
     "create:bonus-link": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/create-bonus-link.mts",
     "send:weekly-newsletter": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/send-weekly-newsletter.mts",
+    "verify:blog-content-rendering": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-blog-content-rendering.mts",
+    "verify:email-footer": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-email-footer.mts",
     "verify:camera-scoring": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-results-scoring.mts",
     "verify:results-scoring": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-results-scoring.mts",
     "verify:lead-scoring": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-results-scoring.mts"

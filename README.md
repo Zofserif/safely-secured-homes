@@ -55,21 +55,23 @@ This project uses a hybrid media strategy:
 - Keep `blog_posts` shared between the blog site and EmailJS (`id`, `slug`, `subject`, `title`, `content`, `preview_text`, `cta`, `created_at`, `updated_at`).
   The `cta` field stores an HTML button fragment (or `''` when unused). See `supabase/blog_posts.sql` for copy-paste examples.
   The admin workflow also stores `status`, `published_at`, `content_markdown`, `cta_label`, `cta_url`, `newsletter_enabled`, and `newsletter_send_key`.
+  Single line breaks in `content_markdown` are preserved as `<br />` inside paragraph HTML for both blog pages and newsletter emails.
 
 ### Supabase setup
 
 1. Run `supabase/blog_posts.sql` to create/update the `blog_posts` schema.
    If you are migrating from the old blog schema, run `npm run backfill:blog-posts` after the first SQL run.
 2. Run `npm run backfill:blog-admin-fields` once to populate `content_markdown`, `cta_label`, and `cta_url` from the existing rendered HTML rows.
-3. Run `supabase/storage_assets.sql` to create storage buckets + policies.
-4. Run `supabase/testimonials.sql` to create/update testimonial moderation schema for `/rate` and public testimonial feeds.
-5. Optional: run `supabase/blog_posts_seed.sql` for sample content.
-6. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
+3. Run `npm run backfill:blog-content-html -- --dry-run` to preview stored `content` rows that should be regenerated from `content_markdown`, then rerun without `--dry-run` to apply the fix.
+4. Run `supabase/storage_assets.sql` to create storage buckets + policies.
+5. Run `supabase/testimonials.sql` to create/update testimonial moderation schema for `/rate` and public testimonial feeds.
+6. Optional: run `supabase/blog_posts_seed.sql` for sample content.
+7. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
    This table also stores `first_name`, `email`, and `mobile` for each generated link.
-7. Run `supabase/leads.sql` to align `leads` with canonical payload storage and remove legacy summary columns.
-8. Run `supabase/email_core.sql` to align `newsletter_subscribers`, create `email_journeys`, `email_journey_steps`, `email_journey_enrollments`, and `email_deliveries`, seed the lead and smart-home journeys, and backfill existing subscriber/journey/send data from the legacy campaign tables when present.
-9. After verifying the app is running on the reset model, run `supabase/email_cleanup.sql` to drop the retired campaign and bucket tables.
-10. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/email-journeys` once daily at `01:00 UTC` for Hobby-safe journey sends.
+8. Run `supabase/leads.sql` to align `leads` with canonical payload storage and remove legacy summary columns.
+9. Run `supabase/email_core.sql` to align `newsletter_subscribers`, create `email_journeys`, `email_journey_steps`, `email_journey_enrollments`, and `email_deliveries`, seed the lead and smart-home journeys, and backfill existing subscriber/journey/send data from the legacy campaign tables when present.
+10. After verifying the app is running on the reset model, run `supabase/email_cleanup.sql` to drop the retired campaign and bucket tables.
+11. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/email-journeys` once daily at `01:00 UTC` for Hobby-safe journey sends.
    On Vercel Hobby, steps 2-4 are delivered on the first daily batch after they become due rather than at exact hour precision.
 
 ### Blog Email Organization
@@ -92,11 +94,10 @@ Optional flags:
 
 ### Environment variables
 
-- `NEXT_PUBLIC_BRAND_FOOTER_LOGO_URL`: absolute or root-relative URL for the email footer logo.
-  If omitted, the app uses `https://ukgfftcenpztjkynbymj.supabase.co/storage/v1/object/public/brand-assets/sssh-banner-logo.png`.
 - `NEXT_PUBLIC_GA4_MEASUREMENT_ID`: GA4 measurement ID (for example `G-XXXXXXXXXX`). When set, GA4 is initialized and lead/checklist/consult events are dual-written alongside PostHog.
 - `NEXT_PUBLIC_EMAILJS_TEMPLATE_ID`: shared EmailJS template ID used by lead, checklist, and newsletter sends.
   The EmailJS template should render from the common fields `to_email`, `name`, `subject`, `title`, `preview_text`, `content`, and `cta`.
+  App-generated emails append the shared branded footer and unsubscribe link inside `cta`.
 - `ADMIN_PASSWORD`: password used by `/admin/login`.
 - `ADMIN_SESSION_SECRET`: server-only secret used to sign the admin session cookie.
 - `EMAILJS_PRIVATE_KEY`: optional server-only EmailJS private key used for cron and server-side journey/newsletter sends.
@@ -117,7 +118,8 @@ Optional flags:
 
 ### Campaign Unsubscribe Link
 
-- Newsletter sends append the unsubscribe footer automatically at send time.
+- App-generated emails append the shared branded footer automatically at send time.
+- The footer logo uses `/public/assets/img/Email/email-footer-logo.jpg` and links to `https://www.safelysecuredhomes.com`.
 - The app now uses token-based links in the form:
   `https://safelysecuredhomes.com/unsubscribe/<token>`
 - `supabase/newsletter_unsubscribe_tokens.sql` is retired by `supabase/email_core.sql`.

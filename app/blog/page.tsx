@@ -4,7 +4,7 @@ import Link from "next/link";
 import BlogPostCard from "../components/blog/BlogPostCard";
 import Footer from "../components/layout/Footer";
 import BreadcrumbJsonLd from "../components/seo/BreadcrumbJsonLd";
-import { getBlogPosts } from "../lib/blogPosts";
+import { getBlogIndexPosts } from "../lib/blogPosts";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 
 export const revalidate = 300;
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
 };
 
 export default async function BlogPage() {
-  const posts = await getBlogPosts();
+  const posts = await getBlogIndexPosts();
 
   return (
     <div className="min-h-screen bg-[#F8F6F2] text-[#1F2937]">

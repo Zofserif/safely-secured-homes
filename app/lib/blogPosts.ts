@@ -367,6 +367,26 @@ const fetchActiveJourneyReferencesByPostIds = async (postIds: string[]) => {
   }
 };
 
+const fetchJourneyReferencesByPostIds = async (postIds: string[]) => {
+  const normalizedPostIds = distinctValues(postIds);
+  if (normalizedPostIds.length === 0) return [];
+
+  try {
+    return await listEmailJourneyStepReferencesByPostIds(normalizedPostIds, {
+      activeJourneysOnly: false,
+      activeStepsOnly: false,
+    });
+  } catch (error) {
+    if (isMissingEmailJourneySchemaError(error as SupabaseError | null)) {
+      warnMissingEmailJourneySchema();
+      return [];
+    }
+
+    console.error("Failed to fetch journey references for blog posts:", error);
+    return [];
+  }
+};
+
 const enrichPostsWithEmailBuckets = async (posts: BlogPostBase[]) => {
   const [broadcastPostIds, journeyReferences] = await Promise.all([
     fetchBroadcastPostIds(posts.map((post) => post.id)),
@@ -630,6 +650,22 @@ export const getBlogPosts = async (): Promise<BlogPost[]> => {
   return (await enrichPostsWithEmailBuckets(posts))
     .map((post) => applyPublicBlogPersonalization(post))
     .sort(sortByPublicDateDesc);
+};
+
+export const getBlogIndexPosts = async (): Promise<BlogPost[]> => {
+  const posts = await getBlogPosts();
+  if (posts.length === 0) return posts;
+
+  const journeyReferences = await fetchJourneyReferencesByPostIds(
+    posts.map((post) => post.id),
+  );
+  if (journeyReferences.length === 0) return posts;
+
+  const hiddenPostIds = new Set(
+    journeyReferences.map((reference) => reference.blogPostId),
+  );
+
+  return posts.filter((post) => !hiddenPostIds.has(post.id));
 };
 
 export const getBlogPostBySlug = async (

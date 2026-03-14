@@ -16,6 +16,7 @@ import {
   publishBlogPostAction,
   saveDraftBlogPostAction,
   sendBlogNewsletterAction,
+  sendTestBlogPostEmailAction,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -188,6 +189,9 @@ export default async function AdminBlogPage({
     isConfirmDeleteRequested && selectedPost?.status === "draft";
   const hasDeleteUsageWarning =
     selectedUsage.broadcastSends.length > 0 || selectedUsage.journeySteps.length > 0;
+  const isHiddenFromBlogIndex = selectedUsage.journeySteps.length > 0;
+  const canSendTestEmail = Boolean(selectedPost);
+  const testSendButtonLabel = selectedPost ? "Send Test Email" : "Save Post First";
   const draftDeleteHref = selectedPost
     ? `/admin/blog?post=${encodeURIComponent(selectedPost.id)}&confirmDelete=1`
     : "/admin/blog";
@@ -207,8 +211,8 @@ export default async function AdminBlogPage({
               Blog Manager
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
-              Create drafts, publish blog posts, and explicitly send published
-              posts to newsletter subscribers.
+              Create drafts, publish blog posts, send one-off test emails, and
+              explicitly send published posts to newsletter subscribers.
             </p>
             <AdminSectionNav current="blog" />
           </div>
@@ -322,6 +326,18 @@ export default async function AdminBlogPage({
                     save. Subject and preview text are optional and will default
                     from the title/body when omitted.
                   </p>
+                  {selectedPost && isHiddenFromBlogIndex ? (
+                    <div className="mt-3">
+                      <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-700">
+                        Hidden from /blog
+                      </span>
+                      <p className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-700">
+                        This post is assigned to a journey/campaign, so it stays
+                        off the <code>/blog</code> index while that reference
+                        exists. Direct article links still work.
+                      </p>
+                    </div>
+                  ) : null}
                   {selectedPost?.status === "published" ? (
                     <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800">
                       Unpublishing removes this post from <code>/blog</code> and
@@ -344,6 +360,9 @@ export default async function AdminBlogPage({
                       Published: {formatDateTime(selectedPost.publishedAt)}
                     </div>
                     <div className="mt-1">Updated: {formatDateTime(selectedPost.updatedAt)}</div>
+                    <div className="mt-1">
+                      Blog index: {isHiddenFromBlogIndex ? "Hidden" : "Visible"}
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -405,12 +424,15 @@ export default async function AdminBlogPage({
                     Newsletter personalization
                   </p>
                   <p className="mt-2">
-                    Use the exact token <code>{"{name}"}</code> in email copy such
-                    as the subject, preview text, title, body, or CTA text.
-                    Newsletter sends replace it with the recipient name before the
-                    EmailJS request is sent. Public blog pages, metadata, and RSS
-                    use the fallback <code>there</code> so the token never appears
-                    publicly. CTA URLs stay literal and do not support merge tags.
+                    Use <code>{"{name}"}</code> anywhere in email copy. Lead
+                    journey emails may also use <code>{"{score}"}</code> and{" "}
+                    <code>{"{score_comment}"}</code> in the subject, preview
+                    text, title, body, or CTA text. Write score copy like{" "}
+                    <code>{"It's {score} 😯"}</code>, not{" "}
+                    <code>{"It's {score}% 😯"}</code>, because the token already
+                    includes the percent sign. Public blog pages, metadata, and
+                    RSS use safe fallback text so merge tags never leak publicly.
+                    CTA URLs stay literal and do not support merge tags.
                   </p>
                 </div>
 
@@ -426,10 +448,13 @@ export default async function AdminBlogPage({
                     className="mt-2 min-h-88 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 font-mono text-sm outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
                   />
                   <span className="mt-2 block text-sm leading-relaxed text-slate-500">
-                    Single line breaks are preserved in the blog post and email
-                    output. Use a blank line to start a new paragraph. For
-                    personalized greetings, write copy like <code>{"Hi {name},"}</code>{" "}
-                    or <code>{"Congrats, {name}"}</code>.
+                    Line breaks and blank lines are preserved in the blog post
+                    and email output, so add the spacing exactly as you want it
+                    to appear. For
+                    personalized greetings, write copy like{" "}
+                    <code>{"Hi {name},"}</code>, <code>{"It's {score} 😯"}</code>,
+                    or{" "}
+                    <code>{"{score_comment}"}</code>.
                   </span>
                 </label>
 
@@ -554,6 +579,88 @@ export default async function AdminBlogPage({
                   ) : null}
                 </div>
               ) : null}
+            </div>
+
+            <div className="rounded-4xl border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold">Test Send</h2>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                    Send the saved version of this post to one email address
+                    without creating delivery logs or changing newsletter send
+                    state. Personalization is resolved from the entered test
+                    email and any saved data we already have for that address.
+                  </p>
+                </div>
+
+                <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-700">
+                  {selectedPost ? selectedPost.status : "Unsaved"}
+                </span>
+              </div>
+
+              <form action={sendTestBlogPostEmailAction} className="mt-6 space-y-4">
+                <input type="hidden" name="postId" value={selectedPost?.id ?? ""} />
+
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                  <label className="block">
+                    <span className="text-sm font-semibold text-slate-700">
+                      Test Email Address
+                    </span>
+                    <input
+                      type="email"
+                      name="testEmail"
+                      placeholder="you@example.com"
+                      required
+                      disabled={!canSendTestEmail}
+                      className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-semibold text-slate-700">
+                      Test Recipient Name
+                    </span>
+                    <input
+                      type="text"
+                      name="testName"
+                      placeholder="Optional override"
+                      disabled={!canSendTestEmail}
+                      className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    />
+                  </label>
+
+                  <div className="flex items-end">
+                    <button
+                      type="submit"
+                      disabled={!canSendTestEmail}
+                      className="w-full rounded-full bg-[#0E79B2] px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-[#0B5E8B] disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto"
+                    >
+                      {testSendButtonLabel}
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-relaxed text-slate-600">
+                <div>Source: saved post content only</div>
+                <div className="mt-1">
+                  Recipient data: resolved from the entered email first, then
+                  overridden by Test Recipient Name when you provide one
+                </div>
+                <div className="mt-1">
+                  Score tokens require saved lead data for that email. Use{" "}
+                  <code>{"{score_comment}"}</code>, not{" "}
+                  <code>{"{score comment}"}</code>.
+                </div>
+                <div className="mt-1">
+                  Footer unsubscribe link: generic <code>/unsubscribe</code> page
+                </div>
+                {!selectedPost ? (
+                  <div className="mt-2 text-slate-700">
+                    Save the post first before sending a test email.
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="rounded-4xl border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">

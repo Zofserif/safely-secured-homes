@@ -616,6 +616,15 @@ export async function getNewsletterSubscriberById(
   return normalizeSubscriber(await fetchSubscriberById(toSafeString(subscriberId)));
 }
 
+export async function getNewsletterSubscriberByEmail(
+  email: string,
+): Promise<NewsletterSubscriberRecord | null> {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return null;
+
+  return normalizeSubscriber(await fetchSubscriberByEmail(normalizedEmail));
+}
+
 export async function getNewsletterSubscriberByUnsubscribeToken(
   unsubscribeToken: string,
 ): Promise<NewsletterSubscriberRecord | null> {

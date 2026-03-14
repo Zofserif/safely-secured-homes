@@ -130,6 +130,23 @@ const resolveContentHref = (href: string) => {
 
 const getUtf8ByteLength = (value: string) => utf8Encoder.encode(value).length;
 
+const CONTENT_PARAGRAPH_STYLE =
+  "margin:0;color:#334155;font-size:16px;line-height:28px;";
+const CONTENT_HEADING_TWO_STYLE =
+  "margin:0;color:#1F2937;font-size:32px;font-weight:700;line-height:38px;";
+const CONTENT_HEADING_THREE_STYLE =
+  "margin:0;color:#1F2937;font-size:28px;font-weight:700;line-height:34px;";
+const CONTENT_UNORDERED_LIST_STYLE =
+  "margin:0;padding-left:20px;color:#334155;font-size:16px;line-height:28px;list-style-type:disc;";
+const CONTENT_ORDERED_LIST_STYLE =
+  "margin:0;padding-left:20px;color:#334155;font-size:16px;line-height:28px;list-style-type:decimal;";
+const CONTENT_LIST_ITEM_STYLE = "margin:0;";
+const CONTENT_BLOCKQUOTE_STYLE =
+  "margin:0;padding-left:16px;border-left:4px solid #BEE9E8;color:#475569;font-size:16px;line-height:28px;";
+const CONTENT_SPACER_STYLE =
+  "display:block;margin:0;height:28px;line-height:28px;font-size:16px;";
+const CONTENT_SPACER_MARKER = 'data-ssh-spacer="true"';
+
 const parseInlineMarkdownForHtml = (value: string) => {
   const siteUrl = resolveSiteUrl();
   let html = escapeHtml(value);
@@ -150,12 +167,17 @@ const parseInlineMarkdownForHtml = (value: string) => {
       const externalAttributes = resolvedHref.startsWith(siteUrl)
         ? ""
         : ' target="_blank" rel="noreferrer"';
-      return `<a href="${escapeHtml(resolvedHref)}"${externalAttributes}>${label}</a>`;
+      return `<a href="${escapeHtml(
+        resolvedHref,
+      )}"${externalAttributes} style="color:#0E79B2;font-weight:600;text-decoration:underline;">${label}</a>`;
     },
   );
 
   return html;
 };
+
+const createSpacerBlock = () =>
+  `<div ${CONTENT_SPACER_MARKER} style="${CONTENT_SPACER_STYLE}">&nbsp;</div>`;
 
 const flushParagraphBlock = (paragraphLines: string[], blocks: string[]) => {
   if (paragraphLines.length === 0) return;
@@ -164,7 +186,7 @@ const flushParagraphBlock = (paragraphLines: string[], blocks: string[]) => {
     .map((line) => parseInlineMarkdownForHtml(line))
     .join("<br />")
     .trim();
-  blocks.push(`<p>${paragraphContent}</p>`);
+  blocks.push(`<p style="${CONTENT_PARAGRAPH_STYLE}">${paragraphContent}</p>`);
   paragraphLines.length = 0;
 };
 
@@ -176,19 +198,24 @@ const flushListBlock = (
   if (!listType || listItems.length === 0) return;
 
   const listTag = listType === "ul" ? "ul" : "ol";
+  const listStyle =
+    listType === "ul" ? CONTENT_UNORDERED_LIST_STYLE : CONTENT_ORDERED_LIST_STYLE;
   const itemsHtml = listItems
-    .map((item) => `<li>${parseInlineMarkdownForHtml(item)}</li>`)
+    .map(
+      (item) =>
+        `<li style="${CONTENT_LIST_ITEM_STYLE}">${parseInlineMarkdownForHtml(item)}</li>`,
+    )
     .join("");
 
-  blocks.push(`<${listTag}>${itemsHtml}</${listTag}>`);
+  blocks.push(`<${listTag} style="${listStyle}">${itemsHtml}</${listTag}>`);
   listItems.length = 0;
 };
 
 export const renderBlogContentHtml = (markdownContent: string) => {
-  const normalizedMarkdown = markdownContent.trim();
-  if (!normalizedMarkdown) return "";
+  const normalizedMarkdown = markdownContent.replace(/\r\n/g, "\n");
+  if (!normalizedMarkdown.trim()) return "";
 
-  const lines = normalizedMarkdown.split(/\r?\n/);
+  const lines = normalizedMarkdown.split("\n");
   const blocks: string[] = [];
   const paragraphLines: string[] = [];
   const listItems: string[] = [];
@@ -201,6 +228,7 @@ export const renderBlogContentHtml = (markdownContent: string) => {
       flushParagraphBlock(paragraphLines, blocks);
       flushListBlock(listType, listItems, blocks);
       listType = null;
+      blocks.push(createSpacerBlock());
       continue;
     }
 
@@ -213,7 +241,9 @@ export const renderBlogContentHtml = (markdownContent: string) => {
       const headingDepth = headingMatch[1].length;
       const headingText = parseInlineMarkdownForHtml(headingMatch[2]);
       const headingTag = headingDepth <= 2 ? "h2" : "h3";
-      blocks.push(`<${headingTag}>${headingText}</${headingTag}>`);
+      const headingStyle =
+        headingTag === "h2" ? CONTENT_HEADING_TWO_STYLE : CONTENT_HEADING_THREE_STYLE;
+      blocks.push(`<${headingTag} style="${headingStyle}">${headingText}</${headingTag}>`);
       continue;
     }
 
@@ -245,7 +275,9 @@ export const renderBlogContentHtml = (markdownContent: string) => {
       flushListBlock(listType, listItems, blocks);
       listType = null;
       blocks.push(
-        `<blockquote><p>${parseInlineMarkdownForHtml(blockquoteMatch[1])}</p></blockquote>`,
+        `<blockquote style="${CONTENT_BLOCKQUOTE_STYLE}">${parseInlineMarkdownForHtml(
+          blockquoteMatch[1],
+        )}</blockquote>`,
       );
       continue;
     }
@@ -416,7 +448,6 @@ const normalizeMarkdownWhitespace = (value: string) =>
   value
     .replace(/\r\n/g, "\n")
     .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
     .trim();
 
 const convertInlineHtmlToMarkdown = (value: string): string => {
@@ -456,12 +487,18 @@ export const convertStoredBlogContentHtmlToMarkdown = (htmlContent: string) => {
   if (!normalizedHtml) return "";
 
   const blocks: string[] = [];
-  const blockPattern = /<(h2|h3|p|ul|ol|blockquote)>([\s\S]*?)<\/\1>/gi;
+  const blockPattern =
+    /<div[^>]*data-ssh-spacer="true"[^>]*>[\s\S]*?<\/div>|<(h2|h3|p|ul|ol|blockquote)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi;
   let match: RegExpExecArray | null = null;
 
   while ((match = blockPattern.exec(normalizedHtml))) {
+    if (match[0].includes("data-ssh-spacer")) {
+      blocks.push("");
+      continue;
+    }
+
     const tag = match[1].toLowerCase();
-    const innerHtml = match[2].trim();
+    const innerHtml = (match[2] || "").trim();
 
     if (tag === "h2") {
       blocks.push(`## ${convertInlineHtmlToMarkdown(innerHtml)}`);
@@ -479,7 +516,7 @@ export const convertStoredBlogContentHtmlToMarkdown = (htmlContent: string) => {
     }
 
     if (tag === "blockquote") {
-      const quoteBody = innerHtml.replace(/^<p>([\s\S]*?)<\/p>$/i, "$1");
+      const quoteBody = innerHtml.replace(/^<p(?:\s[^>]*)?>([\s\S]*?)<\/p>$/i, "$1");
       const quoteLines = convertInlineHtmlToMarkdown(quoteBody)
         .split("\n")
         .map((line) => line.trim())
@@ -493,7 +530,7 @@ export const convertStoredBlogContentHtmlToMarkdown = (htmlContent: string) => {
       continue;
     }
 
-    const itemPattern = /<li>([\s\S]*?)<\/li>/gi;
+    const itemPattern = /<li(?:\s[^>]*)?>([\s\S]*?)<\/li>/gi;
     const items: string[] = [];
     let itemMatch: RegExpExecArray | null = null;
     while ((itemMatch = itemPattern.exec(innerHtml))) {
@@ -513,7 +550,7 @@ export const convertStoredBlogContentHtmlToMarkdown = (htmlContent: string) => {
     blocks.push(items.map((item, index) => `${index + 1}. ${item}`).join("\n"));
   }
 
-  return normalizeMarkdownWhitespace(blocks.join("\n\n"));
+  return normalizeMarkdownWhitespace(blocks.join("\n"));
 };
 
 export const convertStoredBlogCtaHtmlToMarkdown = (ctaHtml: string) => {

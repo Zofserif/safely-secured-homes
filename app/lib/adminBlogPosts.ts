@@ -14,8 +14,16 @@ import {
   deriveBlogPreviewText,
 } from "./blogPosts";
 import { getBlogPostEmailUsage } from "./blogPosts";
+import {
+  assertSupportedNewsletterPersonalizationTokens,
+  EMAIL_PERSONALIZATION_SCORE_TOKENS,
+  newsletterFieldsContainPersonalizationTokens,
+} from "./emailPersonalization";
+import { sendNewsletterEmail } from "./email";
+import { getSavedEmailRecipientProfileByEmail } from "./emailRecipientProfile";
 import { sendTrackedBroadcastNewsletterEmailByPostId } from "./newsletterCampaignEmail";
 import { listSubscribedNewsletterRecipients } from "./newsletterCampaigns";
+import { siteUrl } from "./site";
 
 export type AdminNewsletterState =
   | "not_enabled"
@@ -62,6 +70,17 @@ export type SendAdminBlogPostNewsletterResult = {
   failedCount: number;
   usage: BlogPostEmailUsage;
   newsletterState: AdminNewsletterState;
+};
+
+export type SendAdminBlogPostTestEmailInput = {
+  postId: string;
+  recipientEmail: string;
+  recipientName?: string;
+};
+
+export type SendAdminBlogPostTestEmailResult = {
+  postId: string;
+  recipientEmail: string;
 };
 
 type AdminBlogPostRow = {
@@ -113,6 +132,7 @@ const ADMIN_SCHEMA_COLUMNS = [
   "newsletter_enabled",
   "newsletter_send_key",
 ];
+const TEST_EMAIL_UNSUBSCRIBE_URL = new URL("/unsubscribe", siteUrl).toString();
 
 const toSafeString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
@@ -586,5 +606,60 @@ export async function sendAdminBlogPostNewsletter(
       newsletterSendKey: sendKey,
       usage,
     }),
+  };
+}
+
+export async function sendAdminBlogPostTestEmail({
+  postId,
+  recipientEmail,
+  recipientName,
+}: SendAdminBlogPostTestEmailInput): Promise<SendAdminBlogPostTestEmailResult> {
+  const normalizedPostId = toSafeString(postId);
+  if (!normalizedPostId) {
+    throw new Error("Post ID is required.");
+  }
+
+  const normalizedRecipientEmail = toSafeString(recipientEmail);
+  if (!normalizedRecipientEmail) {
+    throw new Error("Test email address is required.");
+  }
+
+  const post = await getAdminBlogPostById(normalizedPostId);
+  if (!post) {
+    throw new Error("Blog post not found.");
+  }
+
+  assertSupportedNewsletterPersonalizationTokens(post);
+
+  const savedRecipientProfile =
+    await getSavedEmailRecipientProfileByEmail(normalizedRecipientEmail);
+  const requiresLeadScore = newsletterFieldsContainPersonalizationTokens(
+    post,
+    EMAIL_PERSONALIZATION_SCORE_TOKENS,
+  );
+
+  if (
+    requiresLeadScore &&
+    (!savedRecipientProfile?.personalization.score ||
+      !savedRecipientProfile.personalization.scoreComment)
+  ) {
+    throw new Error(
+      `Saved lead score data is required for "${normalizedRecipientEmail}" before sending score-personalized test emails.`,
+    );
+  }
+
+  const sendResult = await sendNewsletterEmail(post, {
+    toEmail: savedRecipientProfile?.email || normalizedRecipientEmail,
+    name: toSafeString(recipientName) || savedRecipientProfile?.name || undefined,
+    unsubscribeUrl: TEST_EMAIL_UNSUBSCRIBE_URL,
+  }, savedRecipientProfile?.personalization);
+
+  if (!sendResult) {
+    throw new Error("EmailJS is not configured for admin test sends.");
+  }
+
+  return {
+    postId: post.id,
+    recipientEmail: savedRecipientProfile?.email || normalizedRecipientEmail,
   };
 }

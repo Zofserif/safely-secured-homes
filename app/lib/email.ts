@@ -1,7 +1,10 @@
 import { getBlogPostById, type BlogPost } from "./blogPosts";
 import { deriveNameFromEmail, normalizeEmail } from "./contactName";
 import { buildEmailCtaWithFooter } from "./emailFooter";
-import { personalizeNewsletterFields } from "./emailPersonalization";
+import {
+  personalizeNewsletterFields,
+  type EmailPersonalizationContext,
+} from "./emailPersonalization";
 import { panatagChecklistUrl, siteUrl } from "./site";
 
 const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "";
@@ -179,12 +182,14 @@ export const buildChecklistTemplateParams = (
 export function buildNewsletterTemplateParams(
   post: NewsletterEmailPost,
   recipient: NewsletterEmailRecipient,
+  personalizationContext: EmailPersonalizationContext = {},
 ): SharedEmailTemplateParams {
   const resolvedRecipient = resolveRecipient({
     to_email: recipient.toEmail,
     name: recipient.name,
   });
   const personalizedPost = personalizeNewsletterFields(post, {
+    ...personalizationContext,
     name: resolvedRecipient.name,
   });
 
@@ -309,18 +314,23 @@ export function sendEmail(
 export async function sendNewsletterEmail(
   post: NewsletterEmailPost,
   recipient: NewsletterEmailRecipient,
+  personalizationContext: EmailPersonalizationContext = {},
 ) {
-  return sendEmail("newsletter", buildNewsletterTemplateParams(post, recipient));
+  return sendEmail(
+    "newsletter",
+    buildNewsletterTemplateParams(post, recipient, personalizationContext),
+  );
 }
 
 export async function sendNewsletterEmailByPostId(
   postId: string,
   recipient: NewsletterEmailRecipient,
+  personalizationContext: EmailPersonalizationContext = {},
 ) {
   const post = await getBlogPostById(postId);
   if (!post) {
     throw new Error(`Blog post "${postId}" was not found.`);
   }
 
-  return sendNewsletterEmail(post, recipient);
+  return sendNewsletterEmail(post, recipient, personalizationContext);
 }

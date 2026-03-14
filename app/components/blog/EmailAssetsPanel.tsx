@@ -24,28 +24,28 @@ const FIELD_CONFIG: Array<{
     key: "subject",
     label: "Subject",
     helper:
-      "Maps to {{subject}} for the EmailJS subject line. Blog copy may include {name}.",
+      "Maps to {{subject}} for the EmailJS subject line. Blog copy may include {name}, {score}, and {score_comment}.",
     isLongForm: false,
   },
   {
     key: "preview_text",
     label: "Preview Text",
     helper:
-      "Use this as the EmailJS preheader variable. Blog copy may include {name}.",
+      "Use this as the EmailJS preheader variable. Blog copy may include {name}, {score}, and {score_comment}.",
     isLongForm: false,
   },
   {
     key: "content",
     label: "Content",
     helper:
-      "Paste into the HTML variable rendered with {{{content}}}. Text nodes may include {name}.",
+      "Paste into the HTML variable rendered with {{{content}}}. Text nodes may include {name}, {score}, and {score_comment}.",
     isLongForm: true,
   },
   {
     key: "cta",
     label: "CTA",
     helper:
-      "Paste into the HTML variable rendered with {{{cta}}}. Visible CTA copy may include {name}; CTA URLs stay literal.",
+      "Paste into the HTML variable rendered with {{{cta}}}. Visible CTA copy may include {name}, {score}, and {score_comment}; CTA URLs stay literal.",
     isLongForm: true,
   },
 ];
@@ -206,7 +206,8 @@ export default function EmailAssetsPanel({
           <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
             Internal publishing assets for EmailJS-ready newsletter campaigns.
             The shared branded footer and unsubscribe link are injected
-            automatically at send time. Blog-authored <code>{"{name}"}</code>{" "}
+            automatically at send time. Blog-authored <code>{"{name}"}</code>,{" "}
+            <code>{"{score}"}</code>, and <code>{"{score_comment}"}</code>{" "}
             merge tags are resolved before the EmailJS request is sent.
           </p>
         </div>
@@ -234,12 +235,20 @@ export default function EmailAssetsPanel({
               <code>{"{{subject}}"}</code>.
               {" "}App-generated emails also append the shared branded footer and
               unsubscribe link automatically. Separately, blog-managed copy may
-              include <code>{"{name}"}</code>; the app resolves that author token
-              before calling EmailJS and uses <code>there</code> on public blog
-              surfaces.
+              include <code>{"{name}"}</code>, <code>{"{score}"}</code>, and{" "}
+              <code>{"{score_comment}"}</code>; the app resolves those author
+              tokens before calling EmailJS. Public blog surfaces use fallback
+              values like <code>there</code>, <code>your current rating</code>,
+              and the default score comment. For score copy, write{" "}
+              <code>{"It's {score} 😯"}</code> because the token already includes
+              the percent sign.
             </p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-[#1F2937]">
               <code className="rounded-full bg-white px-3 py-1">{"{name}"}</code>
+              <code className="rounded-full bg-white px-3 py-1">{"{score}"}</code>
+              <code className="rounded-full bg-white px-3 py-1">
+                {"{score_comment}"}
+              </code>
               <code className="rounded-full bg-white px-3 py-1">{"{{name}}"}</code>
               <code className="rounded-full bg-white px-3 py-1">{"{{subject}}"}</code>
               <code className="rounded-full bg-white px-3 py-1">{"{{title}}"}</code>

@@ -3,6 +3,12 @@ import "server-only";
 import { getBlogPostById } from "./blogPosts";
 import { deriveNameFromEmail, normalizeEmail } from "./contactName";
 import {
+  EMAIL_PERSONALIZATION_SCORE_TOKENS,
+  newsletterFieldsContainPersonalizationTokens,
+  type EmailPersonalizationContext,
+} from "./emailPersonalization";
+import {
+  EMAIL_JOURNEY_KEYS,
   ensureEmailDelivery,
   getNewsletterSubscriberById,
   updateEmailDeliveryStatus,
@@ -11,6 +17,7 @@ import {
 import { getOrCreateBonusLinkBySourceKey } from "./bonusClaimLinksServer";
 import { sendNewsletterEmail } from "./email";
 import { getLatestLeadHasBonusByEmail } from "./leadBonusEligibility";
+import { getLatestLeadScorePersonalizationByEmail } from "./leadScorePersonalization";
 import {
   buildLeadDay0BonusCtaHtml,
   buildLeadDay0BonusLinkNote,
@@ -58,6 +65,44 @@ const resolveProviderMessageId = (value: unknown) => {
 
 const resolveRecipientName = (email: string, recipientName?: string) =>
   toSafeString(recipientName) || deriveNameFromEmail(email);
+
+const resolveTrackedEnrollmentPersonalizationContext = async ({
+  journeyKey,
+  recipientEmail,
+  post,
+}: {
+  journeyKey: EmailJourneyKey;
+  recipientEmail: string;
+  post: {
+    subject: string;
+    title: string;
+    previewText: string;
+    content: string;
+    cta: string;
+  };
+}): Promise<EmailPersonalizationContext> => {
+  if (journeyKey !== EMAIL_JOURNEY_KEYS.leadFollowUpJourney) {
+    return {};
+  }
+
+  const requiresLeadScore = newsletterFieldsContainPersonalizationTokens(
+    post,
+    EMAIL_PERSONALIZATION_SCORE_TOKENS,
+  );
+  if (!requiresLeadScore) {
+    return {};
+  }
+
+  const personalization =
+    await getLatestLeadScorePersonalizationByEmail(recipientEmail);
+  if (!personalization) {
+    throw new Error(
+      `Lead Panatag rating is required to send score-personalized lead journey email to "${recipientEmail}".`,
+    );
+  }
+
+  return personalization;
+};
 
 const resolveTrackedEnrollmentCtaHtml = async ({
   journeyKey,
@@ -147,17 +192,25 @@ export async function sendTrackedEnrollmentNewsletterCampaignEmailByPostId({
       deliveryId: delivery.id,
       defaultCtaHtml,
     });
+    const deliveryPost = {
+      ...post,
+      cta: resolvedCtaHtml,
+    };
+    const personalizationContext =
+      await resolveTrackedEnrollmentPersonalizationContext({
+        journeyKey,
+        recipientEmail: normalizedRecipientEmail,
+        post: deliveryPost,
+      });
 
     const sendResult = await sendNewsletterEmail(
-      {
-        ...post,
-        cta: resolvedCtaHtml,
-      },
+      deliveryPost,
       {
         toEmail: normalizedRecipientEmail,
         name: resolveRecipientName(normalizedRecipientEmail, recipientName),
         unsubscribeUrl: createNewsletterUnsubscribeUrl(subscriber.unsubscribeToken),
       },
+      personalizationContext,
     );
 
     if (!sendResult) {

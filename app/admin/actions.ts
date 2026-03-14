@@ -13,6 +13,7 @@ import {
   normalizeBlogSlug,
   saveAdminBlogPost,
   sendAdminBlogPostNewsletter,
+  sendAdminBlogPostTestEmail,
 } from "../lib/adminBlogPosts";
 import { getAdminSubscriberDetail } from "../lib/adminSubscribers";
 import {
@@ -563,6 +564,52 @@ export async function sendBlogNewsletterAction(formData: FormData) {
       buildAdminBlogRedirect({
         postId: post.id,
         flash,
+      }),
+    );
+  } catch (error) {
+    redirect(
+      buildAdminBlogRedirect({
+        postId: post.id,
+        error: resolveActionErrorMessage(error),
+      }),
+    );
+  }
+}
+
+export async function sendTestBlogPostEmailAction(formData: FormData) {
+  await requireAdminSession();
+
+  const postId = toSafeString(formData.get("postId"));
+  if (!postId) {
+    redirect(
+      buildAdminBlogRedirect({
+        isNew: true,
+        error: "Post ID is required.",
+      }),
+    );
+  }
+
+  const post = await getAdminBlogPostById(postId);
+  if (!post) {
+    redirect(
+      buildAdminBlogRedirect({
+        isNew: true,
+        error: "Blog post not found.",
+      }),
+    );
+  }
+
+  try {
+    const result = await sendAdminBlogPostTestEmail({
+      postId: post.id,
+      recipientEmail: toSafeString(formData.get("testEmail")),
+      recipientName: toSafeString(formData.get("testName")) || undefined,
+    });
+
+    redirect(
+      buildAdminBlogRedirect({
+        postId: post.id,
+        flash: `Test email sent to ${result.recipientEmail}.`,
       }),
     );
   } catch (error) {

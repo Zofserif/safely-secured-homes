@@ -424,14 +424,22 @@ export default async function AdminJourneysPage({
 
                           <label className="block">
                             <span className="text-sm font-semibold text-slate-700">
-                              CTA Override HTML
+                              CTA Override Markdown
                             </span>
                             <textarea
-                              name="ctaOverrideHtml"
-                              defaultValue={step.ctaOverrideHtml}
-                              rows={4}
+                              name="ctaOverrideMarkdown"
+                              defaultValue={step.ctaOverrideMarkdown}
+                              rows={5}
                               className="mt-2 w-full rounded-[1.5rem] border border-slate-300 bg-white px-4 py-3 font-mono text-sm outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
                             />
+                            <span className="mt-2 block text-sm leading-relaxed text-slate-500">
+                              Use the same Markdown structure as blog content,
+                              for example:{" "}
+                              <code>
+                                {"Need help deciding? [Book a free site visit](https://www.safelysecuredhomes.com/schedule-call)"}
+                              </code>
+                              .
+                            </span>
                           </label>
 
                           <button
@@ -521,14 +529,18 @@ export default async function AdminJourneysPage({
 
                       <label className="block">
                         <span className="text-sm font-semibold text-slate-700">
-                          CTA Override HTML
+                          CTA Override Markdown
                         </span>
                         <textarea
-                          name="ctaOverrideHtml"
-                          rows={4}
-                          placeholder="<div>...</div>"
+                          name="ctaOverrideMarkdown"
+                          rows={5}
+                          placeholder="Need help deciding? [Book a free site visit](https://www.safelysecuredhomes.com/schedule-call)"
                           className="mt-2 w-full rounded-[1.5rem] border border-slate-300 bg-white px-4 py-3 font-mono text-sm outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
                         />
+                        <span className="mt-2 block text-sm leading-relaxed text-slate-500">
+                          This renders with the same Markdown-to-HTML pipeline
+                          used by blog CTAs and email content.
+                        </span>
                       </label>
 
                       <button

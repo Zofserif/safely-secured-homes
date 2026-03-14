@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { BlogEmailAssetSource } from "./blogPostContent";
+import { personalizeNewsletterFields } from "./emailPersonalization";
 import {
   isMissingEmailJourneySchemaError,
   listEmailJourneyStepReferencesByPostIds,
@@ -14,12 +15,15 @@ export type {
 export {
   buildBlogCtaHtml,
   buildBlogStoredFields,
+  convertLegacyBlogCtaFieldsToMarkdown,
   convertLegacyBlogPostToStoredFields,
   convertStoredBlogContentHtmlToMarkdown,
+  convertStoredBlogCtaHtmlToMarkdown,
   deriveBlogPreviewText,
   getBlogEmailAssetDiagnostics,
   getBlogEmailAssets,
   parseStoredBlogCtaHtml,
+  renderBlogCtaMarkdownHtml,
   renderBlogContentHtml,
   resolveBlogCtaHtml,
 } from "./blogPostContent";
@@ -290,6 +294,9 @@ const attachEmailBuckets = (
     hasBroadcastSends: broadcastPostIds.has(post.id),
   }),
 });
+
+const applyPublicBlogPersonalization = <T extends BlogEmailAssetSource>(post: T): T =>
+  personalizeNewsletterFields(post);
 
 const fetchBroadcastPostIds = async (postIds: string[]) => {
   const broadcastPostIds = new Set<string>();
@@ -620,7 +627,9 @@ export const getBlogPosts = async (): Promise<BlogPost[]> => {
     .filter((post): post is BlogPostBase => Boolean(post))
     .filter((post) => post.status === "published");
 
-  return (await enrichPostsWithEmailBuckets(posts)).sort(sortByPublicDateDesc);
+  return (await enrichPostsWithEmailBuckets(posts))
+    .map((post) => applyPublicBlogPersonalization(post))
+    .sort(sortByPublicDateDesc);
 };
 
 export const getBlogPostBySlug = async (
@@ -644,10 +653,12 @@ export const getBlogPostBySlug = async (
     fetchBroadcastPostIds([post.id]),
     fetchActiveJourneyReferencesByPostIds([post.id]),
   ]);
-  return attachEmailBuckets(
-    post,
-    broadcastPostIds,
-    groupJourneyReferencesByPostId(journeyReferences),
+  return applyPublicBlogPersonalization(
+    attachEmailBuckets(
+      post,
+      broadcastPostIds,
+      groupJourneyReferencesByPostId(journeyReferences),
+    ),
   );
 };
 

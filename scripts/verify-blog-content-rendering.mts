@@ -4,8 +4,13 @@ const blogPostContentModule = (await import(
   new URL("../app/lib/blogPostContent.ts", import.meta.url).href
 )) as typeof import("../app/lib/blogPostContent");
 
-const { convertStoredBlogContentHtmlToMarkdown, renderBlogContentHtml } =
-  blogPostContentModule;
+const {
+  convertLegacyBlogCtaFieldsToMarkdown,
+  convertStoredBlogContentHtmlToMarkdown,
+  convertStoredBlogCtaHtmlToMarkdown,
+  renderBlogContentHtml,
+  renderBlogCtaMarkdownHtml,
+} = blogPostContentModule;
 
 const signatureMarkdown = "Troy\nFounder, Safely Secured Homes";
 assert.equal(
@@ -32,6 +37,39 @@ assert.equal(
   ),
   signatureMarkdown,
   "stored paragraph line breaks should round-trip back to markdown newlines",
+);
+
+const ctaMarkdown =
+  "I would like to know more about what you know: [click here for FREE on-site visit](https://www.safelysecuredhomes.com/schedule-call)";
+assert.equal(
+  renderBlogCtaMarkdownHtml(ctaMarkdown),
+  '<p>I would like to know more about what you know: <a href="https://www.safelysecuredhomes.com/schedule-call">click here for FREE on-site visit</a></p>',
+  "CTA markdown should render with the shared markdown-to-HTML pipeline",
+);
+
+assert.equal(
+  convertStoredBlogCtaHtmlToMarkdown(
+    '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=blog_cta_book_call" target="_blank" style="display:inline-block;">Book a Free Site Visit</a></div>',
+  ),
+  "[Book a Free Site Visit](https://www.safelysecuredhomes.com/schedule-call?source=blog_cta_book_call)",
+  "legacy button CTA HTML should fall back to a bare markdown link",
+);
+
+assert.equal(
+  convertStoredBlogCtaHtmlToMarkdown(
+    '<p>Need help deciding? <a href="https://www.safelysecuredhomes.com/schedule-call">Book a free site visit</a></p>',
+  ),
+  "Need help deciding? [Book a free site visit](https://www.safelysecuredhomes.com/schedule-call)",
+  "paragraph CTA HTML should round-trip back to markdown text and links",
+);
+
+assert.equal(
+  convertLegacyBlogCtaFieldsToMarkdown({
+    label: "Book a Free Site Visit",
+    url: "https://www.safelysecuredhomes.com/schedule-call",
+  }).ctaMarkdown,
+  "[Book a Free Site Visit](https://www.safelysecuredhomes.com/schedule-call)",
+  "legacy CTA label/url fields should convert to markdown links",
 );
 
 console.log("All blog content rendering checks passed.");

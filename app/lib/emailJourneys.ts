@@ -22,6 +22,7 @@ export type EmailJourneyStepDefinition = {
   delayDays: number;
   blogPostId: string;
   blogPostSlug: string;
+  ctaOverrideMarkdown: string;
   ctaOverrideHtml: string;
   isActive: boolean;
 };
@@ -46,6 +47,7 @@ export type EmailJourneyStepReference = {
   delayDays: number;
   blogPostId: string;
   blogPostSlug: string;
+  ctaOverrideMarkdown: string;
   ctaOverrideHtml: string;
   isStepActive: boolean;
 };

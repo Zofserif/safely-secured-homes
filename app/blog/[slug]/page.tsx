@@ -173,10 +173,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               </div>
 
               {post.cta && (
-                <div
-                  className="mt-8"
-                  dangerouslySetInnerHTML={{ __html: post.cta }}
-                />
+                <div className="mt-8">
+                  <HtmlContent html={post.cta} />
+                </div>
               )}
 
               <div className="mt-10 rounded-2xl border border-[#BEE9E8]/70 bg-[#F8FAFC] p-4 sm:p-5">

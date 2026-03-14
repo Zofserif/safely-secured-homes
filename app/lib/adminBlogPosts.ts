@@ -8,9 +8,10 @@ import type {
 } from "./blogPosts";
 import {
   buildBlogStoredFields,
+  convertLegacyBlogCtaFieldsToMarkdown,
   convertStoredBlogContentHtmlToMarkdown,
+  convertStoredBlogCtaHtmlToMarkdown,
   deriveBlogPreviewText,
-  parseStoredBlogCtaHtml,
 } from "./blogPosts";
 import { getBlogPostEmailUsage } from "./blogPosts";
 import { sendTrackedBroadcastNewsletterEmailByPostId } from "./newsletterCampaignEmail";
@@ -36,8 +37,7 @@ export type AdminBlogPostSummary = {
 
 export type AdminBlogPost = Omit<BlogPost, "emailBuckets"> & {
   contentMarkdown: string;
-  ctaLabel: string;
-  ctaUrl: string;
+  ctaMarkdown: string;
   newsletterEnabled: boolean;
   newsletterSendKey: string;
 };
@@ -49,8 +49,7 @@ export type SaveAdminBlogPostInput = {
   subject: string;
   previewText: string;
   contentMarkdown: string;
-  ctaLabel: string;
-  ctaUrl: string;
+  ctaMarkdown: string;
   status: BlogPostStatus;
   newsletterEnabled: boolean;
 };
@@ -78,6 +77,7 @@ type AdminBlogPostRow = {
   updated_at: string | null;
   published_at?: string | null;
   content_markdown?: string | null;
+  cta_markdown?: string | null;
   cta_label?: string | null;
   cta_url?: string | null;
   newsletter_enabled?: boolean | null;
@@ -100,6 +100,8 @@ const supabase =
 
 const BLOG_TABLE = "blog_posts";
 const ADMIN_BLOG_SELECT =
+  "id,slug,subject,title,content,preview_text,cta,status,created_at,updated_at,published_at,content_markdown,cta_markdown,newsletter_enabled,newsletter_send_key";
+const ADMIN_BLOG_COMPAT_SELECT =
   "id,slug,subject,title,content,preview_text,cta,status,created_at,updated_at,published_at,content_markdown,cta_label,cta_url,newsletter_enabled,newsletter_send_key";
 const ADMIN_BLOG_LEGACY_SELECT =
   "id,slug,subject,title,content,preview_text,cta,created_at,updated_at";
@@ -107,8 +109,7 @@ const ADMIN_SCHEMA_COLUMNS = [
   "status",
   "published_at",
   "content_markdown",
-  "cta_label",
-  "cta_url",
+  "cta_markdown",
   "newsletter_enabled",
   "newsletter_send_key",
 ];
@@ -183,10 +184,17 @@ const normalizeAdminBlogPost = (row: AdminBlogPostRow): AdminBlogPost | null => 
   const publishedAt =
     toSafeString(row.published_at) || (status === "published" ? createdAt : null);
   const ctaHtml = toSafeString(row.cta);
-  const derivedCta = parseStoredBlogCtaHtml(ctaHtml);
   const contentMarkdown =
     toSafeString(row.content_markdown) ||
     convertStoredBlogContentHtmlToMarkdown(toSafeString(row.content));
+  const legacyCtaMarkdown = convertLegacyBlogCtaFieldsToMarkdown({
+    label: toSafeString(row.cta_label),
+    url: toSafeString(row.cta_url),
+  }).ctaMarkdown;
+  const ctaMarkdown =
+    toSafeString(row.cta_markdown) ||
+    legacyCtaMarkdown ||
+    convertStoredBlogCtaHtmlToMarkdown(ctaHtml);
 
   return {
     id,
@@ -201,8 +209,7 @@ const normalizeAdminBlogPost = (row: AdminBlogPostRow): AdminBlogPost | null => 
     updatedAt: row.updated_at || createdAt,
     publishedAt,
     contentMarkdown,
-    ctaLabel: toSafeString(row.cta_label) || derivedCta.label,
-    ctaUrl: toSafeString(row.cta_url) || derivedCta.url,
+    ctaMarkdown,
     newsletterEnabled: normalizeBoolean(row.newsletter_enabled),
     newsletterSendKey: toSafeString(row.newsletter_send_key),
   };
@@ -220,6 +227,19 @@ const fetchAdminRows = async (): Promise<AdminBlogPostRow[]> => {
   }
 
   if (isMissingSchemaError(error, ADMIN_SCHEMA_COLUMNS)) {
+    const compatResult = await client
+      .from(BLOG_TABLE)
+      .select(ADMIN_BLOG_COMPAT_SELECT)
+      .order("updated_at", { ascending: false, nullsFirst: false });
+
+    if (!compatResult.error) {
+      return (compatResult.data as AdminBlogPostRow[] | null) ?? [];
+    }
+
+    if (!isMissingSchemaError(compatResult.error, ADMIN_SCHEMA_COLUMNS)) {
+      throw compatResult.error;
+    }
+
     const legacyResult = await client
       .from(BLOG_TABLE)
       .select(ADMIN_BLOG_LEGACY_SELECT)
@@ -250,6 +270,20 @@ const fetchAdminRowById = async (
   }
 
   if (isMissingSchemaError(error, ADMIN_SCHEMA_COLUMNS)) {
+    const compatResult = await client
+      .from(BLOG_TABLE)
+      .select(ADMIN_BLOG_COMPAT_SELECT)
+      .eq("id", postId)
+      .maybeSingle();
+
+    if (!compatResult.error) {
+      return (compatResult.data as AdminBlogPostRow | null) ?? null;
+    }
+
+    if (!isMissingSchemaError(compatResult.error, ADMIN_SCHEMA_COLUMNS)) {
+      throw compatResult.error;
+    }
+
     const legacyResult = await client
       .from(BLOG_TABLE)
       .select(ADMIN_BLOG_LEGACY_SELECT)
@@ -342,15 +376,13 @@ const savePayloadFromInput = ({
   const safeSubject = toSafeString(input.subject) || safeTitle;
   const safePreviewText = toSafeString(input.previewText);
   const safeContentMarkdown = toSafeString(input.contentMarkdown);
-  const safeCtaLabel = toSafeString(input.ctaLabel);
-  const safeCtaUrl = toSafeString(input.ctaUrl);
+  const safeCtaMarkdown = toSafeString(input.ctaMarkdown);
   const safeStatus = input.status === "draft" ? "draft" : "published";
   const now = new Date().toISOString();
   const storedFields = buildBlogStoredFields({
     previewText: safePreviewText,
     markdownContent: safeContentMarkdown,
-    ctaLabel: safeCtaLabel,
-    ctaUrl: safeCtaUrl,
+    ctaMarkdown: safeCtaMarkdown,
   });
 
   return {
@@ -368,8 +400,7 @@ const savePayloadFromInput = ({
           : now
         : null,
     content_markdown: safeContentMarkdown,
-    cta_label: safeCtaLabel,
-    cta_url: safeCtaUrl,
+    cta_markdown: safeCtaMarkdown,
     newsletter_enabled: input.newsletterEnabled,
     newsletter_send_key: existingPost?.newsletterSendKey || null,
   };

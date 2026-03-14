@@ -140,8 +140,7 @@ const parseSaveInput = (
     subject: toSafeString(formData.get("subject")),
     previewText: toSafeString(formData.get("previewText")),
     contentMarkdown: toSafeString(formData.get("contentMarkdown")),
-    ctaLabel: toSafeString(formData.get("ctaLabel")),
-    ctaUrl: toSafeString(formData.get("ctaUrl")),
+    ctaMarkdown: toSafeString(formData.get("ctaMarkdown")),
     newsletterEnabled: toBooleanField(formData.get("newsletterEnabled")),
     status,
   } as const;
@@ -355,7 +354,7 @@ export async function saveJourneyStepAction(formData: FormData) {
       stepOrder: toIntegerField(formData.get("stepOrder"), 1),
       delayDays: toIntegerField(formData.get("delayDays"), 0),
       blogPostId: toSafeString(formData.get("blogPostId")),
-      ctaOverrideHtml: toSafeString(formData.get("ctaOverrideHtml")),
+      ctaOverrideMarkdown: toSafeString(formData.get("ctaOverrideMarkdown")),
       isActive: toBooleanField(formData.get("isActive")),
     });
 

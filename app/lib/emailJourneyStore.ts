@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { convertStoredBlogCtaHtmlToMarkdown } from "./blogPostContent";
 import type {
   EmailJourneyDefinition,
   EmailJourneyKey,
@@ -22,6 +23,7 @@ type JourneyStepRow = {
   step_order: number | null;
   delay_days: number | null;
   blog_post_id: string | null;
+  cta_override_markdown: string | null;
   cta_override_html: string | null;
   is_active: boolean | null;
 };
@@ -47,6 +49,8 @@ const supabase =
 
 const JOURNEY_SELECT = "key,name,objective_key,badge_key,badge_name,status";
 const JOURNEY_STEP_SELECT =
+  "journey_key,step_key,step_order,delay_days,blog_post_id,cta_override_markdown,cta_override_html,is_active";
+const JOURNEY_STEP_COMPAT_SELECT =
   "journey_key,step_key,step_order,delay_days,blog_post_id,cta_override_html,is_active";
 
 const toSafeString = (value: unknown): string =>
@@ -132,9 +136,41 @@ const fetchJourneyStepRows = async ({
     ascending: true,
     nullsFirst: false,
   });
-  if (error) throw error;
+  if (!error) {
+    return (data as JourneyStepRow[] | null) ?? [];
+  }
 
-  return (data as JourneyStepRow[] | null) ?? [];
+  const isMissingCtaOverrideMarkdown =
+    error.code === "42703" ||
+    error.code === "PGRST204" ||
+    `${error.message ?? ""} ${error.details ?? ""}`
+      .toLowerCase()
+      .includes("cta_override_markdown");
+  if (!isMissingCtaOverrideMarkdown) {
+    throw error;
+  }
+
+  let compatQuery = client
+    .from("email_journey_steps")
+    .select(JOURNEY_STEP_COMPAT_SELECT);
+
+  if (normalizedJourneyKeys.length > 0) {
+    compatQuery = compatQuery.in("journey_key", normalizedJourneyKeys);
+  }
+  if (normalizedBlogPostIds.length > 0) {
+    compatQuery = compatQuery.in("blog_post_id", normalizedBlogPostIds);
+  }
+  if (activeStepsOnly) {
+    compatQuery = compatQuery.eq("is_active", true);
+  }
+
+  const compatResult = await compatQuery.order("step_order", {
+    ascending: true,
+    nullsFirst: false,
+  });
+  if (compatResult.error) throw compatResult.error;
+
+  return (compatResult.data as JourneyStepRow[] | null) ?? [];
 };
 
 const fetchBlogPostSlugsByIds = async (blogPostIds: string[]) => {
@@ -209,6 +245,9 @@ const normalizeJourneyStep = ({
     delayDays: row.delay_days,
     blogPostId,
     blogPostSlug,
+    ctaOverrideMarkdown:
+      toSafeString(row.cta_override_markdown) ||
+      convertStoredBlogCtaHtmlToMarkdown(toSafeString(row.cta_override_html)),
     ctaOverrideHtml: toSafeString(row.cta_override_html),
     isActive: row.is_active === true,
   };
@@ -377,6 +416,7 @@ export async function listEmailJourneyStepReferencesByPostIds(
           delayDays: step.delayDays,
           blogPostId: step.blogPostId,
           blogPostSlug: step.blogPostSlug,
+          ctaOverrideMarkdown: step.ctaOverrideMarkdown,
           ctaOverrideHtml: step.ctaOverrideHtml,
           isStepActive: step.isActive,
         },

@@ -23,25 +23,29 @@ const FIELD_CONFIG: Array<{
   {
     key: "subject",
     label: "Subject",
-    helper: "Maps to {{subject}} for the EmailJS subject line.",
+    helper:
+      "Maps to {{subject}} for the EmailJS subject line. Blog copy may include {name}.",
     isLongForm: false,
   },
   {
     key: "preview_text",
     label: "Preview Text",
-    helper: "Use this as the EmailJS preheader variable.",
+    helper:
+      "Use this as the EmailJS preheader variable. Blog copy may include {name}.",
     isLongForm: false,
   },
   {
     key: "content",
     label: "Content",
-    helper: "Paste into the HTML variable rendered with {{{content}}}.",
+    helper:
+      "Paste into the HTML variable rendered with {{{content}}}. Text nodes may include {name}.",
     isLongForm: true,
   },
   {
     key: "cta",
     label: "CTA",
-    helper: "Paste into the HTML variable rendered with {{{cta}}}.",
+    helper:
+      "Paste into the HTML variable rendered with {{{cta}}}. Visible CTA copy may include {name}; CTA URLs stay literal.",
     isLongForm: true,
   },
 ];
@@ -202,7 +206,8 @@ export default function EmailAssetsPanel({
           <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
             Internal publishing assets for EmailJS-ready newsletter campaigns.
             The shared branded footer and unsubscribe link are injected
-            automatically at send time.
+            automatically at send time. Blog-authored <code>{"{name}"}</code>{" "}
+            merge tags are resolved before the EmailJS request is sent.
           </p>
         </div>
         <button
@@ -228,9 +233,13 @@ export default function EmailAssetsPanel({
               {" "}
               <code>{"{{subject}}"}</code>.
               {" "}App-generated emails also append the shared branded footer and
-              unsubscribe link automatically.
+              unsubscribe link automatically. Separately, blog-managed copy may
+              include <code>{"{name}"}</code>; the app resolves that author token
+              before calling EmailJS and uses <code>there</code> on public blog
+              surfaces.
             </p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-[#1F2937]">
+              <code className="rounded-full bg-white px-3 py-1">{"{name}"}</code>
               <code className="rounded-full bg-white px-3 py-1">{"{{name}}"}</code>
               <code className="rounded-full bg-white px-3 py-1">{"{{subject}}"}</code>
               <code className="rounded-full bg-white px-3 py-1">{"{{title}}"}</code>

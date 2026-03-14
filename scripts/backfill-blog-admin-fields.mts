@@ -6,8 +6,11 @@ const blogPostContentModule = (await import(
   new URL("../app/lib/blogPostContent.ts", import.meta.url).href
 )) as typeof import("../app/lib/blogPostContent");
 
-const { convertStoredBlogContentHtmlToMarkdown, parseStoredBlogCtaHtml } =
-  blogPostContentModule;
+const {
+  convertLegacyBlogCtaFieldsToMarkdown,
+  convertStoredBlogContentHtmlToMarkdown,
+  convertStoredBlogCtaHtmlToMarkdown,
+} = blogPostContentModule;
 
 const ENV_FILES = [".env.local", ".env"];
 
@@ -49,6 +52,7 @@ type BlogAdminBackfillRow = {
   content: string | null;
   cta: string | null;
   content_markdown?: string | null;
+  cta_markdown?: string | null;
   cta_label?: string | null;
   cta_url?: string | null;
 };
@@ -71,7 +75,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 const { data, error } = await supabase
   .from("blog_posts")
-  .select("id,slug,content,cta,content_markdown,cta_label,cta_url")
+  .select("id,slug,content,cta,content_markdown,cta_markdown,cta_label,cta_url")
   .order("created_at", { ascending: true, nullsFirst: false });
 
 if (error) {
@@ -91,23 +95,25 @@ for (const row of rows) {
   }
 
   const currentMarkdown = toSafeString(row.content_markdown);
+  const currentCtaMarkdown = toSafeString(row.cta_markdown);
   const currentCtaLabel = toSafeString(row.cta_label);
   const currentCtaUrl = toSafeString(row.cta_url);
   const derivedMarkdown =
     currentMarkdown || convertStoredBlogContentHtmlToMarkdown(toSafeString(row.content));
-  const derivedCta =
-    currentCtaLabel || currentCtaUrl
-      ? { label: currentCtaLabel, url: currentCtaUrl }
-      : parseStoredBlogCtaHtml(toSafeString(row.cta));
+  const derivedCtaMarkdown =
+    currentCtaMarkdown ||
+    convertLegacyBlogCtaFieldsToMarkdown({
+      label: currentCtaLabel,
+      url: currentCtaUrl,
+    }).ctaMarkdown ||
+    convertStoredBlogCtaHtmlToMarkdown(toSafeString(row.cta));
 
   const nextMarkdown = currentMarkdown || derivedMarkdown;
-  const nextCtaLabel = currentCtaLabel || derivedCta.label;
-  const nextCtaUrl = currentCtaUrl || derivedCta.url;
+  const nextCtaMarkdown = currentCtaMarkdown || derivedCtaMarkdown;
 
   if (
     nextMarkdown === currentMarkdown &&
-    nextCtaLabel === currentCtaLabel &&
-    nextCtaUrl === currentCtaUrl
+    nextCtaMarkdown === currentCtaMarkdown
   ) {
     skippedCount += 1;
     continue;
@@ -117,8 +123,7 @@ for (const row of rows) {
     .from("blog_posts")
     .update({
       content_markdown: nextMarkdown,
-      cta_label: nextCtaLabel,
-      cta_url: nextCtaUrl,
+      cta_markdown: nextCtaMarkdown,
     })
     .eq("id", rowId);
 

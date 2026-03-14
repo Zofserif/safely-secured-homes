@@ -96,8 +96,7 @@ const emptyEditor: Pick<
   | "subject"
   | "previewText"
   | "contentMarkdown"
-  | "ctaLabel"
-  | "ctaUrl"
+  | "ctaMarkdown"
   | "status"
   | "newsletterEnabled"
   | "newsletterSendKey"
@@ -108,8 +107,7 @@ const emptyEditor: Pick<
   subject: "",
   previewText: "",
   contentMarkdown: "",
-  ctaLabel: "",
-  ctaUrl: "",
+  ctaMarkdown: "",
   status: "draft",
   newsletterEnabled: false,
   newsletterSendKey: "",
@@ -385,7 +383,7 @@ export default async function AdminBlogPage({
                       type="text"
                       name="subject"
                       defaultValue={editorValues.subject}
-                      placeholder="Newsletter/email subject line for this post"
+                      placeholder="Newsletter/email subject line for this post. Supports {name}"
                       className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
                     />
                   </label>
@@ -402,6 +400,20 @@ export default async function AdminBlogPage({
                   </label>
                 </div>
 
+                <div className="rounded-3xl border border-[#BEE9E8] bg-[#F0F9FF] px-4 py-4 text-sm leading-relaxed text-slate-600">
+                  <p className="font-semibold text-[#1F2937]">
+                    Newsletter personalization
+                  </p>
+                  <p className="mt-2">
+                    Use the exact token <code>{"{name}"}</code> in email copy such
+                    as the subject, preview text, title, body, or CTA text.
+                    Newsletter sends replace it with the recipient name before the
+                    EmailJS request is sent. Public blog pages, metadata, and RSS
+                    use the fallback <code>there</code> so the token never appears
+                    publicly. CTA URLs stay literal and do not support merge tags.
+                  </p>
+                </div>
+
                 <label className="block">
                   <span className="text-sm font-semibold text-slate-700">
                     Body Markdown
@@ -415,33 +427,30 @@ export default async function AdminBlogPage({
                   />
                   <span className="mt-2 block text-sm leading-relaxed text-slate-500">
                     Single line breaks are preserved in the blog post and email
-                    output. Use a blank line to start a new paragraph.
+                    output. Use a blank line to start a new paragraph. For
+                    personalized greetings, write copy like <code>{"Hi {name},"}</code>{" "}
+                    or <code>{"Congrats, {name}"}</code>.
                   </span>
                 </label>
 
-                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-                  <label className="block">
-                    <span className="text-sm font-semibold text-slate-700">CTA Label</span>
-                    <input
-                      type="text"
-                      name="ctaLabel"
-                      defaultValue={editorValues.ctaLabel}
-                      placeholder="Optional button text, for example: Book a Free Site Visit"
-                      className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="text-sm font-semibold text-slate-700">CTA URL</span>
-                    <input
-                      type="url"
-                      name="ctaUrl"
-                      defaultValue={editorValues.ctaUrl}
-                      placeholder="Optional CTA link, for example: https://www.safelysecuredhomes.com/schedule-call"
-                      className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
-                    />
-                  </label>
-                </div>
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">
+                    CTA Markdown
+                  </span>
+                  <textarea
+                    name="ctaMarkdown"
+                    defaultValue={editorValues.ctaMarkdown}
+                    rows={5}
+                    placeholder={
+                      "I would like to know more about what you know: [click here for FREE on-site visit](https://www.safelysecuredhomes.com/schedule-call)"
+                    }
+                    className="mt-2 min-h-[8rem] w-full rounded-[1.5rem] border border-slate-300 bg-white px-4 py-3 font-mono text-sm outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
+                  />
+                  <span className="mt-2 block text-sm leading-relaxed text-slate-500">
+                    Use the same Markdown structure as the body. Inline links,
+                    short paragraphs, and lists are supported.
+                  </span>
+                </label>
 
                 <label className="flex items-start gap-3 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4">
                   <input

@@ -4,6 +4,9 @@ import { readFileSync } from "node:fs";
 const emailFooterModule = (await import(
   new URL("../app/lib/emailFooter.ts", import.meta.url).href
 )) as typeof import("../app/lib/emailFooter");
+const blogPostContentModule = (await import(
+  new URL("../app/lib/blogPostContent.ts", import.meta.url).href
+)) as typeof import("../app/lib/blogPostContent");
 
 const {
   EMAIL_FOOTER_ADDRESS,
@@ -12,6 +15,7 @@ const {
   buildEmailCtaWithFooter,
   buildSharedEmailFooter,
 } = emailFooterModule;
+const { renderBlogCtaMarkdownHtml } = blogPostContentModule;
 
 const unsubscribeUrl =
   "https://www.safelysecuredhomes.com/unsubscribe/0123456789abcdef0123456789abcdef0123";
@@ -55,6 +59,22 @@ assert.ok(
   "footer-only output should not introduce undefined placeholders",
 );
 
+const renderedNewsletterCta = renderBlogCtaMarkdownHtml(
+  "Need help deciding? [Book a free site visit](https://www.safelysecuredhomes.com/schedule-call)",
+);
+const newsletterTemplateParams = buildEmailCtaWithFooter(
+  renderedNewsletterCta,
+  unsubscribeUrl,
+);
+assert.ok(
+  newsletterTemplateParams.startsWith(renderedNewsletterCta),
+  "newsletter CTA HTML should remain before the shared footer",
+);
+assert.ok(
+  newsletterTemplateParams.includes(`href="${unsubscribeUrl}"`),
+  "newsletter CTA output should append the shared footer unsubscribe link",
+);
+
 assert.match(
   emailSource,
   /buildLeadTemplateParams[\s\S]*?cta:\s*buildEmailCtaWithFooter\([\s\S]*?input\.unsubscribe_url/,
@@ -67,7 +87,7 @@ assert.match(
 );
 assert.match(
   emailSource,
-  /buildNewsletterTemplateParams[\s\S]*?cta:\s*buildEmailCtaWithFooter\(post\.cta, recipient\.unsubscribeUrl\)/,
+  /buildNewsletterTemplateParams[\s\S]*?cta:\s*buildEmailCtaWithFooter\(\s*personalizedPost\.cta,\s*recipient\.unsubscribeUrl/,
   "newsletter template params should append the shared footer",
 );
 

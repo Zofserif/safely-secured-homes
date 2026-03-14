@@ -443,11 +443,15 @@ create table if not exists public.email_campaign_steps (
   step_order integer not null,
   delay_days integer not null default 0,
   blog_post_id uuid not null references public.blog_posts (id) on delete restrict,
+  cta_override_markdown text not null default '',
   cta_override_html text not null default '',
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table if exists public.email_campaign_steps
+  add column if not exists cta_override_markdown text not null default '';
 
 do $$
 begin
@@ -680,6 +684,7 @@ insert into public.email_campaign_steps (
   step_order,
   delay_days,
   blog_post_id,
+  cta_override_markdown,
   cta_override_html,
   is_active
 )
@@ -689,6 +694,7 @@ select
   seed.step_order,
   seed.delay_days,
   blog_post.id,
+  seed.cta_override_markdown,
   seed.cta_override_html,
   true
 from public.email_campaigns as campaign
@@ -699,6 +705,7 @@ join (
       1,
       0,
       'camera-placement-mistakes-families-make',
+      'P.S. Just remember ''Troy to Call'' for any home-related safety consult. [Click here for your FREE Home Call Consult.](https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_0_no_bonus)',
       '<p style="margin:24px 0 0 0;color:#1F2937;font-size:16px;line-height:1.6;">P.S. Just remember &#39;Troy to Call&#39; for any home-related safety consult. <a href="https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_0_no_bonus" target="_blank" style="color:#0E79B2;font-weight:700;text-decoration:underline;">Click here for your FREE Home Call Consult.</a></p>'
     ),
     (
@@ -706,6 +713,7 @@ join (
       2,
       3,
       'smart-lighting-rules-for-safer-nights',
+      '[Book a Free Site Visit](https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_3)',
       '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_3" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Book a Free Site Visit</a></div>'
     ),
     (
@@ -713,6 +721,7 @@ join (
       3,
       6,
       'weekly-security-routine-15-minutes',
+      '[Book a Free Site Visit](https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_6)',
       '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_6" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Book a Free Site Visit</a></div>'
     ),
     (
@@ -720,9 +729,10 @@ join (
       4,
       10,
       'what-happens-during-a-home-security-site-visit',
+      '[Book a Free Site Visit](https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_10)',
       '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=lead_journey_day_10" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Book a Free Site Visit</a></div>'
     )
-) as seed(step_key, step_order, delay_days, slug, cta_override_html)
+) as seed(step_key, step_order, delay_days, slug, cta_override_markdown, cta_override_html)
   on campaign.key = 'lead_follow_up_journey'
 join public.blog_posts as blog_post
   on blog_post.slug = seed.slug
@@ -731,6 +741,7 @@ set
   step_order = excluded.step_order,
   delay_days = excluded.delay_days,
   blog_post_id = excluded.blog_post_id,
+  cta_override_markdown = excluded.cta_override_markdown,
   cta_override_html = excluded.cta_override_html,
   is_active = excluded.is_active,
   updated_at = now();

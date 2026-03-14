@@ -2,8 +2,9 @@
 -- Run this in the Supabase SQL editor before using /admin/blog.
 -- `content` and `cta` remain the trusted rendered HTML used by the website
 -- and newsletter email sends.
--- `content_markdown`, `cta_label`, and `cta_url` are the admin editor source
--- fields used to derive those rendered HTML values on save.
+-- `content_markdown` and `cta_markdown` are the admin editor source fields
+-- used to derive those rendered HTML values on save.
+-- `cta_label` and `cta_url` remain for legacy compatibility only.
 --
 -- Rollout notes:
 -- 1. Run this file once to add the admin/status fields and backfill visibility.
@@ -25,6 +26,7 @@ create table if not exists public.blog_posts (
   status text not null default 'draft',
   published_at timestamptz,
   content_markdown text not null default '',
+  cta_markdown text not null default '',
   cta_label text not null default '',
   cta_url text not null default '',
   newsletter_enabled boolean not null default false,
@@ -53,6 +55,9 @@ alter table public.blog_posts
 
 alter table public.blog_posts
   add column if not exists content_markdown text not null default '';
+
+alter table public.blog_posts
+  add column if not exists cta_markdown text not null default '';
 
 alter table public.blog_posts
   add column if not exists cta_label text not null default '';
@@ -158,32 +163,31 @@ alter table public.blog_posts drop column if exists alt_text;
 alter table public.blog_posts drop constraint if exists blog_posts_asset_type_check;
 alter table public.blog_posts drop column if exists excerpt;
 
--- CTA examples for `blog_posts.cta`:
+-- CTA examples for `blog_posts.cta_markdown`:
 -- Free Plan
--- <div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/form?source=blog_cta_free_plan" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Get My Free Plan</a></div>
+-- [Get My Free Plan](https://www.safelysecuredhomes.com/form?source=blog_cta_free_plan)
 --
 -- Book Call
--- <div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/schedule-call?source=blog_cta_book_call" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Book a Free Site Visit</a></div>
+-- Need help deciding? [Book a Free Site Visit](https://www.safelysecuredhomes.com/schedule-call?source=blog_cta_book_call)
 --
 -- Checklist
--- <div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/newsletter?source=blog_cta_checklist" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Get the Free Home Safety Checklist</a></div>
+-- [Get the Free Home Safety Checklist](https://www.safelysecuredhomes.com/newsletter?source=blog_cta_checklist)
 --
 -- Example row shape:
 -- insert into public.blog_posts (
 --   slug, subject, title, content, preview_text, cta, status, published_at,
---   content_markdown, cta_label, cta_url, newsletter_enabled, created_at
+--   content_markdown, cta_markdown, newsletter_enabled, created_at
 -- ) values (
 --   'camera-placement-mistakes-families-make',
 --   'Who Carries the "What-Ifs" for Your Home Tonight?',
 --   'Who Carries the "What-Ifs" for Your Home Tonight?',
 --   '<h2>The Weight of the What-Ifs</h2><p>Thank you for trusting us with your home...</p>',
 --   'A personal story about nightly worries, peace of mind, and the first practical step families can take to feel safer at home.',
---   '<div style="margin:24px 0 0 0;"><a href="https://www.safelysecuredhomes.com/form?source=blog_cta_free_plan" target="_blank" style="display:inline-block;border-radius:9999px;background-color:#0E79B2;color:#FFFFFF;font-weight:700;line-height:1.2;padding:14px 24px;text-decoration:none;">Get My Free Plan</a></div>',
+--   '<p><a href="https://www.safelysecuredhomes.com/form?source=blog_cta_free_plan">Get My Free Plan</a></p>',
 --   'published',
 --   '2026-01-28T00:00:00Z',
 --   '## The Weight of the What-Ifs\n\nThank you for trusting us with your home...',
---   'Get My Free Plan',
---   'https://www.safelysecuredhomes.com/form?source=blog_cta_free_plan',
+--   '[Get My Free Plan](https://www.safelysecuredhomes.com/form?source=blog_cta_free_plan)',
 --   true,
 --   '2026-01-28T00:00:00Z'
 -- );

@@ -24,6 +24,7 @@ export type LegacyBlogPostContentRow = {
   title?: unknown;
   excerpt?: unknown;
   content_markdown?: unknown;
+  cta_markdown?: unknown;
   cta_label?: unknown;
   cta_url?: unknown;
 };
@@ -118,7 +119,7 @@ const resolveContentHref = (href: string) => {
   try {
     const parsedUrl = new URL(trimmedHref);
     if (parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:") {
-      return parsedUrl.toString();
+      return trimmedHref;
     }
   } catch {
     return "";
@@ -126,8 +127,6 @@ const resolveContentHref = (href: string) => {
 
   return "";
 };
-
-const resolveCtaUrl = (value: string) => resolveContentHref(value);
 
 const getUtf8ByteLength = (value: string) => utf8Encoder.encode(value).length;
 
@@ -262,6 +261,9 @@ export const renderBlogContentHtml = (markdownContent: string) => {
   return blocks.join("");
 };
 
+export const renderBlogCtaMarkdownHtml = (ctaMarkdown: string) =>
+  renderBlogContentHtml(ctaMarkdown);
+
 export const buildBlogCtaHtml = ({
   label,
   url,
@@ -291,7 +293,7 @@ export const deriveBlogPreviewText = (
     : normalizedMarkdown;
 };
 
-export const resolveBlogCtaHtml = ({
+export const convertLegacyBlogCtaFieldsToMarkdown = ({
   label,
   url,
 }: {
@@ -304,7 +306,7 @@ export const resolveBlogCtaHtml = ({
 
   if (!resolvedLabel && !resolvedUrl) {
     return {
-      cta: "",
+      ctaMarkdown: "",
       warnings,
     };
   }
@@ -312,7 +314,7 @@ export const resolveBlogCtaHtml = ({
   if (!resolvedLabel) {
     warnings.push("CTA label is blank. CTA field was left empty.");
     return {
-      cta: "",
+      ctaMarkdown: "",
       warnings,
     };
   }
@@ -320,45 +322,44 @@ export const resolveBlogCtaHtml = ({
   if (!resolvedUrl) {
     warnings.push("CTA URL is blank. CTA field was left empty.");
     return {
-      cta: "",
+      ctaMarkdown: "",
       warnings,
     };
   }
 
-  const absoluteCtaUrl = resolveCtaUrl(resolvedUrl);
-  if (!absoluteCtaUrl) {
+  const resolvedCtaUrl = resolveContentHref(resolvedUrl);
+  if (!resolvedCtaUrl) {
     warnings.push(
-      "CTA URL must be an absolute http(s) URL or a root-relative path. CTA field was left empty.",
+      "CTA URL should be an absolute http(s) URL or a root-relative path. Generated markdown may need manual review.",
     );
-    return {
-      cta: "",
-      warnings,
-    };
   }
 
   return {
-    cta: buildBlogCtaHtml({
-      label: resolvedLabel,
-      url: absoluteCtaUrl,
-    }),
+    ctaMarkdown: `[${resolvedLabel}](${resolvedCtaUrl || resolvedUrl})`,
     warnings,
   };
 };
 
+export const resolveBlogCtaHtml = ({
+  markdown,
+}: {
+  markdown: string;
+}) => ({
+  cta: renderBlogCtaMarkdownHtml(parseOptionalText(markdown)),
+  warnings: [] as string[],
+});
+
 export const buildBlogStoredFields = ({
   previewText,
   markdownContent,
-  ctaLabel,
-  ctaUrl,
+  ctaMarkdown,
 }: {
   previewText: string;
   markdownContent: string;
-  ctaLabel: string;
-  ctaUrl: string;
+  ctaMarkdown: string;
 }) => {
   const ctaResult = resolveBlogCtaHtml({
-    label: ctaLabel,
-    url: ctaUrl,
+    markdown: ctaMarkdown,
   });
 
   return {
@@ -373,6 +374,7 @@ export const convertLegacyBlogPostToStoredFields = ({
   title,
   excerpt,
   content_markdown,
+  cta_markdown,
   cta_label,
   cta_url,
 }: LegacyBlogPostContentRow): {
@@ -385,14 +387,18 @@ export const convertLegacyBlogPostToStoredFields = ({
   const resolvedTitle = parseOptionalText(title);
   const resolvedExcerpt = parseOptionalText(excerpt);
   const resolvedMarkdown = parseOptionalText(content_markdown);
+  const resolvedCtaMarkdown = parseOptionalText(cta_markdown);
   const resolvedCtaLabel = parseOptionalText(cta_label);
   const resolvedCtaUrl = parseOptionalText(cta_url);
   const markdownSource = resolvedMarkdown || resolvedExcerpt;
+  const legacyCta = convertLegacyBlogCtaFieldsToMarkdown({
+    label: resolvedCtaLabel,
+    url: resolvedCtaUrl,
+  });
   const storedFields = buildBlogStoredFields({
     previewText: resolvedExcerpt,
     markdownContent: markdownSource,
-    ctaLabel: resolvedCtaLabel,
-    ctaUrl: resolvedCtaUrl,
+    ctaMarkdown: resolvedCtaMarkdown || legacyCta.ctaMarkdown,
   });
 
   return {
@@ -400,7 +406,7 @@ export const convertLegacyBlogPostToStoredFields = ({
     previewText: storedFields.previewText,
     content: storedFields.content,
     cta: storedFields.cta,
-    warnings: storedFields.warnings,
+    warnings: [...legacyCta.warnings, ...storedFields.warnings],
   };
 };
 
@@ -508,6 +514,20 @@ export const convertStoredBlogContentHtmlToMarkdown = (htmlContent: string) => {
   }
 
   return normalizeMarkdownWhitespace(blocks.join("\n\n"));
+};
+
+export const convertStoredBlogCtaHtmlToMarkdown = (ctaHtml: string) => {
+  const normalizedHtml = ctaHtml.trim();
+  if (!normalizedHtml) return "";
+
+  const convertedBlocks = convertStoredBlogContentHtmlToMarkdown(normalizedHtml);
+  if (convertedBlocks) {
+    return convertedBlocks;
+  }
+
+  const divWrappedMatch = normalizedHtml.match(/^<div[^>]*>([\s\S]+)<\/div>$/i);
+  const inlineSource = divWrappedMatch?.[1]?.trim() || normalizedHtml;
+  return normalizeMarkdownWhitespace(convertInlineHtmlToMarkdown(inlineSource));
 };
 
 export const parseStoredBlogCtaHtml = (ctaHtml: string) => {

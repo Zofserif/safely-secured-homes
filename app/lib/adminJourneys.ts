@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
+import { renderBlogCtaMarkdownHtml } from "./blogPosts";
 import {
   getEmailJourneyDefinition,
   listEmailJourneyDefinitions,
@@ -13,6 +14,7 @@ type JourneyStepRow = {
   step_order: number | null;
   delay_days: number | null;
   blog_post_id: string | null;
+  cta_override_markdown: string | null;
   cta_override_html: string | null;
   is_active: boolean | null;
 };
@@ -43,6 +45,7 @@ export type AdminJourneyStep = {
   blogPostId: string;
   blogPostSlug: string;
   blogPostTitle: string;
+  ctaOverrideMarkdown: string;
   ctaOverrideHtml: string;
   isActive: boolean;
 };
@@ -79,7 +82,7 @@ export type SaveAdminJourneyStepInput = {
   stepOrder: number;
   delayDays: number;
   blogPostId: string;
-  ctaOverrideHtml: string;
+  ctaOverrideMarkdown: string;
   isActive: boolean;
 };
 
@@ -93,7 +96,7 @@ const supabase =
 
 const JOURNEY_SELECT = "key,name,objective_key,badge_key,badge_name,status";
 const JOURNEY_STEP_SELECT =
-  "journey_key,step_key,step_order,delay_days,blog_post_id,cta_override_html,is_active";
+  "journey_key,step_key,step_order,delay_days,blog_post_id,cta_override_markdown,cta_override_html,is_active";
 
 const toSafeString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
@@ -233,6 +236,7 @@ export async function getAdminJourneyByKey(
       blogPostSlug: step.blogPostSlug,
       blogPostTitle:
         blogPostsById.get(step.blogPostId)?.title || step.blogPostSlug,
+      ctaOverrideMarkdown: step.ctaOverrideMarkdown,
       ctaOverrideHtml: step.ctaOverrideHtml,
       isActive: step.isActive,
     })),
@@ -446,7 +450,10 @@ export async function saveAdminJourneyStep(
     step_order: stepOrder,
     delay_days: delayDays,
     blog_post_id: blogPostId,
-    cta_override_html: toSafeString(input.ctaOverrideHtml),
+    cta_override_markdown: toSafeString(input.ctaOverrideMarkdown),
+    cta_override_html: renderBlogCtaMarkdownHtml(
+      toSafeString(input.ctaOverrideMarkdown),
+    ),
     is_active: input.isActive,
   };
 

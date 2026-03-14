@@ -1,6 +1,7 @@
 import { getBlogPostById, type BlogPost } from "./blogPosts";
 import { deriveNameFromEmail, normalizeEmail } from "./contactName";
 import { buildEmailCtaWithFooter } from "./emailFooter";
+import { personalizeNewsletterFields } from "./emailPersonalization";
 import { panatagChecklistUrl, siteUrl } from "./site";
 
 const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "";
@@ -183,14 +184,20 @@ export function buildNewsletterTemplateParams(
     to_email: recipient.toEmail,
     name: recipient.name,
   });
+  const personalizedPost = personalizeNewsletterFields(post, {
+    name: resolvedRecipient.name,
+  });
 
   return {
     ...resolvedRecipient,
-    subject: post.subject,
-    title: post.title,
-    preview_text: post.previewText,
-    content: post.content,
-    cta: buildEmailCtaWithFooter(post.cta, recipient.unsubscribeUrl),
+    subject: personalizedPost.subject,
+    title: personalizedPost.title,
+    preview_text: personalizedPost.previewText,
+    content: personalizedPost.content,
+    cta: buildEmailCtaWithFooter(
+      personalizedPost.cta,
+      recipient.unsubscribeUrl,
+    ),
   };
 }
 

@@ -54,15 +54,15 @@ This project uses a hybrid media strategy:
 - Keep small, app-owned static assets in `public/assets` and track them in Git.
 - Store dynamic media (email media and user uploads) in Supabase Storage.
 - Keep `blog_posts` shared between the blog site and EmailJS (`id`, `slug`, `subject`, `title`, `content`, `preview_text`, `cta`, `created_at`, `updated_at`).
-  The `cta` field stores an HTML button fragment (or `''` when unused). See `supabase/blog_posts.sql` for copy-paste examples.
-  The admin workflow also stores `status`, `published_at`, `content_markdown`, `cta_label`, `cta_url`, `newsletter_enabled`, and `newsletter_send_key`.
+  The `cta` field stores rendered HTML generated from Markdown CTA content (or `''` when unused). See `supabase/blog_posts.sql` for copy-paste examples.
+  The admin workflow also stores `status`, `published_at`, `content_markdown`, `cta_markdown`, `newsletter_enabled`, and `newsletter_send_key`.
   Single line breaks in `content_markdown` are preserved as `<br />` inside paragraph HTML for both blog pages and newsletter emails.
 
 ### Supabase setup
 
 1. Run `supabase/blog_posts.sql` to create/update the `blog_posts` schema.
    If you are migrating from the old blog schema, run `npm run backfill:blog-posts` after the first SQL run.
-2. Run `npm run backfill:blog-admin-fields` once to populate `content_markdown`, `cta_label`, and `cta_url` from the existing rendered HTML rows.
+2. Run `npm run backfill:blog-admin-fields` once to populate `content_markdown` and `cta_markdown` from the existing rendered HTML rows.
 3. Run `npm run backfill:blog-content-html -- --dry-run` to preview stored `content` rows that should be regenerated from `content_markdown`, then rerun without `--dry-run` to apply the fix.
 4. Run `supabase/storage_assets.sql` to create storage buckets + policies.
 5. Run `supabase/testimonials.sql` to create/update testimonial moderation schema for `/rate` and public testimonial feeds.

@@ -14,6 +14,7 @@ type LegacyBlogPostRow = {
   title: string | null;
   excerpt: string | null;
   content_markdown: string | null;
+  cta_markdown: string | null;
   cta_label: string | null;
   cta_url: string | null;
   subject: string | null;
@@ -77,7 +78,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey);
 const { data, error } = await supabase
   .from("blog_posts")
   .select(
-    "id,slug,title,excerpt,content_markdown,cta_label,cta_url,subject,preview_text,content,cta",
+    "id,slug,title,excerpt,content_markdown,cta_markdown,cta_label,cta_url,subject,preview_text,content,cta",
   )
   .order("created_at", { ascending: false, nullsFirst: false });
 
@@ -110,6 +111,7 @@ for (const row of rows) {
     title: row.title,
     excerpt: row.excerpt,
     content_markdown: row.content_markdown,
+    cta_markdown: row.cta_markdown,
     cta_label: row.cta_label,
     cta_url: row.cta_url,
   });

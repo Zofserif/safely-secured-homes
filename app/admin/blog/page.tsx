@@ -450,7 +450,9 @@ export default async function AdminBlogPage({
                   <span className="mt-2 block text-sm leading-relaxed text-slate-500">
                     Line breaks and blank lines are preserved in the blog post
                     and email output, so add the spacing exactly as you want it
-                    to appear. For
+                    to appear. Center a line or block with{" "}
+                    <code>{"[center]Thank you[/center]"}</code> or a multi-line{" "}
+                    <code>{"[center]...[/center]"}</code> block. For
                     personalized greetings, write copy like{" "}
                     <code>{"Hi {name},"}</code>, <code>{"It's {score} 😯"}</code>,
                     or{" "}

@@ -145,7 +145,12 @@ const CONTENT_BLOCKQUOTE_STYLE =
   "margin:0;padding-left:16px;border-left:4px solid #BEE9E8;color:#475569;font-size:16px;line-height:28px;";
 const CONTENT_SPACER_STYLE =
   "display:block;margin:0;height:28px;line-height:28px;font-size:16px;";
+const CONTENT_CENTERED_PARAGRAPH_STYLE = `${CONTENT_PARAGRAPH_STYLE}text-align:center;`;
 const CONTENT_SPACER_MARKER = 'data-ssh-spacer="true"';
+const CONTENT_CENTER_MARKER = 'data-ssh-center="true"';
+const CONTENT_CENTER_CONTAINER_STYLE = "margin:0;padding:0;text-align:center;";
+const CENTER_MARKDOWN_OPEN_TAG = "[center]";
+const CENTER_MARKDOWN_CLOSE_TAG = "[/center]";
 
 const parseInlineMarkdownForHtml = (value: string) => {
   const siteUrl = resolveSiteUrl();
@@ -176,18 +181,77 @@ const parseInlineMarkdownForHtml = (value: string) => {
   return html;
 };
 
-const createSpacerBlock = () =>
-  `<div ${CONTENT_SPACER_MARKER} style="${CONTENT_SPACER_STYLE}">&nbsp;</div>`;
+const createSpacerBlock = (tagName: "div" | "span" = "div") =>
+  `<${tagName} ${CONTENT_SPACER_MARKER} style="${CONTENT_SPACER_STYLE}">&nbsp;</${tagName}>`;
 
-const flushParagraphBlock = (paragraphLines: string[], blocks: string[]) => {
+const stripCenterMarkdownTags = (value: string) =>
+  value
+    .replaceAll(CENTER_MARKDOWN_OPEN_TAG, "")
+    .replaceAll(CENTER_MARKDOWN_CLOSE_TAG, "");
+
+const flushParagraphBlock = (
+  paragraphLines: string[],
+  blocks: string[],
+  paragraphStyle = CONTENT_PARAGRAPH_STYLE,
+) => {
   if (paragraphLines.length === 0) return;
 
   const paragraphContent = paragraphLines
     .map((line) => parseInlineMarkdownForHtml(line))
     .join("<br />")
     .trim();
-  blocks.push(`<p style="${CONTENT_PARAGRAPH_STYLE}">${paragraphContent}</p>`);
+  blocks.push(`<p style="${paragraphStyle}">${paragraphContent}</p>`);
   paragraphLines.length = 0;
+};
+
+const renderParagraphOnlyBlocks = ({
+  lines,
+  paragraphStyle = CONTENT_PARAGRAPH_STYLE,
+  spacerTagName = "div",
+}: {
+  lines: string[];
+  paragraphStyle?: string;
+  spacerTagName?: "div" | "span";
+}) => {
+  const blocks: string[] = [];
+  const paragraphLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+
+    if (!trimmedLine) {
+      flushParagraphBlock(paragraphLines, blocks, paragraphStyle);
+      blocks.push(createSpacerBlock(spacerTagName));
+      continue;
+    }
+
+    paragraphLines.push(trimmedLine);
+  }
+
+  flushParagraphBlock(paragraphLines, blocks, paragraphStyle);
+  return blocks;
+};
+
+const renderCenteredBlock = (lines: string[]) => {
+  const centeredBlocks = renderParagraphOnlyBlocks({
+    lines,
+    paragraphStyle: CONTENT_CENTERED_PARAGRAPH_STYLE,
+    spacerTagName: "span",
+  });
+
+  if (centeredBlocks.length === 0) return "";
+
+  return `<div ${CONTENT_CENTER_MARKER} style="${CONTENT_CENTER_CONTAINER_STYLE}">${centeredBlocks.join("")}</div>`;
+};
+
+const findMatchingCenterCloseLine = (lines: string[], startIndex: number) => {
+  for (let index = startIndex; index < lines.length; index += 1) {
+    if (lines[index].trim() === CENTER_MARKDOWN_CLOSE_TAG) {
+      return index;
+    }
+  }
+
+  return -1;
 };
 
 const flushListBlock = (
@@ -211,7 +275,14 @@ const flushListBlock = (
   listItems.length = 0;
 };
 
-export const renderBlogContentHtml = (markdownContent: string) => {
+const renderBlogMarkdownHtml = (
+  markdownContent: string,
+  {
+    enableCenteredBlocks = false,
+  }: {
+    enableCenteredBlocks?: boolean;
+  } = {},
+) => {
   const normalizedMarkdown = markdownContent.replace(/\r\n/g, "\n");
   if (!normalizedMarkdown.trim()) return "";
 
@@ -221,8 +292,43 @@ export const renderBlogContentHtml = (markdownContent: string) => {
   const listItems: string[] = [];
   let listType: "ul" | "ol" | null = null;
 
-  for (const line of lines) {
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
     const trimmedLine = line.trim();
+
+    if (
+      enableCenteredBlocks &&
+      trimmedLine.startsWith(CENTER_MARKDOWN_OPEN_TAG) &&
+      trimmedLine.endsWith(CENTER_MARKDOWN_CLOSE_TAG)
+    ) {
+      const centerCloseIndex = trimmedLine.lastIndexOf(CENTER_MARKDOWN_CLOSE_TAG);
+      const centeredLine = trimmedLine
+        .slice(CENTER_MARKDOWN_OPEN_TAG.length, centerCloseIndex)
+        .trim();
+      const centeredBlock = centeredLine.length > 0 ? renderCenteredBlock([centeredLine]) : "";
+      if (centeredBlock) {
+        flushParagraphBlock(paragraphLines, blocks);
+        flushListBlock(listType, listItems, blocks);
+        listType = null;
+        blocks.push(centeredBlock);
+        continue;
+      }
+    }
+
+    if (enableCenteredBlocks && trimmedLine === CENTER_MARKDOWN_OPEN_TAG) {
+      const closingIndex = findMatchingCenterCloseLine(lines, index + 1);
+      if (closingIndex !== -1) {
+        const centeredBlock = renderCenteredBlock(lines.slice(index + 1, closingIndex));
+        if (centeredBlock) {
+          flushParagraphBlock(paragraphLines, blocks);
+          flushListBlock(listType, listItems, blocks);
+          listType = null;
+          blocks.push(centeredBlock);
+          index = closingIndex;
+          continue;
+        }
+      }
+    }
 
     if (!trimmedLine) {
       flushParagraphBlock(paragraphLines, blocks);
@@ -293,8 +399,11 @@ export const renderBlogContentHtml = (markdownContent: string) => {
   return blocks.join("");
 };
 
+export const renderBlogContentHtml = (markdownContent: string) =>
+  renderBlogMarkdownHtml(markdownContent, { enableCenteredBlocks: true });
+
 export const renderBlogCtaMarkdownHtml = (ctaMarkdown: string) =>
-  renderBlogContentHtml(ctaMarkdown);
+  renderBlogMarkdownHtml(ctaMarkdown);
 
 export const buildBlogCtaHtml = ({
   label,
@@ -315,7 +424,9 @@ export const deriveBlogPreviewText = (
 ) => {
   if (excerpt.trim()) return excerpt.trim();
 
-  const normalizedMarkdown = stripMarkdownSyntax(markdownContent);
+  const normalizedMarkdown = stripMarkdownSyntax(
+    stripCenterMarkdownTags(markdownContent),
+  );
   if (!normalizedMarkdown) {
     return DEFAULT_BLOG_PREVIEW_TEXT;
   }
@@ -482,23 +593,49 @@ const convertInlineHtmlToMarkdown = (value: string): string => {
     .trim();
 };
 
-export const convertStoredBlogContentHtmlToMarkdown = (htmlContent: string) => {
+const convertStoredBlogHtmlToMarkdown = (
+  htmlContent: string,
+  {
+    preserveCenteredBlocks = false,
+  }: {
+    preserveCenteredBlocks?: boolean;
+  } = {},
+) => {
   const normalizedHtml = htmlContent.trim();
   if (!normalizedHtml) return "";
 
   const blocks: string[] = [];
   const blockPattern =
-    /<div[^>]*data-ssh-spacer="true"[^>]*>[\s\S]*?<\/div>|<(h2|h3|p|ul|ol|blockquote)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi;
+    /<div[^>]*data-ssh-center="true"[^>]*>([\s\S]*?)<\/div>|<(?:div|span)[^>]*data-ssh-spacer="true"[^>]*>[\s\S]*?<\/(?:div|span)>|<(h2|h3|p|ul|ol|blockquote)(?:\s[^>]*)?>([\s\S]*?)<\/\2>/gi;
   let match: RegExpExecArray | null = null;
 
   while ((match = blockPattern.exec(normalizedHtml))) {
-    if (match[0].includes("data-ssh-spacer")) {
+    if (match[0].includes(CONTENT_CENTER_MARKER)) {
+      const centeredMarkdown = convertStoredBlogHtmlToMarkdown(match[1] || "", {
+        preserveCenteredBlocks,
+      });
+      if (!centeredMarkdown) continue;
+
+      if (!preserveCenteredBlocks) {
+        blocks.push(centeredMarkdown);
+        continue;
+      }
+
+      blocks.push(
+        centeredMarkdown.includes("\n")
+          ? `${CENTER_MARKDOWN_OPEN_TAG}\n${centeredMarkdown}\n${CENTER_MARKDOWN_CLOSE_TAG}`
+          : `${CENTER_MARKDOWN_OPEN_TAG}${centeredMarkdown}${CENTER_MARKDOWN_CLOSE_TAG}`,
+      );
+      continue;
+    }
+
+    if (match[0].includes(CONTENT_SPACER_MARKER)) {
       blocks.push("");
       continue;
     }
 
-    const tag = match[1].toLowerCase();
-    const innerHtml = (match[2] || "").trim();
+    const tag = match[2].toLowerCase();
+    const innerHtml = (match[3] || "").trim();
 
     if (tag === "h2") {
       blocks.push(`## ${convertInlineHtmlToMarkdown(innerHtml)}`);
@@ -553,11 +690,14 @@ export const convertStoredBlogContentHtmlToMarkdown = (htmlContent: string) => {
   return normalizeMarkdownWhitespace(blocks.join("\n"));
 };
 
+export const convertStoredBlogContentHtmlToMarkdown = (htmlContent: string) =>
+  convertStoredBlogHtmlToMarkdown(htmlContent, { preserveCenteredBlocks: true });
+
 export const convertStoredBlogCtaHtmlToMarkdown = (ctaHtml: string) => {
   const normalizedHtml = ctaHtml.trim();
   if (!normalizedHtml) return "";
 
-  const convertedBlocks = convertStoredBlogContentHtmlToMarkdown(normalizedHtml);
+  const convertedBlocks = convertStoredBlogHtmlToMarkdown(normalizedHtml);
   if (convertedBlocks) {
     return convertedBlocks;
   }

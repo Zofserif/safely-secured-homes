@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { estimateCameraPlan, getResultsSummary } from "../../lib/calculations";
 import { deriveNameFromEmail } from "../../lib/contactName";
-import { sendLeadNtfyNotification } from "../../lib/ntfy";
-import { normalizeSafetyHabitAnswers } from "../../lib/safetyHabits";
 import {
-  getSafetyCategoryScores,
-  getSafetySummary,
-} from "../../lib/safetyScores";
+  buildLeadPayload,
+  resolveStoredLeadContactName,
+  type LeadAnswers,
+  type LeadContact,
+  type LeadCreateBody,
+  type LeadLocation,
+  type LeadPayloadV2,
+} from "../../lib/leadPayload";
+import { sendLeadNtfyNotification } from "../../lib/ntfy";
 import { clampSafetyScore } from "../../lib/safetyScale.js";
 import { processLeadJourneyEnrollment } from "../../lib/leadJourney";
 import {
@@ -15,7 +18,6 @@ import {
   getActiveJourneyEnrollmentForSubscriber,
   syncNewsletterSubscriber,
 } from "../../lib/newsletterCampaigns";
-import type { FormData, LeadTier } from "../../lib/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -25,70 +27,10 @@ const supabase =
     ? createClient(supabaseUrl, serviceRoleKey)
     : null;
 
-type LeadLocation = {
-  source: "ip_header" | "unavailable";
-  country_code: string | null;
-  region: string | null;
-  city: string | null;
-};
-
-type LeadContact = {
-  name: string;
-  email: string;
-  mobile: string;
-};
-
-type LeadAnswers = Omit<FormData, "name" | "email" | "mobile">;
-
-type LeadCreateBody = {
-  contact: LeadContact;
-  answers: LeadAnswers;
-  meta: {
-    source: string;
-    utm_source: string;
-    utm_medium: string;
-    utm_campaign: string;
-    allow_external_emails: boolean | null;
-    has_bonus: boolean;
-  };
-};
-
-type LeadPayload = {
-  source: string;
-  has_bonus: boolean;
-  location: LeadLocation;
-  contact: LeadContact;
-  answers: LeadAnswers;
-  outcomes: {
-    lead: {
-      score: number;
-      tier: LeadTier;
-      model_version: string;
-    };
-    safety: {
-      total: number;
-      emergency_readiness_score: number;
-      categories: {
-        home_entrance: number;
-        neighborhood_safety_check: number;
-        windows_terrace: number;
-        emergency_readiness_home: number;
-      };
-    };
-    panatag_home_rating: number;
-    camera_plan: {
-      camera_count: number;
-      nvr_channel: number;
-      storage_recommended_tb: number;
-      storage_estimated_tb_7d: number;
-    };
-  };
-};
-
 type LeadInsertBody = {
   email: string;
   name: string;
-  payload: LeadPayload;
+  payload: LeadPayloadV2;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -108,12 +50,6 @@ const toNullableBoolean = (value: unknown): boolean | null =>
 
 const toBoolean = (value: unknown): boolean =>
   typeof value === "boolean" ? value : false;
-
-const toFiniteNumber = (value: unknown): number =>
-  typeof value === "number" && Number.isFinite(value) ? value : 0;
-
-const toScore100 = (value: unknown): number =>
-  Math.max(0, Math.min(100, Math.round(toFiniteNumber(value))));
 
 const toNullableSafetyScore = (value: unknown): number | null =>
   typeof value === "number" && Number.isFinite(value)
@@ -227,67 +163,6 @@ const resolveLeadLocation = (req: Request): LeadLocation => {
   };
 };
 
-const toFormData = (contact: LeadContact, answers: LeadAnswers): FormData =>
-  normalizeSafetyHabitAnswers({
-    ...answers,
-    name: contact.name,
-    email: contact.email,
-    mobile: contact.mobile,
-  });
-
-const buildLeadPayload = (
-  input: LeadCreateBody,
-  location: LeadLocation
-): LeadPayload => {
-  const formData = toFormData(input.contact, input.answers);
-  const result = estimateCameraPlan(formData);
-  const safetySummary = getSafetySummary(formData);
-  const safetyCategories = getSafetyCategoryScores(formData);
-  const { panatagRating } = getResultsSummary(formData, result);
-
-  return {
-    source: input.meta.source,
-    has_bonus: input.meta.has_bonus,
-    location,
-    contact: input.contact,
-    answers: input.answers,
-    outcomes: {
-      lead: {
-        score: toScore100(result.leadScore),
-        tier: result.leadTier,
-        model_version: toSafeString(result.leadScoringModelVersion) || "unknown",
-      },
-      safety: {
-        total: toScore100(safetySummary.total),
-        emergency_readiness_score: toScore100(
-          safetySummary.emergencyReadinessScore
-        ),
-        categories: {
-          home_entrance: toScore100(safetyCategories.home_entrance),
-          neighborhood_safety_check: toScore100(
-            safetyCategories.neighborhood_safety_check
-          ),
-          windows_terrace: toScore100(safetyCategories.windows_terrace),
-          emergency_readiness_home: toScore100(
-            safetyCategories.emergency_readiness_home
-          ),
-        },
-      },
-      panatag_home_rating: toScore100(panatagRating),
-      camera_plan: {
-        camera_count: Math.max(0, Math.round(toFiniteNumber(result.cameraCount))),
-        nvr_channel: Math.max(0, Math.round(toFiniteNumber(result.nvrChannel))),
-        storage_recommended_tb: Math.max(
-          1,
-          Math.round(toFiniteNumber(result.storageRecommendedTB))
-        ),
-        storage_estimated_tb_7d:
-          Math.round(toFiniteNumber(result.storageEstimatedTB7d) * 1000) / 1000,
-      },
-    },
-  };
-};
-
 export async function POST(req: Request) {
   if (!supabase) {
     console.warn("Supabase env vars missing; skipping lead insert.");
@@ -306,7 +181,8 @@ export async function POST(req: Request) {
   const location = resolveLeadLocation(req);
   const payload = buildLeadPayload(leadBody, location);
   const leadName =
-    toSafeString(payload.contact.name) || deriveNameFromEmail(payload.contact.email);
+    resolveStoredLeadContactName(payload.contact) ||
+    deriveNameFromEmail(payload.contact.email);
   const leadInsertBody: LeadInsertBody = {
     email: payload.contact.email,
     name: leadName,
@@ -369,8 +245,8 @@ export async function POST(req: Request) {
       name: leadInsertBody.name,
       email: leadInsertBody.email,
       mobile: leadInsertBody.payload.contact.mobile,
-      tier: leadInsertBody.payload.outcomes.lead.tier,
-      score: leadInsertBody.payload.outcomes.lead.score,
+      tier: leadInsertBody.payload.outcomes.lead.tier ?? "Nurture",
+      score: leadInsertBody.payload.outcomes.lead.score ?? 0,
       source: leadInsertBody.payload.source,
       location: leadInsertBody.payload.location,
     });

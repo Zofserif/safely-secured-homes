@@ -1,1 +1,1 @@
-export * from "./leadScoring";
+export * from "./leadScoring.ts";

@@ -1,1 +1,1 @@
-export * from "./resultsScoring";
+export * from "./resultsScoring.ts";

@@ -1,1 +1,1 @@
-export * from "./safetyScores";
+export * from "./safetyScores.ts";

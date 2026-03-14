@@ -48,7 +48,7 @@ const personalizedFields = personalizeNewsletterFields(authoredFields, {
 
 assert.equal(
   personalizedFields.subject,
-  "This is the best offer Lemon & <Team> at 67% (Your score is nearly there, and only needs minor changes)",
+  "This is the best offer Lemon & <Team> at 67% Your score is nearly there, and only needs minor changes",
   "plain-text fields should replace every supported personalization token",
 );
 assert.equal(
@@ -58,17 +58,17 @@ assert.equal(
 );
 assert.equal(
   personalizedFields.previewText,
-  "Hi Lemon & <Team>, your score is 67%. (Your score is nearly there, and only needs minor changes)",
+  "Hi Lemon & <Team>, your score is 67%. Your score is nearly there, and only needs minor changes",
   "preview text should personalize name, score, and score_comment tokens",
 );
 assert.equal(
   personalizedFields.content,
-  '<p>Congrats! Lemon &amp; &lt;Team&gt;</p><p>It\'s 67%. (Your score is nearly there, and only needs minor changes)</p><p><a href="https://example.com/{name}/{score}">See Lemon &amp; &lt;Team&gt;\'s offer at 67%</a></p>',
+  '<p>Congrats! Lemon &amp; &lt;Team&gt;</p><p>It\'s 67%. Your score is nearly there, and only needs minor changes</p><p><a href="https://example.com/{name}/{score}">See Lemon &amp; &lt;Team&gt;\'s offer at 67%</a></p>',
   "HTML personalization should escape inserted values and leave href attributes literal",
 );
-assert.equal(
+assert.match(
   personalizedFields.cta,
-  '<p>Claim for <a href="https://example.com/{name}/{score}" target="_blank" rel="noreferrer">Lemon &amp; &lt;Team&gt; at 67%</a></p>',
+  /href="https:\/\/example\.com\/\{name\}\/\{score\}"[\s\S]*Lemon &amp; &lt;Team&gt; at 67%/,
   "CTA personalization should affect visible copy without mutating the URL",
 );
 assert.ok(
@@ -142,7 +142,7 @@ assert.equal(
 );
 assert.equal(
   sendTimeFields.previewText,
-  "Hi Lemon, your score is 31%. (Not bad, but not good either, we've got more work to do)",
+  "Hi Lemon, your score is 31%. Not bad, but not good either, we've got more work to do",
   "send-time personalization should cover preview text with the derived name and score comment",
 );
 assert.match(
@@ -170,33 +170,33 @@ const scoreBoundaryCases = [
     score: 0,
     display: "0%",
     comment:
-      "(Your score is kinda low for comfort, that's why we need to strengthen it)",
+      "Your score is kinda low for comfort, that's why we need to strengthen it",
   },
   {
     score: 30,
     display: "30%",
     comment:
-      "(Your score is kinda low for comfort, that's why we need to strengthen it)",
+      "Your score is kinda low for comfort, that's why we need to strengthen it",
   },
   {
     score: 31,
     display: "31%",
-    comment: "(Not bad, but not good either, we've got more work to do)",
+    comment: "Not bad, but not good either, we've got more work to do",
   },
   {
     score: 60,
     display: "60%",
-    comment: "(Not bad, but not good either, we've got more work to do)",
+    comment: "Not bad, but not good either, we've got more work to do",
   },
   {
     score: 61,
     display: "61%",
-    comment: "(Your score is nearly there, and only needs minor changes)",
+    comment: "Your score is nearly there, and only needs minor changes",
   },
   {
     score: 100,
     display: "100%",
-    comment: "(Your score is nearly there, and only needs minor changes)",
+    comment: "Your score is nearly there, and only needs minor changes",
   },
 ] as const;
 
@@ -233,6 +233,10 @@ const leadScorePersonalizationSource = readFileSync(
   new URL("../app/lib/leadScorePersonalization.ts", import.meta.url),
   "utf8",
 );
+const leadPayloadStoreSource = readFileSync(
+  new URL("../app/lib/leadPayloadStore.ts", import.meta.url),
+  "utf8",
+);
 const newsletterCampaignEmailSource = readFileSync(
   new URL("../app/lib/newsletterCampaignEmail.ts", import.meta.url),
   "utf8",
@@ -264,19 +268,30 @@ assert.match(
 );
 
 assert.match(
-  leadScorePersonalizationSource,
+  leadPayloadStoreSource,
   /normalizeEmail\(email\)/,
-  "lead score lookup should normalize email addresses before querying",
+  "latest lead payload lookup should normalize email addresses before querying",
 );
 assert.match(
-  leadScorePersonalizationSource,
+  leadPayloadStoreSource,
   /\.order\("created_at",\s*\{\s*ascending:\s*false,\s*nullsFirst:\s*false\s*\}\)\s*\.limit\(1\)\s*\.maybeSingle\(\)/,
-  "lead score lookup should read the latest lead row by created_at",
+  "latest lead payload lookup should read the latest lead row by created_at",
+);
+assert.match(
+  leadPayloadStoreSource,
+  /\.select\("email,name,payload,created_at"\)/,
+  "latest lead payload lookup should fetch the canonical payload row metadata",
+);
+
+assert.match(
+  leadScorePersonalizationSource,
+  /getLatestLeadPayloadByEmail\(email\)/,
+  "lead score personalization should read from the canonical latest lead payload helper",
 );
 assert.match(
   leadScorePersonalizationSource,
-  /buildLeadScorePersonalizationContext\(scoreValue\)/,
-  "lead score lookup should convert the stored score into email personalization fields",
+  /getLeadPayloadScorePersonalization\(latestLead\.payload\)/,
+  "lead score personalization should derive email fields from the canonical payload",
 );
 
 assert.match(

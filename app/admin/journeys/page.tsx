@@ -138,7 +138,7 @@ export default async function AdminJourneysPage({
         ) : null}
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="rounded-[2rem] border border-[#BEE9E8]/70 bg-white/95 p-4 shadow-lg shadow-[#0E79B2]/10">
+          <aside className="rounded-4xl border border-[#BEE9E8]/70 bg-white/95 p-4 shadow-lg shadow-[#0E79B2]/10">
             <div className="flex items-center justify-between px-2 pb-3">
               <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-slate-500">
                 Journeys
@@ -191,7 +191,7 @@ export default async function AdminJourneysPage({
           </aside>
 
           <section className="space-y-6">
-            <div className="rounded-[2rem] border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
+            <div className="rounded-4xl border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -308,7 +308,7 @@ export default async function AdminJourneysPage({
               </form>
             </div>
 
-            <div className="rounded-[2rem] border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
+            <div className="rounded-4xl border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-bold">Journey Steps</h2>
@@ -430,7 +430,7 @@ export default async function AdminJourneysPage({
                               name="ctaOverrideMarkdown"
                               defaultValue={step.ctaOverrideMarkdown}
                               rows={5}
-                              className="mt-2 w-full rounded-[1.5rem] border border-slate-300 bg-white px-4 py-3 font-mono text-sm outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
+                              className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 font-mono text-sm outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
                             />
                             <span className="mt-2 block text-sm leading-relaxed text-slate-500">
                               Use the same Markdown structure as blog content,
@@ -535,7 +535,7 @@ export default async function AdminJourneysPage({
                           name="ctaOverrideMarkdown"
                           rows={5}
                           placeholder="Need help deciding? [Book a free site visit](https://www.safelysecuredhomes.com/schedule-call)"
-                          className="mt-2 w-full rounded-[1.5rem] border border-slate-300 bg-white px-4 py-3 font-mono text-sm outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
+                          className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 font-mono text-sm outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
                         />
                         <span className="mt-2 block text-sm leading-relaxed text-slate-500">
                           This renders with the same Markdown-to-HTML pipeline

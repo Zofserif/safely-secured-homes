@@ -24,28 +24,28 @@ const FIELD_CONFIG: Array<{
     key: "subject",
     label: "Subject",
     helper:
-      "Maps to {{subject}} for the EmailJS subject line. Blog copy may include {name}, {score}, and {score_comment}.",
+      "Maps to {{subject}} for the EmailJS subject line. Blog copy may include {name}, {score}, {score_comment}, and {results_link}.",
     isLongForm: false,
   },
   {
     key: "preview_text",
     label: "Preview Text",
     helper:
-      "Use this as the EmailJS preheader variable. Blog copy may include {name}, {score}, and {score_comment}.",
+      "Use this as the EmailJS preheader variable. Blog copy may include {name}, {score}, {score_comment}, and {results_link}.",
     isLongForm: false,
   },
   {
     key: "content",
     label: "Content",
     helper:
-      "Paste into the HTML variable rendered with {{{content}}}. Text nodes may include {name}, {score}, and {score_comment}.",
+      "Paste into the HTML variable rendered with {{{content}}}. Text nodes may include {name}, {score}, {score_comment}, and {results_link}; use [label]({results_link}) to control anchor text.",
     isLongForm: true,
   },
   {
     key: "cta",
     label: "CTA",
     helper:
-      "Paste into the HTML variable rendered with {{{cta}}}. Visible CTA copy may include {name}, {score}, and {score_comment}; CTA URLs stay literal.",
+      "Paste into the HTML variable rendered with {{{cta}}}. Visible CTA copy may include {name}, {score}, {score_comment}, and {results_link}; regular CTA URLs stay literal unless you use {results_link} as the markdown link target.",
     isLongForm: true,
   },
 ];
@@ -207,8 +207,9 @@ export default function EmailAssetsPanel({
             Internal publishing assets for EmailJS-ready newsletter campaigns.
             The shared branded footer and unsubscribe link are injected
             automatically at send time. Blog-authored <code>{"{name}"}</code>,{" "}
-            <code>{"{score}"}</code>, and <code>{"{score_comment}"}</code>{" "}
-            merge tags are resolved before the EmailJS request is sent.
+            <code>{"{score}"}</code>, <code>{"{score_comment}"}</code>, and{" "}
+            <code>{"{results_link}"}</code> merge tags are resolved before the
+            EmailJS request is sent.
           </p>
         </div>
         <button
@@ -236,10 +237,14 @@ export default function EmailAssetsPanel({
               {" "}App-generated emails also append the shared branded footer and
               unsubscribe link automatically. Separately, blog-managed copy may
               include <code>{"{name}"}</code>, <code>{"{score}"}</code>, and{" "}
-              <code>{"{score_comment}"}</code>; the app resolves those author
-              tokens before calling EmailJS. Public blog surfaces use fallback
-              values like <code>there</code>, <code>your current rating</code>,
-              and the default score comment. For score copy, write{" "}
+              <code>{"{score_comment}"}</code>, plus{" "}
+              <code>{"{results_link}"}</code>. Use{" "}
+              <code>{"[label]({results_link})"}</code> when you want custom
+              clickable text, or bare <code>{"{results_link}"}</code> when you
+              want the raw URL. The app resolves those author tokens before
+              calling EmailJS. Public blog surfaces use fallback values like{" "}
+              <code>there</code>, <code>your current rating</code>, the default
+              score comment, and the generic results URL. For score copy, write{" "}
               <code>{"It's {score} 😯"}</code> because the token already includes
               the percent sign.
             </p>
@@ -248,6 +253,9 @@ export default function EmailAssetsPanel({
               <code className="rounded-full bg-white px-3 py-1">{"{score}"}</code>
               <code className="rounded-full bg-white px-3 py-1">
                 {"{score_comment}"}
+              </code>
+              <code className="rounded-full bg-white px-3 py-1">
+                {"{results_link}"}
               </code>
               <code className="rounded-full bg-white px-3 py-1">{"{{name}}"}</code>
               <code className="rounded-full bg-white px-3 py-1">{"{{subject}}"}</code>

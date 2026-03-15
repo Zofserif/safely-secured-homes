@@ -426,13 +426,18 @@ export default async function AdminBlogPage({
                   <p className="mt-2">
                     Use <code>{"{name}"}</code> anywhere in email copy. Lead
                     journey emails may also use <code>{"{score}"}</code> and{" "}
-                    <code>{"{score_comment}"}</code> in the subject, preview
+                    <code>{"{score_comment}"}</code>. Use{" "}
+                    <code>{"[your label]({results_link})"}</code> in body or CTA
+                    copy to control the results-link text, or use bare{" "}
+                    <code>{"{results_link}"}</code> when you want the raw URL.
+                    Lead journey emails may use these in the subject, preview
                     text, title, body, or CTA text. Write score copy like{" "}
                     <code>{"It's {score} 😯"}</code>, not{" "}
                     <code>{"It's {score}% 😯"}</code>, because the token already
                     includes the percent sign. Public blog pages, metadata, and
                     RSS use safe fallback text so merge tags never leak publicly.
-                    CTA URLs stay literal and do not support merge tags.
+                    Regular CTA URLs stay literal unless you intentionally use{" "}
+                    <code>{"{results_link}"}</code> as the markdown link target.
                   </p>
                 </div>
 
@@ -455,8 +460,10 @@ export default async function AdminBlogPage({
                     <code>{"[center]...[/center]"}</code> block. For
                     personalized greetings, write copy like{" "}
                     <code>{"Hi {name},"}</code>, <code>{"It's {score} 😯"}</code>,
-                    or{" "}
-                    <code>{"{score_comment}"}</code>.
+                    <code>{"{score_comment}"}</code>, or write{" "}
+                    <code>{"[See your report]({results_link})"}</code> to pick
+                    your own link text. A bare <code>{"{results_link}"}</code>{" "}
+                    resolves to the raw URL for backward compatibility.
                   </span>
                 </label>
 

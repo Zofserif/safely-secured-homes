@@ -1,12 +1,19 @@
+import { publicSiteUrl } from "./site.ts";
+
 export const EMAIL_PERSONALIZATION_NAME_TOKEN = "{name}";
 export const EMAIL_PERSONALIZATION_SCORE_TOKEN = "{score}";
 export const EMAIL_PERSONALIZATION_SCORE_COMMENT_TOKEN = "{score_comment}";
+export const EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN = "{results_link}";
 export const INVALID_EMAIL_PERSONALIZATION_SCORE_COMMENT_TOKEN =
   "{score comment}";
 export const DEFAULT_EMAIL_PERSONALIZATION_NAME = "there";
 export const DEFAULT_EMAIL_PERSONALIZATION_SCORE = "your current rating";
 export const DEFAULT_EMAIL_PERSONALIZATION_SCORE_COMMENT =
   "(I know you want to improve your rating)";
+export const DEFAULT_EMAIL_PERSONALIZATION_RESULTS_LINK = new URL(
+  "/results",
+  publicSiteUrl,
+).toString();
 
 export const EMAIL_PERSONALIZATION_SCORE_TOKENS = [
   EMAIL_PERSONALIZATION_SCORE_TOKEN,
@@ -17,6 +24,7 @@ export type EmailPersonalizationContext = {
   name?: string | null;
   score?: string | null;
   scoreComment?: string | null;
+  resultsLink?: string | null;
 };
 
 export type PersonalizableNewsletterFields = {
@@ -37,6 +45,9 @@ const escapeHtml = (value: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const clampScore = (value: number): number =>
   Math.max(0, Math.min(100, Math.round(value)));
@@ -80,6 +91,22 @@ const htmlTextNodesContainPersonalizationToken = (
         hasEmailPersonalizationToken(segment, tokens),
     );
 
+const htmlHrefContainsResultsLinkToken = (
+  value: string,
+  tokens?: readonly string[],
+): boolean => {
+  const activeTokens = tokens ?? [
+    EMAIL_PERSONALIZATION_NAME_TOKEN,
+    ...EMAIL_PERSONALIZATION_SCORE_TOKENS,
+    EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
+  ];
+  if (!activeTokens.includes(EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN)) {
+    return false;
+  }
+
+  return /\bhref\s*=\s*(["'])\{results_link\}\1/.test(value);
+};
+
 export const resolveEmailPersonalizationName = (
   context: EmailPersonalizationContext = {},
 ) => toSafeString(context.name) || DEFAULT_EMAIL_PERSONALIZATION_NAME;
@@ -93,6 +120,11 @@ export const resolveEmailPersonalizationScoreComment = (
 ) =>
   toSafeString(context.scoreComment) ||
   DEFAULT_EMAIL_PERSONALIZATION_SCORE_COMMENT;
+
+export const resolveEmailPersonalizationResultsLink = (
+  context: EmailPersonalizationContext = {},
+) =>
+  toSafeString(context.resultsLink) || DEFAULT_EMAIL_PERSONALIZATION_RESULTS_LINK;
 
 export const formatLeadScoreDisplay = (score: number): string =>
   `${clampScore(score)}%`;
@@ -123,6 +155,7 @@ export const hasEmailPersonalizationToken = (
   tokens: readonly string[] = [
     EMAIL_PERSONALIZATION_NAME_TOKEN,
     ...EMAIL_PERSONALIZATION_SCORE_TOKENS,
+    EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
   ],
 ): boolean => tokens.some((token) => value.includes(token));
 
@@ -138,7 +171,9 @@ export const newsletterFieldsContainPersonalizationTokens = <
     value.previewText,
   ].some((fieldValue) => hasEmailPersonalizationToken(fieldValue, tokens)) ||
   htmlTextNodesContainPersonalizationToken(value.content, tokens) ||
-  htmlTextNodesContainPersonalizationToken(value.cta, tokens);
+  htmlTextNodesContainPersonalizationToken(value.cta, tokens) ||
+  htmlHrefContainsResultsLinkToken(value.content, tokens) ||
+  htmlHrefContainsResultsLinkToken(value.cta, tokens);
 
 export const getUnsupportedNewsletterPersonalizationTokenError = <
   T extends PersonalizableNewsletterFields,
@@ -182,7 +217,46 @@ const resolveEmailPersonalizationTokens = (
   [EMAIL_PERSONALIZATION_SCORE_TOKEN]: resolveEmailPersonalizationScore(context),
   [EMAIL_PERSONALIZATION_SCORE_COMMENT_TOKEN]:
     resolveEmailPersonalizationScoreComment(context),
+  [EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN]:
+    resolveEmailPersonalizationResultsLink(context),
 });
+
+const resolveEmailPersonalizationHtmlTokens = (
+  context: EmailPersonalizationContext = {},
+): Record<string, string> => ({
+  [EMAIL_PERSONALIZATION_NAME_TOKEN]: escapeHtml(resolveEmailPersonalizationName(context)),
+  [EMAIL_PERSONALIZATION_SCORE_TOKEN]: escapeHtml(
+    resolveEmailPersonalizationScore(context),
+  ),
+  [EMAIL_PERSONALIZATION_SCORE_COMMENT_TOKEN]: escapeHtml(
+    resolveEmailPersonalizationScoreComment(context),
+  ),
+  [EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN]: escapeHtml(
+    resolveEmailPersonalizationResultsLink(context),
+  ),
+});
+
+const replaceExactHtmlAttributeValue = ({
+  value,
+  attributeName,
+  token,
+  replacement,
+}: {
+  value: string;
+  attributeName: string;
+  token: string;
+  replacement: string;
+}) =>
+  value.replace(
+    new RegExp(
+      `(\\b${escapeRegExp(attributeName)}\\s*=\\s*)(["'])${escapeRegExp(
+        token,
+      )}\\2`,
+      "g",
+    ),
+    (_match, prefix: string, quote: string) =>
+      `${prefix}${quote}${replacement}${quote}`,
+  );
 
 export const personalizeEmailPlainText = (
   value: string,
@@ -192,15 +266,19 @@ export const personalizeEmailPlainText = (
 export const personalizeEmailHtml = (
   value: string,
   context: EmailPersonalizationContext = {},
-) =>
-  replaceHtmlTextNodes(
-    value,
-    Object.fromEntries(
-      Object.entries(resolveEmailPersonalizationTokens(context)).map(
-        ([token, replacement]) => [token, escapeHtml(replacement)],
-      ),
-    ),
-  );
+) => {
+  const htmlTokens = resolveEmailPersonalizationHtmlTokens(context);
+  const textPersonalizedValue = replaceHtmlTextNodes(value, htmlTokens);
+
+  return replaceExactHtmlAttributeValue({
+    value: textPersonalizedValue,
+    attributeName: "href",
+    token: EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
+    replacement:
+      htmlTokens[EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN] ??
+      escapeHtml(resolveEmailPersonalizationResultsLink(context)),
+  });
+};
 
 export const personalizeNewsletterFields = <
   T extends PersonalizableNewsletterFields,

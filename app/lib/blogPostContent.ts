@@ -1,3 +1,5 @@
+import { publicSiteUrl } from "./site.ts";
+
 export type BlogEmailAssets = {
   subject: string;
   preview_text: string;
@@ -29,44 +31,11 @@ export type LegacyBlogPostContentRow = {
   cta_url?: unknown;
 };
 
-const DEFAULT_SITE_URL = "https://www.safelysecuredhomes.com";
 export const DEFAULT_BLOG_PREVIEW_TEXT =
   "Practical home security guidance for safer, smarter homes.";
 const EMAILJS_VARIABLE_LIMIT_BYTES = 50 * 1024;
 const EMAILJS_VARIABLE_WARNING_BYTES = 45 * 1024;
 const utf8Encoder = new TextEncoder();
-
-const normalizeSiteUrl = (input: string): string => {
-  const rawValue = input.trim();
-  if (!rawValue) return DEFAULT_SITE_URL;
-
-  const withProtocol =
-    rawValue.startsWith("http://") || rawValue.startsWith("https://")
-      ? rawValue
-      : `https://${rawValue}`;
-
-  const url = new URL(withProtocol);
-  const pathname = url.pathname.replace(/\/+$/, "");
-  url.pathname = pathname || "/";
-
-  const normalized = url.toString();
-  return normalized.endsWith("/")
-    ? normalized.slice(0, normalized.length - 1)
-    : normalized;
-};
-
-const resolveSiteUrl = () => {
-  const envSiteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.NEXT_PUBLIC_VERCEL_URL ||
-    process.env.VERCEL_URL;
-
-  return envSiteUrl
-    ? normalizeSiteUrl(envSiteUrl)
-    : process.env.NODE_ENV === "development"
-      ? "http://localhost:3000"
-      : DEFAULT_SITE_URL;
-};
 
 const parseOptionalText = (value: unknown) =>
   typeof value === "string" ? value.trim() : "";
@@ -106,11 +75,9 @@ const resolveContentHref = (href: string) => {
   const trimmedHref = href.trim();
   if (!trimmedHref) return "";
 
-  const siteUrl = resolveSiteUrl();
-
   if (trimmedHref.startsWith("/")) {
     try {
-      return new URL(trimmedHref, siteUrl).toString();
+      return new URL(trimmedHref, publicSiteUrl).toString();
     } catch {
       return "";
     }
@@ -151,9 +118,9 @@ const CONTENT_CENTER_MARKER = 'data-ssh-center="true"';
 const CONTENT_CENTER_CONTAINER_STYLE = "margin:0;padding:0;text-align:center;";
 const CENTER_MARKDOWN_OPEN_TAG = "[center]";
 const CENTER_MARKDOWN_CLOSE_TAG = "[/center]";
+const RESULTS_LINK_MARKDOWN_HREF = "{results_link}";
 
 const parseInlineMarkdownForHtml = (value: string) => {
-  const siteUrl = resolveSiteUrl();
   let html = escapeHtml(value);
 
   html = html.replace(
@@ -165,11 +132,17 @@ const parseInlineMarkdownForHtml = (value: string) => {
   html = html.replace(/(^|[^*])\*([^*]+)\*([^*]|$)/g, "$1<em>$2</em>$3");
   html = html.replace(/(^|[^_])_([^_]+)_([^_]|$)/g, "$1<em>$2</em>$3");
   html = html.replace(
-    /\[([^\]]+)\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g,
+    /\[([^\]]+)\]\(((?:https?:\/\/|\/)[^\s)]+|\{results_link\})\)/g,
     (_match, label: string, href: string) => {
+      if (href === RESULTS_LINK_MARKDOWN_HREF) {
+        return `<a href="${escapeHtml(
+          href,
+        )}" style="color:#0E79B2;font-weight:600;text-decoration:underline;">${label}</a>`;
+      }
+
       const resolvedHref = resolveContentHref(href);
       if (!resolvedHref) return label;
-      const externalAttributes = resolvedHref.startsWith(siteUrl)
+      const externalAttributes = resolvedHref.startsWith(publicSiteUrl)
         ? ""
         : ' target="_blank" rel="noreferrer"';
       return `<a href="${escapeHtml(
@@ -705,6 +678,48 @@ export const convertStoredBlogCtaHtmlToMarkdown = (ctaHtml: string) => {
   const divWrappedMatch = normalizedHtml.match(/^<div[^>]*>([\s\S]+)<\/div>$/i);
   const inlineSource = divWrappedMatch?.[1]?.trim() || normalizedHtml;
   return normalizeMarkdownWhitespace(convertInlineHtmlToMarkdown(inlineSource));
+};
+
+export type BlogStoredHtmlBackfillSource = {
+  content?: string | null;
+  cta?: string | null;
+  contentMarkdown?: string | null;
+  ctaMarkdown?: string | null;
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;
+};
+
+export const buildBlogStoredHtmlBackfillFields = ({
+  content,
+  cta,
+  contentMarkdown,
+  ctaMarkdown,
+  ctaLabel,
+  ctaUrl,
+}: BlogStoredHtmlBackfillSource) => {
+  const resolvedContentMarkdown =
+    parseOptionalText(contentMarkdown) ||
+    convertStoredBlogContentHtmlToMarkdown(parseOptionalText(content));
+  const legacyCta = convertLegacyBlogCtaFieldsToMarkdown({
+    label: parseOptionalText(ctaLabel),
+    url: parseOptionalText(ctaUrl),
+  });
+  const resolvedCtaMarkdown =
+    parseOptionalText(ctaMarkdown) ||
+    legacyCta.ctaMarkdown ||
+    convertStoredBlogCtaHtmlToMarkdown(parseOptionalText(cta));
+  const storedFields = buildBlogStoredFields({
+    previewText: "",
+    markdownContent: resolvedContentMarkdown,
+    ctaMarkdown: resolvedCtaMarkdown,
+  });
+
+  return {
+    contentMarkdown: resolvedContentMarkdown,
+    ctaMarkdown: resolvedCtaMarkdown,
+    content: storedFields.content,
+    cta: storedFields.cta,
+  };
 };
 
 export const parseStoredBlogCtaHtml = (ctaHtml: string) => {

@@ -16,6 +16,7 @@ import {
 import { getBlogPostEmailUsage } from "./blogPosts";
 import {
   assertSupportedNewsletterPersonalizationTokens,
+  EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
   EMAIL_PERSONALIZATION_SCORE_TOKENS,
   newsletterFieldsContainPersonalizationTokens,
 } from "./emailPersonalization";
@@ -23,6 +24,7 @@ import { sendNewsletterEmail } from "./email";
 import { getSavedEmailRecipientProfileByEmail } from "./emailRecipientProfile";
 import { sendTrackedBroadcastNewsletterEmailByPostId } from "./newsletterCampaignEmail";
 import { listSubscribedNewsletterRecipients } from "./newsletterCampaigns";
+import { resolvePersonalizedResultsLinkByEmail } from "./resultsLinksServer";
 import { siteUrl } from "./site";
 
 export type AdminNewsletterState =
@@ -637,6 +639,9 @@ export async function sendAdminBlogPostTestEmail({
     post,
     EMAIL_PERSONALIZATION_SCORE_TOKENS,
   );
+  const requiresResultsLink = newsletterFieldsContainPersonalizationTokens(post, [
+    EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
+  ]);
 
   if (
     requiresLeadScore &&
@@ -648,11 +653,24 @@ export async function sendAdminBlogPostTestEmail({
     );
   }
 
-  const sendResult = await sendNewsletterEmail(post, {
-    toEmail: savedRecipientProfile?.email || normalizedRecipientEmail,
-    name: toSafeString(recipientName) || savedRecipientProfile?.name || undefined,
-    unsubscribeUrl: TEST_EMAIL_UNSUBSCRIBE_URL,
-  }, savedRecipientProfile?.personalization);
+  const resolvedResultsLink = requiresResultsLink
+    ? await resolvePersonalizedResultsLinkByEmail(
+        savedRecipientProfile?.email || normalizedRecipientEmail,
+      )
+    : null;
+
+  const sendResult = await sendNewsletterEmail(
+    post,
+    {
+      toEmail: savedRecipientProfile?.email || normalizedRecipientEmail,
+      name: toSafeString(recipientName) || savedRecipientProfile?.name || undefined,
+      unsubscribeUrl: TEST_EMAIL_UNSUBSCRIBE_URL,
+    },
+    {
+      ...savedRecipientProfile?.personalization,
+      resultsLink: resolvedResultsLink,
+    },
+  );
 
   if (!sendResult) {
     throw new Error("EmailJS is not configured for admin test sends.");

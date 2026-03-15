@@ -6,13 +6,17 @@ const blogPostContentModule = (await import(
   new URL("../app/lib/blogPostContent.ts", import.meta.url).href
 )) as typeof import("../app/lib/blogPostContent");
 
-const { renderBlogContentHtml } = blogPostContentModule;
+const { buildBlogStoredHtmlBackfillFields } = blogPostContentModule;
 
 type BlogContentBackfillRow = {
   id: string | null;
   slug: string | null;
   content: string | null;
+  cta: string | null;
   content_markdown: string | null;
+  cta_markdown: string | null;
+  cta_label?: string | null;
+  cta_url?: string | null;
 };
 
 const ENV_FILES = [".env.local", ".env"];
@@ -71,7 +75,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 const { data, error } = await supabase
   .from("blog_posts")
-  .select("id,slug,content,content_markdown")
+  .select("id,slug,content,cta,content_markdown,cta_markdown,cta_label,cta_url")
   .order("updated_at", { ascending: false, nullsFirst: false });
 
 if (error) {
@@ -91,41 +95,91 @@ if (error) {
 }
 
 const rows = (data as BlogContentBackfillRow[] | null) ?? [];
-const updates: Array<{ id: string; slug: string; content: string }> = [];
-let skippedBlankMarkdownCount = 0;
+const updates: Array<{
+  id: string;
+  slug: string;
+  payload: {
+    content: string;
+    cta: string;
+    content_markdown: string;
+    cta_markdown: string;
+  };
+  changedFields: string[];
+  derivedSourceFields: string[];
+}> = [];
 
 for (const row of rows) {
   const rowId = toSafeString(row.id);
   const rowSlug = toSafeString(row.slug) || rowId;
-  const markdownContent = toSafeString(row.content_markdown);
 
   if (!rowId) {
     console.log("Skipping row without an id.");
     continue;
   }
 
-  if (!markdownContent) {
-    skippedBlankMarkdownCount += 1;
-    console.log(`Skipping ${rowSlug}: content_markdown is blank.`);
+  const nextFields = buildBlogStoredHtmlBackfillFields({
+    content: row.content,
+    cta: row.cta,
+    contentMarkdown: row.content_markdown,
+    ctaMarkdown: row.cta_markdown,
+    ctaLabel: row.cta_label,
+    ctaUrl: row.cta_url,
+  });
+  const nextPayload = {
+    content: nextFields.content,
+    cta: nextFields.cta,
+    content_markdown: nextFields.contentMarkdown,
+    cta_markdown: nextFields.ctaMarkdown,
+  };
+  const changedFields = Object.entries(nextPayload)
+    .filter(([key, nextValue]) => {
+      if (key === "content") {
+        return !isSameText(row.content, nextValue);
+      }
+      if (key === "cta") {
+        return !isSameText(row.cta, nextValue);
+      }
+      if (key === "content_markdown") {
+        return !isSameText(row.content_markdown, nextValue);
+      }
+      return !isSameText(row.cta_markdown, nextValue);
+    })
+    .map(([key]) => key);
+
+  if (changedFields.length === 0) {
     continue;
   }
 
-  const nextContent = renderBlogContentHtml(markdownContent);
-  if (isSameText(row.content, nextContent)) {
-    continue;
-  }
+  const derivedSourceFields = [
+    !toSafeString(row.content_markdown) && nextPayload.content_markdown
+      ? "content_markdown"
+      : null,
+    !toSafeString(row.cta_markdown) && nextPayload.cta_markdown
+      ? "cta_markdown"
+      : null,
+  ].filter((fieldValue): fieldValue is string => Boolean(fieldValue));
 
   updates.push({
     id: rowId,
     slug: rowSlug,
-    content: nextContent,
+    payload: nextPayload,
+    changedFields,
+    derivedSourceFields,
   });
 }
 
 console.log(
-  `Scanned ${rows.length} blog posts. ${updates.length} row(s) require content regeneration.${dryRun ? " Dry run only." : ""}`,
+  `Scanned ${rows.length} blog posts. ${updates.length} row(s) require stored HTML regeneration.${dryRun ? " Dry run only." : ""}`,
 );
-console.log(`Skipped for blank content_markdown: ${skippedBlankMarkdownCount}`);
+
+for (const update of updates) {
+  const derivedFieldsMessage = update.derivedSourceFields.length
+    ? `; derived ${update.derivedSourceFields.join(", ")}`
+    : "";
+  console.log(
+    `${dryRun ? "Would update" : "Updating"} ${update.slug}: ${update.changedFields.join(", ")}${derivedFieldsMessage}`,
+  );
+}
 
 if (dryRun || updates.length === 0) {
   process.exit(0);
@@ -134,9 +188,7 @@ if (dryRun || updates.length === 0) {
 for (const update of updates) {
   const { error: updateError } = await supabase
     .from("blog_posts")
-    .update({
-      content: update.content,
-    })
+    .update(update.payload)
     .eq("id", update.id);
 
   if (updateError) {

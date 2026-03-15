@@ -3,6 +3,7 @@ import "server-only";
 import { getBlogPostById } from "./blogPosts";
 import { deriveNameFromEmail, normalizeEmail } from "./contactName";
 import {
+  EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
   EMAIL_PERSONALIZATION_SCORE_TOKENS,
   newsletterFieldsContainPersonalizationTokens,
   type EmailPersonalizationContext,
@@ -24,6 +25,7 @@ import {
   buildLeadDay0BonusLinkSourceKey,
   isLeadDay0JourneyEmail,
 } from "./leadJourneyDay0Cta";
+import { resolvePersonalizedResultsLinkByEmail } from "./resultsLinksServer";
 import { createNewsletterUnsubscribeUrl } from "./newsletterSubscribers";
 
 type SendTrackedEnrollmentNewsletterEmailInput = {
@@ -102,6 +104,31 @@ const resolveTrackedEnrollmentPersonalizationContext = async ({
   }
 
   return personalization;
+};
+
+const resolveResultsLinkPersonalizationContext = async ({
+  recipientEmail,
+  post,
+}: {
+  recipientEmail: string;
+  post: {
+    subject: string;
+    title: string;
+    previewText: string;
+    content: string;
+    cta: string;
+  };
+}): Promise<Pick<EmailPersonalizationContext, "resultsLink">> => {
+  const requiresResultsLink = newsletterFieldsContainPersonalizationTokens(post, [
+    EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
+  ]);
+  if (!requiresResultsLink) {
+    return {};
+  }
+
+  return {
+    resultsLink: await resolvePersonalizedResultsLinkByEmail(recipientEmail),
+  };
 };
 
 const resolveTrackedEnrollmentCtaHtml = async ({
@@ -202,6 +229,10 @@ export async function sendTrackedEnrollmentNewsletterCampaignEmailByPostId({
         recipientEmail: normalizedRecipientEmail,
         post: deliveryPost,
       });
+    const resultsLinkContext = await resolveResultsLinkPersonalizationContext({
+      recipientEmail: normalizedRecipientEmail,
+      post: deliveryPost,
+    });
 
     const sendResult = await sendNewsletterEmail(
       deliveryPost,
@@ -210,7 +241,10 @@ export async function sendTrackedEnrollmentNewsletterCampaignEmailByPostId({
         name: resolveRecipientName(normalizedRecipientEmail, recipientName),
         unsubscribeUrl: createNewsletterUnsubscribeUrl(subscriber.unsubscribeToken),
       },
-      personalizationContext,
+      {
+        ...personalizationContext,
+        ...resultsLinkContext,
+      },
     );
 
     if (!sendResult) {
@@ -274,11 +308,19 @@ export async function sendTrackedBroadcastNewsletterEmailByPostId({
   }
 
   try {
-    const sendResult = await sendNewsletterEmail(post, {
-      toEmail: normalizedRecipientEmail,
-      name: resolveRecipientName(normalizedRecipientEmail, recipientName),
-      unsubscribeUrl: createNewsletterUnsubscribeUrl(subscriber.unsubscribeToken),
+    const resultsLinkContext = await resolveResultsLinkPersonalizationContext({
+      recipientEmail: normalizedRecipientEmail,
+      post,
     });
+    const sendResult = await sendNewsletterEmail(
+      post,
+      {
+        toEmail: normalizedRecipientEmail,
+        name: resolveRecipientName(normalizedRecipientEmail, recipientName),
+        unsubscribeUrl: createNewsletterUnsubscribeUrl(subscriber.unsubscribeToken),
+      },
+      resultsLinkContext,
+    );
 
     if (!sendResult) {
       throw new Error("EmailJS is not configured for tracked newsletter sends.");

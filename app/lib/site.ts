@@ -1,6 +1,6 @@
-import { normalizeSiteUrl } from "./seo";
+import { normalizeSiteUrl } from "./seo.ts";
 
-const defaultSiteUrl = "https://www.safelysecuredhomes.com";
+export const DEFAULT_SITE_URL = "https://www.safelysecuredhomes.com";
 const envSiteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ||
   process.env.NEXT_PUBLIC_VERCEL_URL ||
@@ -23,11 +23,14 @@ const whatsappDigits = sitePhoneDigits.startsWith("0")
 const whatsappPrefillMessage =
   process.env.NEXT_PUBLIC_WHATSAPP_PREFILL_MESSAGE?.trim() ||
   defaultWhatsAppPrefillMessage;
+export const publicSiteUrl = normalizeSiteUrl(
+  process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL,
+);
 export const siteUrl = envSiteUrl
   ? normalizeSiteUrl(envSiteUrl)
   : process.env.NODE_ENV === "development"
     ? "http://localhost:3000"
-    : defaultSiteUrl;
+    : DEFAULT_SITE_URL;
 export const ogImagePath = "/assets/img/Logo/Black Header.png";
 export const ogImageUrl = new URL(ogImagePath, siteUrl).toString();
 export const panatagChecklistPath = "/assets/templates/ice/ice-card-template.pdf";

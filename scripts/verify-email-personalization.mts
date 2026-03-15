@@ -15,10 +15,12 @@ const blogPostContentModule = (await import(
 )) as typeof import("../app/lib/blogPostContent");
 
 const {
+  DEFAULT_EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER,
   DEFAULT_EMAIL_PERSONALIZATION_NAME,
   DEFAULT_EMAIL_PERSONALIZATION_RESULTS_LINK,
   DEFAULT_EMAIL_PERSONALIZATION_SCORE,
   DEFAULT_EMAIL_PERSONALIZATION_SCORE_COMMENT,
+  EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
   EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
   EMAIL_PERSONALIZATION_SCORE_TOKENS,
   buildLeadScorePersonalizationContext,
@@ -26,6 +28,7 @@ const {
   getLeadScoreComment,
   newsletterFieldsContainPersonalizationTokens,
   personalizeNewsletterFields,
+  resolveEmailPersonalizationLimitedTimeOfferUrl,
   resolveEmailPersonalizationName,
   resolveEmailPersonalizationResultsLink,
   resolveEmailPersonalizationScore,
@@ -79,6 +82,40 @@ assert.match(
   renderedCta,
   /\{results_link\}/,
   "bare {results_link} in CTA markdown should remain visible text until personalization time",
+);
+
+const renderedLimitedOfferContent = renderBlogContentHtml(`Limited window
+
+[Claim the offer]({limited_time_offer})
+
+{limited_time_offer}`);
+
+assert.match(
+  renderedLimitedOfferContent,
+  /href="\{limited_time_offer\}"[\s\S]*>Claim the offer<\/a>/,
+  "body markdown should preserve {limited_time_offer} as a placeholder href so it can be personalized later",
+);
+assert.match(
+  renderedLimitedOfferContent,
+  /<p style="[^"]*">\{limited_time_offer\}<\/p>/,
+  "bare {limited_time_offer} in body markdown should remain plain text until personalization time",
+);
+
+const renderedLimitedOfferCta = renderBlogCtaMarkdownHtml(
+  `[Reserve your slot]({limited_time_offer})
+
+{limited_time_offer}`,
+);
+
+assert.match(
+  renderedLimitedOfferCta,
+  /href="\{limited_time_offer\}"[\s\S]*>Reserve your slot<\/a>/,
+  "CTA markdown should preserve {limited_time_offer} as a placeholder href with the authored label intact",
+);
+assert.match(
+  renderedLimitedOfferCta,
+  /\{limited_time_offer\}/,
+  "bare {limited_time_offer} in CTA markdown should remain visible text until personalization time",
 );
 
 const backfilledFields = buildBlogStoredHtmlBackfillFields({
@@ -204,6 +241,21 @@ assert.ok(
   ),
   "score token detection should recognize score-based author tokens",
 );
+assert.ok(
+  newsletterFieldsContainPersonalizationTokens(
+    {
+      subject: "",
+      title: "",
+      previewText: "",
+      content: renderBlogContentHtml(
+        "[Claim the offer]({limited_time_offer})",
+      ),
+      cta: "",
+    },
+    [EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN],
+  ),
+  "limited-offer detection should recognize exact href=\"{limited_time_offer}\" placeholders when the token is used as a markdown link target",
+);
 
 const publicFallbackFields = personalizeNewsletterFields(authoredFields);
 const publicVisibleCopy = `${publicFallbackFields.content} ${publicFallbackFields.cta}`
@@ -230,6 +282,11 @@ assert.equal(
   resolveEmailPersonalizationResultsLink(),
   DEFAULT_EMAIL_PERSONALIZATION_RESULTS_LINK,
   "missing results links should resolve to the shared public fallback",
+);
+assert.equal(
+  resolveEmailPersonalizationLimitedTimeOfferUrl(),
+  DEFAULT_EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER,
+  "missing limited-offer links should resolve to the schedule-call fallback",
 );
 assert.ok(
   !publicFallbackFields.subject.includes("{name}") &&
@@ -277,6 +334,56 @@ assert.doesNotMatch(
 assert.ok(
   !newsletterFieldsContainPersonalizationTokens(publicFallbackFields),
   "fallback-personalized fields should no longer expose raw personalization tokens",
+);
+
+const limitedOfferFields = {
+  subject: "Limited slot: {limited_time_offer}",
+  title: "Your limited slot",
+  previewText: "Use this link now: {limited_time_offer}",
+  content: renderedLimitedOfferContent,
+  cta: renderedLimitedOfferCta,
+};
+
+const personalizedLimitedOfferFields = personalizeNewsletterFields(
+  limitedOfferFields,
+  {
+    limitedTimeOfferUrl: "https://www.safelysecuredhomes.com/offer/test-token",
+  },
+);
+
+assert.equal(
+  personalizedLimitedOfferFields.subject,
+  "Limited slot: https://www.safelysecuredhomes.com/offer/test-token",
+  "plain-text fields should replace the limited-offer token with the personalized URL",
+);
+assert.match(
+  personalizedLimitedOfferFields.content,
+  /href="https:\/\/www\.safelysecuredhomes\.com\/offer\/test-token"[\s\S]*>Claim the offer<\/a>/,
+  "HTML personalization should replace exact href=\"{limited_time_offer}\" values without changing the authored label",
+);
+assert.match(
+  personalizedLimitedOfferFields.content,
+  /<p style="[^"]*">https:\/\/www\.safelysecuredhomes\.com\/offer\/test-token<\/p>/,
+  "bare {limited_time_offer} in HTML content should resolve to the raw personalized URL string",
+);
+assert.match(
+  personalizedLimitedOfferFields.cta,
+  /href="https:\/\/www\.safelysecuredhomes\.com\/offer\/test-token"[\s\S]*>Reserve your slot<\/a>/,
+  "CTA personalization should preserve authored limited-offer link text while swapping the placeholder href",
+);
+
+const publicFallbackLimitedOfferFields =
+  personalizeNewsletterFields(limitedOfferFields);
+
+assert.match(
+  publicFallbackLimitedOfferFields.content,
+  /href="https:\/\/www\.safelysecuredhomes\.com\/schedule-call"[\s\S]*>Claim the offer<\/a>/,
+  "public fallback HTML should use the schedule-call URL while preserving the authored limited-offer link text",
+);
+assert.match(
+  publicFallbackLimitedOfferFields.cta,
+  /href="https:\/\/www\.safelysecuredhomes\.com\/schedule-call"[\s\S]*>Reserve your slot<\/a>/,
+  "public fallback CTA HTML should use the schedule-call URL while preserving the authored label",
 );
 
 const derivedRecipientName = deriveNameFromEmail("lemon.squeezy@example.com");
@@ -550,6 +657,11 @@ assert.match(
   /RESULTS_LINK_MARKDOWN_HREF/,
   "blog markdown rendering should recognize {results_link} as a special-case link destination",
 );
+assert.match(
+  blogPostContentSource,
+  /LIMITED_TIME_OFFER_MARKDOWN_HREF/,
+  "blog markdown rendering should recognize {limited_time_offer} as a special-case link destination",
+);
 assert.doesNotMatch(
   blogPostContentSource,
   /localhost:3000|NEXT_PUBLIC_VERCEL_URL|VERCEL_URL/,
@@ -576,6 +688,16 @@ assert.match(
   "newsletter email sends should pass the optional personalization context through to template building",
 );
 
+assert.match(
+  emailPersonalizationSource,
+  /EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN/,
+  "email personalization should define a dedicated limited-time-offer token",
+);
+assert.match(
+  emailPersonalizationSource,
+  /resolveEmailPersonalizationLimitedTimeOfferUrl/,
+  "email personalization should expose a shared limited-offer URL fallback resolver",
+);
 assert.match(
   emailPersonalizationSource,
   /replaceExactHtmlAttributeValue/,
@@ -677,13 +799,33 @@ assert.match(
 );
 assert.match(
   newsletterCampaignEmailSource,
+  /getOrCreateLimitedOfferLinkBySourceKey/,
+  "tracked broadcast sends should create or reuse limited-offer links when the token is present",
+);
+assert.match(
+  newsletterCampaignEmailSource,
   /Lead Panatag rating is required to send score-personalized lead journey email/,
   "lead journey sends should fail clearly when score-personalized content has no score data",
+);
+assert.match(
+  newsletterCampaignEmailSource,
+  /Limited-time offer token is only supported for manual admin blog sends/,
+  "journey sends should fail clearly when the limited-offer token is used outside manual admin sends",
 );
 assert.match(
   adminBlogPostsSource,
   /resolvePersonalizedResultsLinkByEmail\(/,
   "admin test sends should resolve personalized results links when the token is present",
+);
+assert.match(
+  adminBlogPostsSource,
+  /getOrCreateLimitedOfferLinkBySourceKey/,
+  "admin test sends should create limited-offer links when the token is present",
+);
+assert.match(
+  adminBlogPostsSource,
+  /assertValidLimitedOfferHours/,
+  "admin blog sends should validate offer hours before sending limited-offer content",
 );
 
 assert.match(
@@ -718,13 +860,28 @@ assert.match(
 );
 assert.match(
   adminBlogSource,
+  /\[your label\]\(\{limited_time_offer\}\)/,
+  "admin blog manager should document markdown-link-target authoring for the limited-offer link",
+);
+assert.match(
+  adminBlogSource,
   /raw URL/,
   "admin blog manager should explain bare-token backward compatibility",
+);
+assert.match(
+  adminBlogSource,
+  /Offer Hours/,
+  "admin blog manager should expose offer-hours inputs for limited-offer sends",
 );
 assert.match(
   emailAssetsPanelSource,
   /\[label\]\(\{results_link\}\)/,
   "email assets helper copy should document markdown-link-target authoring for the results link",
+);
+assert.match(
+  emailAssetsPanelSource,
+  /\[label\]\(\{limited_time_offer\}\)/,
+  "email assets helper copy should document markdown-link-target authoring for the limited-offer link",
 );
 assert.match(
   emailAssetsPanelSource,

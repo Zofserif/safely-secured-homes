@@ -11,6 +11,10 @@ import {
 import { requireAdminSession } from "../../lib/adminAuth";
 import { getBlogPostEmailUsage } from "../../lib/blogPosts";
 import {
+  EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
+  newsletterFieldsContainPersonalizationTokens,
+} from "../../lib/emailPersonalization";
+import {
   deleteDraftBlogPostAction,
   logoutAdminAction,
   publishBlogPostAction,
@@ -165,6 +169,11 @@ export default async function AdminBlogPage({
         newsletterSendKey: selectedPost.newsletterSendKey,
       })
     : null;
+  const selectedPostRequiresLimitedOffer = selectedPost
+    ? newsletterFieldsContainPersonalizationTokens(selectedPost, [
+        EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
+      ])
+    : false;
 
   const canSendNewsletter = selectedPost
     ? selectedPost.status === "published" &&
@@ -430,14 +439,21 @@ export default async function AdminBlogPage({
                     <code>{"[your label]({results_link})"}</code> in body or CTA
                     copy to control the results-link text, or use bare{" "}
                     <code>{"{results_link}"}</code> when you want the raw URL.
-                    Lead journey emails may use these in the subject, preview
-                    text, title, body, or CTA text. Write score copy like{" "}
+                    Manual admin test sends and newsletter broadcasts may also
+                    use <code>{"[your label]({limited_time_offer})"}</code> or
+                    bare <code>{"{limited_time_offer}"}</code>. Those sends
+                    require an offer-hours value and resolve to a unique,
+                    expiring recipient link. Lead journey emails may use the
+                    score and results tokens in the subject, preview text,
+                    title, body, or CTA text. Write score copy like{" "}
                     <code>{"It's {score} 😯"}</code>, not{" "}
                     <code>{"It's {score}% 😯"}</code>, because the token already
                     includes the percent sign. Public blog pages, metadata, and
                     RSS use safe fallback text so merge tags never leak publicly.
                     Regular CTA URLs stay literal unless you intentionally use{" "}
-                    <code>{"{results_link}"}</code> as the markdown link target.
+                    <code>{"{results_link}"}</code> or{" "}
+                    <code>{"{limited_time_offer}"}</code> as the markdown link
+                    target.
                   </p>
                 </div>
 
@@ -461,9 +477,12 @@ export default async function AdminBlogPage({
                     personalized greetings, write copy like{" "}
                     <code>{"Hi {name},"}</code>, <code>{"It's {score} 😯"}</code>,
                     <code>{"{score_comment}"}</code>, or write{" "}
-                    <code>{"[See your report]({results_link})"}</code> to pick
-                    your own link text. A bare <code>{"{results_link}"}</code>{" "}
-                    resolves to the raw URL for backward compatibility.
+                    <code>{"[See your report]({results_link})"}</code> or{" "}
+                    <code>{"[your label]({limited_time_offer})"}</code> to pick
+                    your own link text. A bare{" "}
+                    <code>{"{results_link}"}</code> or{" "}
+                    <code>{"{limited_time_offer}"}</code> resolves to the raw
+                    URL for backward compatibility.
                   </span>
                 </label>
 
@@ -610,7 +629,7 @@ export default async function AdminBlogPage({
               <form action={sendTestBlogPostEmailAction} className="mt-6 space-y-4">
                 <input type="hidden" name="postId" value={selectedPost?.id ?? ""} />
 
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,180px)_auto]">
                   <label className="block">
                     <span className="text-sm font-semibold text-slate-700">
                       Test Email Address
@@ -638,6 +657,22 @@ export default async function AdminBlogPage({
                     />
                   </label>
 
+                  <label className="block">
+                    <span className="text-sm font-semibold text-slate-700">
+                      Offer Hours
+                    </span>
+                    <input
+                      type="number"
+                      name="offerHours"
+                      min={1}
+                      step={1}
+                      defaultValue={selectedPostRequiresLimitedOffer ? 24 : undefined}
+                      required={selectedPostRequiresLimitedOffer}
+                      disabled={!canSendTestEmail}
+                      className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    />
+                  </label>
+
                   <div className="flex items-end">
                     <button
                       type="submit"
@@ -660,6 +695,11 @@ export default async function AdminBlogPage({
                   Score tokens require saved lead data for that email. Use{" "}
                   <code>{"{score_comment}"}</code>, not{" "}
                   <code>{"{score comment}"}</code>.
+                </div>
+                <div className="mt-1">
+                  {selectedPostRequiresLimitedOffer
+                    ? "This post uses {limited_time_offer}, so Offer Hours is required for the generated link window."
+                    : "Offer Hours is only required when the post uses {limited_time_offer}."}
                 </div>
                 <div className="mt-1">
                   Footer unsubscribe link: generic <code>/unsubscribe</code> page
@@ -701,6 +741,11 @@ export default async function AdminBlogPage({
                     Send key: {selectedPost?.newsletterSendKey || "Not sent yet"}
                   </div>
                   <div className="mt-1">
+                    {selectedPostRequiresLimitedOffer
+                      ? "This post uses {limited_time_offer}; offer hours are required before sending."
+                      : "Offer hours only apply when {limited_time_offer} is used in the post."}
+                  </div>
+                  <div className="mt-1">
                     Sent: {currentBroadcastSummary?.sentCount ?? 0} / Failed:{" "}
                     {currentBroadcastSummary?.failedCount ?? 0} / Queued:{" "}
                     {currentBroadcastSummary?.queuedCount ?? 0}
@@ -709,6 +754,23 @@ export default async function AdminBlogPage({
 
                 <form action={sendBlogNewsletterAction}>
                   <input type="hidden" name="postId" value={selectedPost?.id ?? ""} />
+                  <div className="mb-4">
+                    <label className="block">
+                      <span className="text-sm font-semibold text-slate-700">
+                        Offer Hours
+                      </span>
+                      <input
+                        type="number"
+                        name="offerHours"
+                        min={1}
+                        step={1}
+                        defaultValue={selectedPostRequiresLimitedOffer ? 24 : undefined}
+                        required={selectedPostRequiresLimitedOffer}
+                        disabled={!canSendNewsletter}
+                        className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20 disabled:cursor-not-allowed disabled:bg-slate-100 lg:min-w-[180px]"
+                      />
+                    </label>
+                  </div>
                   <button
                     type="submit"
                     disabled={!canSendNewsletter}

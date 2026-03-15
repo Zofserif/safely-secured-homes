@@ -23,6 +23,7 @@ const FUNNEL_PAGE_PATH: Record<FunnelPage, string> = {
   newsletter: "/newsletter",
   newsletter_thank_you: "/newsletter/thank-you",
   schedule_call: "/schedule-call",
+  waitlist: "/waitlist",
 };
 
 type EventProps = Record<string, unknown>;
@@ -37,7 +38,8 @@ export type FunnelPage =
   | "apply_success"
   | "newsletter"
   | "newsletter_thank_you"
-  | "schedule_call";
+  | "schedule_call"
+  | "waitlist";
 export type FunnelOutcome = "results" | "apply_success" | "schedule_call";
 export type FunnelContext = {
   flow_source: FlowSource;
@@ -475,21 +477,25 @@ export const trackNewsletterLeadGenerated = (
     source?: string;
     method?: string;
     destination?: string;
+    page?: FunnelPage;
   }
 ) => {
   const resolvedContext: FunnelContext = context ?? {
     flow_source: "newsletter",
     flow_mode: "newsletter",
   };
+  const page = props?.page ?? "newsletter";
+  const eventPropsInput = { ...(props ?? {}) };
+  delete (eventPropsInput as { page?: FunnelPage }).page;
   const eventProps = {
     lead_source: resolvedContext.flow_source,
     lead_channel: "newsletter",
-    ...(props ?? {}),
+    ...eventPropsInput,
   };
 
-  trackV2("funnel_submission_completed", "newsletter", resolvedContext, eventProps);
+  trackV2("funnel_submission_completed", page, resolvedContext, eventProps);
   captureGa4("generate_lead", {
-    ...funnelBaseProps("newsletter", resolvedContext),
+    ...funnelBaseProps(page, resolvedContext),
     ...eventProps,
   });
 };

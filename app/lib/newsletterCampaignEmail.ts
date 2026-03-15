@@ -3,6 +3,7 @@ import "server-only";
 import { getBlogPostById } from "./blogPosts";
 import { deriveNameFromEmail, normalizeEmail } from "./contactName";
 import {
+  EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
   EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
   EMAIL_PERSONALIZATION_SCORE_TOKENS,
   newsletterFieldsContainPersonalizationTokens,
@@ -25,6 +26,7 @@ import {
   buildLeadDay0BonusLinkSourceKey,
   isLeadDay0JourneyEmail,
 } from "./leadJourneyDay0Cta";
+import { getOrCreateLimitedOfferLinkBySourceKey } from "./limitedOfferLinksServer";
 import { resolvePersonalizedResultsLinkByEmail } from "./resultsLinksServer";
 import { createNewsletterUnsubscribeUrl } from "./newsletterSubscribers";
 
@@ -45,6 +47,7 @@ type SendTrackedBroadcastNewsletterEmailInput = {
   recipientEmail: string;
   recipientName?: string;
   postId: string;
+  limitedOfferExpiresAt?: string;
 };
 
 const toSafeString = (value: unknown): string =>
@@ -67,6 +70,53 @@ const resolveProviderMessageId = (value: unknown) => {
 
 const resolveRecipientName = (email: string, recipientName?: string) =>
   toSafeString(recipientName) || deriveNameFromEmail(email);
+
+const resolveLimitedOfferLinkPersonalizationContext = async ({
+  recipientEmail,
+  recipientName,
+  post,
+  postId,
+  sourceKey,
+  expiresAt,
+}: {
+  recipientEmail: string;
+  recipientName?: string;
+  post: {
+    subject: string;
+    title: string;
+    previewText: string;
+    content: string;
+    cta: string;
+  };
+  postId: string;
+  sourceKey?: string;
+  expiresAt?: string;
+}): Promise<Pick<EmailPersonalizationContext, "limitedTimeOfferUrl">> => {
+  const requiresLimitedOffer = newsletterFieldsContainPersonalizationTokens(post, [
+    EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
+  ]);
+  if (!requiresLimitedOffer) {
+    return {};
+  }
+
+  if (!sourceKey || !expiresAt) {
+    throw new Error(
+      "Limited-time offer token is only supported for manual admin blog sends with configured offer hours.",
+    );
+  }
+
+  const limitedOfferLink = await getOrCreateLimitedOfferLinkBySourceKey({
+    sourceKey,
+    recipientName: resolveRecipientName(recipientEmail, recipientName),
+    recipientEmail,
+    blogPostId: postId,
+    expiresAt,
+  });
+
+  return {
+    limitedTimeOfferUrl: limitedOfferLink.url,
+  };
+};
 
 const resolveTrackedEnrollmentPersonalizationContext = async ({
   journeyKey,
@@ -185,6 +235,15 @@ export async function sendTrackedEnrollmentNewsletterCampaignEmailByPostId({
   if (!post) {
     throw new Error(`Blog post "${postId}" was not found.`);
   }
+  if (
+    newsletterFieldsContainPersonalizationTokens(post, [
+      EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
+    ])
+  ) {
+    throw new Error(
+      "Limited-time offer token is only supported for manual admin blog sends.",
+    );
+  }
 
   const subscriber = await getNewsletterSubscriberById(subscriberId);
   if (!subscriber) {
@@ -223,6 +282,15 @@ export async function sendTrackedEnrollmentNewsletterCampaignEmailByPostId({
       ...post,
       cta: resolvedCtaHtml,
     };
+    if (
+      newsletterFieldsContainPersonalizationTokens(deliveryPost, [
+        EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
+      ])
+    ) {
+      throw new Error(
+        "Limited-time offer token is only supported for manual admin blog sends.",
+      );
+    }
     const personalizationContext =
       await resolveTrackedEnrollmentPersonalizationContext({
         journeyKey,
@@ -275,6 +343,7 @@ export async function sendTrackedBroadcastNewsletterEmailByPostId({
   recipientEmail,
   recipientName,
   postId,
+  limitedOfferExpiresAt,
 }: SendTrackedBroadcastNewsletterEmailInput) {
   const normalizedRecipientEmail = normalizeEmail(recipientEmail);
   if (!normalizedRecipientEmail) {
@@ -312,6 +381,15 @@ export async function sendTrackedBroadcastNewsletterEmailByPostId({
       recipientEmail: normalizedRecipientEmail,
       post,
     });
+    const limitedOfferContext =
+      await resolveLimitedOfferLinkPersonalizationContext({
+        recipientEmail: normalizedRecipientEmail,
+        recipientName,
+        post,
+        postId,
+        sourceKey: delivery.id,
+        expiresAt: limitedOfferExpiresAt,
+      });
     const sendResult = await sendNewsletterEmail(
       post,
       {
@@ -319,7 +397,10 @@ export async function sendTrackedBroadcastNewsletterEmailByPostId({
         name: resolveRecipientName(normalizedRecipientEmail, recipientName),
         unsubscribeUrl: createNewsletterUnsubscribeUrl(subscriber.unsubscribeToken),
       },
-      resultsLinkContext,
+      {
+        ...resultsLinkContext,
+        ...limitedOfferContext,
+      },
     );
 
     if (!sendResult) {

@@ -3,13 +3,44 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
-import { trackNewsletterLeadGenerated } from "../../lib/analytics";
+import {
+  trackNewsletterLeadGenerated,
+  type FunnelContext,
+  type FunnelPage,
+} from "../../lib/analytics";
 import { deriveNameFromEmail, normalizeEmail } from "../../lib/contactName";
 import { sendEmail } from "../../lib/email";
 import { readCurrentMarketingAttribution } from "../../lib/marketingAttribution";
 import { panatagChecklistUrl } from "../../lib/site";
 
-export default function NewsletterForm() {
+type NewsletterFormProps = {
+  title?: string;
+  description?: string;
+  submitLabel?: string;
+  defaultSource?: string;
+  trackingPage?: FunnelPage;
+  trackingContext?: FunnelContext;
+  trackingDestination?: string;
+  successTitle?: string;
+  successEmailSentCopy?: string;
+  successFallbackCopy?: string;
+};
+
+export default function NewsletterForm({
+  title = "Join the Newsletter",
+  description = "Receive security tips, maintenance reminders, and smart home updates designed for Filipino households.",
+  submitLabel = "GET THE CHECKLIST",
+  defaultSource = "newsletter_form",
+  trackingPage = "newsletter",
+  trackingContext = {
+    flow_source: "newsletter",
+    flow_mode: "newsletter",
+  },
+  trackingDestination = "newsletter_thank_you",
+  successTitle = "Thanks! You are on the list.",
+  successEmailSentCopy = "Your Panatag Home Checklist is on its way to your inbox.",
+  successFallbackCopy = "If email delivery is delayed, use the direct download on the thank-you page.",
+}: NewsletterFormProps) {
   const [status, setStatus] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
@@ -31,7 +62,7 @@ export default function NewsletterForm() {
     const attribution = readCurrentMarketingAttribution();
     const payload = {
       email,
-      source: attribution.source || "newsletter_form",
+      source: attribution.source || defaultSource,
       utm_source: attribution.utm_source,
       utm_medium: attribution.utm_medium,
       utm_campaign: attribution.utm_campaign,
@@ -82,11 +113,12 @@ export default function NewsletterForm() {
 
       setChecklistEmailSent(checklistSent);
       trackNewsletterLeadGenerated(
-        { flow_source: "newsletter", flow_mode: "newsletter" },
+        trackingContext,
         {
-          source: "newsletter_form",
+          page: trackingPage,
+          source: payload.source,
           method: checklistSent ? "emailjs" : "fallback",
-          destination: "newsletter_thank_you",
+          destination: trackingDestination,
         }
       );
       form.reset();
@@ -100,10 +132,9 @@ export default function NewsletterForm() {
 
   return (
     <div className="w-full max-w-lg bg-white/95 border border-[#BEE9E8]/70 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-[#0E79B2]/10">
-      <h2 className="text-2xl font-bold text-[#2D3748]">Join the Newsletter</h2>
+      <h2 className="text-2xl font-bold text-[#2D3748]">{title}</h2>
       <p className="text-slate-600 mt-2 text-sm sm:text-base">
-        Receive security tips, maintenance reminders, and smart home updates
-        designed for Filipino households.
+        {description}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -130,7 +161,7 @@ export default function NewsletterForm() {
           disabled={status === "submitting"}
           className="w-full bg-[#0E79B2] hover:bg-[#0b5e8b] text-white text-base sm:text-lg py-3 rounded-2xl font-bold shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          {status === "submitting" ? "Submitting..." : "GET THE CHECKLIST"}
+          {status === "submitting" ? "Submitting..." : submitLabel}
         </button>
 
         <p className="text-xs text-slate-500 text-center">
@@ -148,11 +179,11 @@ export default function NewsletterForm() {
         {status === "success" && (
           <div className="flex flex-col items-center justify-center gap-2 text-sm text-[#2E8B57] font-semibold text-center">
             <CheckCircle2 className="w-4 h-4" />
-            <span>Thanks! You are on the list.</span>
+            <span>{successTitle}</span>
             <span className="text-xs font-medium text-slate-600">
               {checklistEmailSent
-                ? "Your Panatag Home Checklist is on its way to your inbox."
-                : "If email delivery is delayed, use the direct download on the thank-you page."}
+                ? successEmailSentCopy
+                : successFallbackCopy}
             </span>
           </div>
         )}

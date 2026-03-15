@@ -4,6 +4,8 @@ export const EMAIL_PERSONALIZATION_NAME_TOKEN = "{name}";
 export const EMAIL_PERSONALIZATION_SCORE_TOKEN = "{score}";
 export const EMAIL_PERSONALIZATION_SCORE_COMMENT_TOKEN = "{score_comment}";
 export const EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN = "{results_link}";
+export const EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN =
+  "{limited_time_offer}";
 export const INVALID_EMAIL_PERSONALIZATION_SCORE_COMMENT_TOKEN =
   "{score comment}";
 export const DEFAULT_EMAIL_PERSONALIZATION_NAME = "there";
@@ -12,6 +14,10 @@ export const DEFAULT_EMAIL_PERSONALIZATION_SCORE_COMMENT =
   "(I know you want to improve your rating)";
 export const DEFAULT_EMAIL_PERSONALIZATION_RESULTS_LINK = new URL(
   "/results",
+  publicSiteUrl,
+).toString();
+export const DEFAULT_EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER = new URL(
+  "/schedule-call",
   publicSiteUrl,
 ).toString();
 
@@ -25,6 +31,7 @@ export type EmailPersonalizationContext = {
   score?: string | null;
   scoreComment?: string | null;
   resultsLink?: string | null;
+  limitedTimeOfferUrl?: string | null;
 };
 
 export type PersonalizableNewsletterFields = {
@@ -99,12 +106,16 @@ const htmlHrefContainsResultsLinkToken = (
     EMAIL_PERSONALIZATION_NAME_TOKEN,
     ...EMAIL_PERSONALIZATION_SCORE_TOKENS,
     EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
+    EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
   ];
-  if (!activeTokens.includes(EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN)) {
-    return false;
-  }
-
-  return /\bhref\s*=\s*(["'])\{results_link\}\1/.test(value);
+  return [
+    EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
+    EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
+  ].some(
+    (token) =>
+      activeTokens.includes(token) &&
+      new RegExp(`\\bhref\\s*=\\s*(["'])${escapeRegExp(token)}\\1`).test(value),
+  );
 };
 
 export const resolveEmailPersonalizationName = (
@@ -125,6 +136,12 @@ export const resolveEmailPersonalizationResultsLink = (
   context: EmailPersonalizationContext = {},
 ) =>
   toSafeString(context.resultsLink) || DEFAULT_EMAIL_PERSONALIZATION_RESULTS_LINK;
+
+export const resolveEmailPersonalizationLimitedTimeOfferUrl = (
+  context: EmailPersonalizationContext = {},
+) =>
+  toSafeString(context.limitedTimeOfferUrl) ||
+  DEFAULT_EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER;
 
 export const formatLeadScoreDisplay = (score: number): string =>
   `${clampScore(score)}%`;
@@ -156,6 +173,7 @@ export const hasEmailPersonalizationToken = (
     EMAIL_PERSONALIZATION_NAME_TOKEN,
     ...EMAIL_PERSONALIZATION_SCORE_TOKENS,
     EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
+    EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
   ],
 ): boolean => tokens.some((token) => value.includes(token));
 
@@ -219,6 +237,8 @@ const resolveEmailPersonalizationTokens = (
     resolveEmailPersonalizationScoreComment(context),
   [EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN]:
     resolveEmailPersonalizationResultsLink(context),
+  [EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN]:
+    resolveEmailPersonalizationLimitedTimeOfferUrl(context),
 });
 
 const resolveEmailPersonalizationHtmlTokens = (
@@ -233,6 +253,9 @@ const resolveEmailPersonalizationHtmlTokens = (
   ),
   [EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN]: escapeHtml(
     resolveEmailPersonalizationResultsLink(context),
+  ),
+  [EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN]: escapeHtml(
+    resolveEmailPersonalizationLimitedTimeOfferUrl(context),
   ),
 });
 
@@ -268,15 +291,24 @@ export const personalizeEmailHtml = (
   context: EmailPersonalizationContext = {},
 ) => {
   const htmlTokens = resolveEmailPersonalizationHtmlTokens(context);
-  const textPersonalizedValue = replaceHtmlTextNodes(value, htmlTokens);
+  let nextValue = replaceHtmlTextNodes(value, htmlTokens);
 
-  return replaceExactHtmlAttributeValue({
-    value: textPersonalizedValue,
+  nextValue = replaceExactHtmlAttributeValue({
+    value: nextValue,
     attributeName: "href",
     token: EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
     replacement:
       htmlTokens[EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN] ??
       escapeHtml(resolveEmailPersonalizationResultsLink(context)),
+  });
+
+  return replaceExactHtmlAttributeValue({
+    value: nextValue,
+    attributeName: "href",
+    token: EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
+    replacement:
+      htmlTokens[EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN] ??
+      escapeHtml(resolveEmailPersonalizationLimitedTimeOfferUrl(context)),
   });
 };
 

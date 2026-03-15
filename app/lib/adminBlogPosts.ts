@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomUUID } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import type {
   BlogPost,
@@ -16,12 +17,14 @@ import {
 import { getBlogPostEmailUsage } from "./blogPosts";
 import {
   assertSupportedNewsletterPersonalizationTokens,
+  EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
   EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
   EMAIL_PERSONALIZATION_SCORE_TOKENS,
   newsletterFieldsContainPersonalizationTokens,
 } from "./emailPersonalization";
 import { sendNewsletterEmail } from "./email";
 import { getSavedEmailRecipientProfileByEmail } from "./emailRecipientProfile";
+import { getOrCreateLimitedOfferLinkBySourceKey } from "./limitedOfferLinksServer";
 import { sendTrackedBroadcastNewsletterEmailByPostId } from "./newsletterCampaignEmail";
 import { listSubscribedNewsletterRecipients } from "./newsletterCampaigns";
 import { resolvePersonalizedResultsLinkByEmail } from "./resultsLinksServer";
@@ -78,6 +81,7 @@ export type SendAdminBlogPostTestEmailInput = {
   postId: string;
   recipientEmail: string;
   recipientName?: string;
+  offerHours?: number;
 };
 
 export type SendAdminBlogPostTestEmailResult = {
@@ -135,6 +139,7 @@ const ADMIN_SCHEMA_COLUMNS = [
   "newsletter_send_key",
 ];
 const TEST_EMAIL_UNSUBSCRIBE_URL = new URL("/unsubscribe", siteUrl).toString();
+const MIN_LIMITED_OFFER_HOURS = 1;
 
 const toSafeString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
@@ -143,6 +148,17 @@ const toBlogPostStatus = (value: unknown): BlogPostStatus =>
   value === "draft" ? "draft" : "published";
 
 const normalizeBoolean = (value: unknown) => value === true;
+
+const isValidLimitedOfferHours = (value: number | undefined) =>
+  typeof value === "number" &&
+  Number.isInteger(value) &&
+  value >= MIN_LIMITED_OFFER_HOURS;
+
+const createLimitedOfferExpiryTimestamp = (
+  offerHours: number,
+  now = new Date(),
+) =>
+  new Date(now.getTime() + offerHours * 60 * 60 * 1000).toISOString();
 
 const requireSupabase = () => {
   if (!supabase) {
@@ -194,6 +210,43 @@ const formatWeeklySendKeyDate = (value: Date) => {
 
 const createWeeklySendKey = (slug: string, date = new Date()) =>
   `weekly_${formatWeeklySendKeyDate(date)}_${slug}`;
+
+const postRequiresLimitedTimeOffer = (post: {
+  subject: string;
+  title: string;
+  previewText: string;
+  content: string;
+  cta: string;
+}) =>
+  newsletterFieldsContainPersonalizationTokens(post, [
+    EMAIL_PERSONALIZATION_LIMITED_TIME_OFFER_TOKEN,
+  ]);
+
+const assertValidLimitedOfferHours = ({
+  post,
+  offerHours,
+  contextLabel,
+}: {
+  post: {
+    subject: string;
+    title: string;
+    previewText: string;
+    content: string;
+    cta: string;
+  };
+  offerHours?: number;
+  contextLabel: string;
+}) => {
+  if (!postRequiresLimitedTimeOffer(post)) {
+    return;
+  }
+
+  if (!isValidLimitedOfferHours(offerHours)) {
+    throw new Error(
+      `${contextLabel} requires a whole-number offer window of at least ${MIN_LIMITED_OFFER_HOURS} hour when {limited_time_offer} is used.`,
+    );
+  }
+};
 
 const normalizeAdminBlogPost = (row: AdminBlogPostRow): AdminBlogPost | null => {
   const id = toSafeString(row.id);
@@ -544,6 +597,7 @@ export const deriveAdminNewsletterState = ({
 
 export async function sendAdminBlogPostNewsletter(
   postId: string,
+  offerHours?: number,
 ): Promise<SendAdminBlogPostNewsletterResult | { status: "no_subscribers" }> {
   const post = await getAdminBlogPostById(postId);
   if (!post) {
@@ -555,6 +609,11 @@ export async function sendAdminBlogPostNewsletter(
   if (!post.newsletterEnabled) {
     throw new Error("Enable the newsletter toggle before sending this post.");
   }
+  assertValidLimitedOfferHours({
+    post,
+    offerHours,
+    contextLabel: "Newsletter send",
+  });
 
   const recipients = await listSubscribedNewsletterRecipients();
   if (recipients.length === 0) {
@@ -565,6 +624,9 @@ export async function sendAdminBlogPostNewsletter(
   if (!post.newsletterSendKey) {
     await persistNewsletterSendKey(post.id, sendKey);
   }
+  const limitedOfferExpiresAt = postRequiresLimitedTimeOffer(post)
+    ? createLimitedOfferExpiryTimestamp(offerHours as number)
+    : undefined;
 
   let sentCount = 0;
   let skippedCount = 0;
@@ -578,6 +640,7 @@ export async function sendAdminBlogPostNewsletter(
         recipientEmail: recipient.email,
         recipientName: recipient.name,
         postId: post.id,
+        limitedOfferExpiresAt,
       });
 
       if (result.skipped) {
@@ -615,6 +678,7 @@ export async function sendAdminBlogPostTestEmail({
   postId,
   recipientEmail,
   recipientName,
+  offerHours,
 }: SendAdminBlogPostTestEmailInput): Promise<SendAdminBlogPostTestEmailResult> {
   const normalizedPostId = toSafeString(postId);
   if (!normalizedPostId) {
@@ -632,6 +696,11 @@ export async function sendAdminBlogPostTestEmail({
   }
 
   assertSupportedNewsletterPersonalizationTokens(post);
+  assertValidLimitedOfferHours({
+    post,
+    offerHours,
+    contextLabel: "Test email",
+  });
 
   const savedRecipientProfile =
     await getSavedEmailRecipientProfileByEmail(normalizedRecipientEmail);
@@ -642,6 +711,7 @@ export async function sendAdminBlogPostTestEmail({
   const requiresResultsLink = newsletterFieldsContainPersonalizationTokens(post, [
     EMAIL_PERSONALIZATION_RESULTS_LINK_TOKEN,
   ]);
+  const requiresLimitedOffer = postRequiresLimitedTimeOffer(post);
 
   if (
     requiresLeadScore &&
@@ -658,6 +728,16 @@ export async function sendAdminBlogPostTestEmail({
         savedRecipientProfile?.email || normalizedRecipientEmail,
       )
     : null;
+  const resolvedLimitedOfferLink = requiresLimitedOffer
+    ? await getOrCreateLimitedOfferLinkBySourceKey({
+        sourceKey: `admin_test:${post.id}:${randomUUID()}`,
+        recipientName:
+          toSafeString(recipientName) || savedRecipientProfile?.name || undefined,
+        recipientEmail: savedRecipientProfile?.email || normalizedRecipientEmail,
+        blogPostId: post.id,
+        expiresAt: createLimitedOfferExpiryTimestamp(offerHours as number),
+      })
+    : null;
 
   const sendResult = await sendNewsletterEmail(
     post,
@@ -669,6 +749,7 @@ export async function sendAdminBlogPostTestEmail({
     {
       ...savedRecipientProfile?.personalization,
       resultsLink: resolvedResultsLink,
+      limitedTimeOfferUrl: resolvedLimitedOfferLink?.url || null,
     },
   );
 

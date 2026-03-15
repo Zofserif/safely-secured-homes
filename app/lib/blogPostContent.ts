@@ -119,9 +119,52 @@ const CONTENT_CENTER_CONTAINER_STYLE = "margin:0;padding:0;text-align:center;";
 const CENTER_MARKDOWN_OPEN_TAG = "[center]";
 const CENTER_MARKDOWN_CLOSE_TAG = "[/center]";
 const RESULTS_LINK_MARKDOWN_HREF = "{results_link}";
+const LIMITED_TIME_OFFER_MARKDOWN_HREF = "{limited_time_offer}";
+const SPECIAL_MARKDOWN_LINK_TOKENS = [
+  RESULTS_LINK_MARKDOWN_HREF,
+  LIMITED_TIME_OFFER_MARKDOWN_HREF,
+] as const;
+const SPECIAL_MARKDOWN_LINK_PLACEHOLDER_PREFIX = "%%SSHMARKDOWNTOKEN";
+const SPECIAL_MARKDOWN_LINK_PLACEHOLDER_PATTERN =
+  /%%SSHMARKDOWNTOKEN\d+%%/;
+
+const protectSpecialMarkdownLinkTokens = (value: string) => {
+  const placeholders = new Map<string, string>();
+  let nextValue = value;
+
+  SPECIAL_MARKDOWN_LINK_TOKENS.forEach((token, index) => {
+    const placeholder = `${SPECIAL_MARKDOWN_LINK_PLACEHOLDER_PREFIX}${index}%%`;
+    if (!nextValue.includes(token)) {
+      return;
+    }
+
+    nextValue = nextValue.split(token).join(placeholder);
+    placeholders.set(placeholder, token);
+  });
+
+  return {
+    value: nextValue,
+    placeholders,
+  };
+};
+
+const restoreSpecialMarkdownLinkTokens = (
+  value: string,
+  placeholders: ReadonlyMap<string, string>,
+) => {
+  let nextValue = value;
+
+  for (const [placeholder, token] of placeholders.entries()) {
+    nextValue = nextValue.split(placeholder).join(token);
+  }
+
+  return nextValue;
+};
 
 const parseInlineMarkdownForHtml = (value: string) => {
-  let html = escapeHtml(value);
+  const { value: protectedValue, placeholders } =
+    protectSpecialMarkdownLinkTokens(value);
+  let html = escapeHtml(protectedValue);
 
   html = html.replace(
     /`([^`]+)`/g,
@@ -132,15 +175,22 @@ const parseInlineMarkdownForHtml = (value: string) => {
   html = html.replace(/(^|[^*])\*([^*]+)\*([^*]|$)/g, "$1<em>$2</em>$3");
   html = html.replace(/(^|[^_])_([^_]+)_([^_]|$)/g, "$1<em>$2</em>$3");
   html = html.replace(
-    /\[([^\]]+)\]\(((?:https?:\/\/|\/)[^\s)]+|\{results_link\})\)/g,
+    new RegExp(
+      `\\[([^\\]]+)\\]\\(((?:https?:\\/\\/|\\/)[^\\s)]+|${SPECIAL_MARKDOWN_LINK_PLACEHOLDER_PATTERN.source})\\)`,
+      "g",
+    ),
     (_match, label: string, href: string) => {
-      if (href === RESULTS_LINK_MARKDOWN_HREF) {
+      const restoredHref = restoreSpecialMarkdownLinkTokens(href, placeholders);
+      if (
+        restoredHref === RESULTS_LINK_MARKDOWN_HREF ||
+        restoredHref === LIMITED_TIME_OFFER_MARKDOWN_HREF
+      ) {
         return `<a href="${escapeHtml(
-          href,
+          restoredHref,
         )}" style="color:#0E79B2;font-weight:600;text-decoration:underline;">${label}</a>`;
       }
 
-      const resolvedHref = resolveContentHref(href);
+      const resolvedHref = resolveContentHref(restoredHref);
       if (!resolvedHref) return label;
       const externalAttributes = resolvedHref.startsWith(publicSiteUrl)
         ? ""
@@ -151,7 +201,7 @@ const parseInlineMarkdownForHtml = (value: string) => {
     },
   );
 
-  return html;
+  return restoreSpecialMarkdownLinkTokens(html, placeholders);
 };
 
 const createSpacerBlock = (tagName: "div" | "span" = "div") =>

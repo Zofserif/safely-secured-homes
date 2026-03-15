@@ -7,8 +7,42 @@ import {
   FunnelPageMountTracker,
   FunnelTrackedAnchor,
 } from "../components/analytics/FunnelTrackingClient";
+import type { FunnelContext } from "../lib/analytics";
 
 const calendlyUrl = "https://calendly.com/vallarta-troy/30min";
+
+const readSearchParam = (value: string | string[] | undefined) => {
+  if (Array.isArray(value)) {
+    return value[0]?.trim() || "";
+  }
+
+  return typeof value === "string" ? value.trim() : "";
+};
+
+const buildScheduleCallContext = (rawSource: string): FunnelContext => {
+  const source = rawSource.trim();
+  const lowered = source.toLowerCase();
+
+  if (lowered === "apply") {
+    return {
+      flow_source: "apply",
+      flow_mode: "newsletter",
+    };
+  }
+
+  if (lowered === "newsletter") {
+    return {
+      flow_source: "newsletter",
+      flow_mode: "newsletter",
+    };
+  }
+
+  return {
+    flow_source: "unknown",
+    flow_mode: "newsletter",
+    source_raw: source,
+  };
+};
 
 export const metadata: Metadata = {
   title: "Schedule Your Call",
@@ -46,13 +80,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ScheduleCallPage() {
+export default async function ScheduleCallPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const rawSource = readSearchParam(resolvedSearchParams.source) || "newsletter";
+  const trackingContext = buildScheduleCallContext(rawSource);
+
   return (
     <div className="min-h-screen bg-[#F7FAFC] text-[#2D3748]">
       <FunnelPageMountTracker
         page="schedule_call"
         outcome="schedule_call"
-        context={{ flow_source: "newsletter", flow_mode: "newsletter" }}
+        context={trackingContext}
       />
       <header className="container mx-auto px-6 pt-8 pb-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
@@ -97,7 +139,7 @@ export default function ScheduleCallPage() {
           <FunnelTrackedAnchor
             href={calendlyUrl}
             page="schedule_call"
-            context={{ flow_source: "newsletter", flow_mode: "newsletter" }}
+            context={trackingContext}
             ctaId="schedule_my_call"
             ctaLocation="hero_primary"
             target="_blank"

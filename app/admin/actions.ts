@@ -127,6 +127,14 @@ const toIntegerField = (value: FormDataEntryValue | null, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const toOptionalIntegerField = (value: FormDataEntryValue | null) => {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = Number.parseInt(trimmed, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
 const parseSaveInput = (
   formData: FormData,
   status: "draft" | "published",
@@ -535,7 +543,10 @@ export async function sendBlogNewsletterAction(formData: FormData) {
   }
 
   try {
-    const result = await sendAdminBlogPostNewsletter(post.id);
+    const result = await sendAdminBlogPostNewsletter(
+      post.id,
+      toOptionalIntegerField(formData.get("offerHours")),
+    );
     if ("status" in result && result.status === "no_subscribers") {
       redirect(
         buildAdminBlogRedirect({
@@ -604,6 +615,7 @@ export async function sendTestBlogPostEmailAction(formData: FormData) {
       postId: post.id,
       recipientEmail: toSafeString(formData.get("testEmail")),
       recipientName: toSafeString(formData.get("testName")) || undefined,
+      offerHours: toOptionalIntegerField(formData.get("offerHours")),
     });
 
     redirect(

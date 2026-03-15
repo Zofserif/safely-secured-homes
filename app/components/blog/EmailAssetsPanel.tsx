@@ -24,28 +24,28 @@ const FIELD_CONFIG: Array<{
     key: "subject",
     label: "Subject",
     helper:
-      "Maps to {{subject}} for the EmailJS subject line. Blog copy may include {name}, {score}, {score_comment}, and {results_link}.",
+      "Maps to {{subject}} for the EmailJS subject line. Blog copy may include {name}, {score}, {score_comment}, {results_link}, and {limited_time_offer}.",
     isLongForm: false,
   },
   {
     key: "preview_text",
     label: "Preview Text",
     helper:
-      "Use this as the EmailJS preheader variable. Blog copy may include {name}, {score}, {score_comment}, and {results_link}.",
+      "Use this as the EmailJS preheader variable. Blog copy may include {name}, {score}, {score_comment}, {results_link}, and {limited_time_offer}.",
     isLongForm: false,
   },
   {
     key: "content",
     label: "Content",
     helper:
-      "Paste into the HTML variable rendered with {{{content}}}. Text nodes may include {name}, {score}, {score_comment}, and {results_link}; use [label]({results_link}) to control anchor text.",
+      "Paste into the HTML variable rendered with {{{content}}}. Text nodes may include {name}, {score}, {score_comment}, {results_link}, and {limited_time_offer}; use [label]({results_link}) or [label]({limited_time_offer}) to control anchor text.",
     isLongForm: true,
   },
   {
     key: "cta",
     label: "CTA",
     helper:
-      "Paste into the HTML variable rendered with {{{cta}}}. Visible CTA copy may include {name}, {score}, {score_comment}, and {results_link}; regular CTA URLs stay literal unless you use {results_link} as the markdown link target.",
+      "Paste into the HTML variable rendered with {{{cta}}}. Visible CTA copy may include {name}, {score}, {score_comment}, {results_link}, and {limited_time_offer}; regular CTA URLs stay literal unless you use one of those tokens as the markdown link target.",
     isLongForm: true,
   },
 ];
@@ -208,8 +208,9 @@ export default function EmailAssetsPanel({
             The shared branded footer and unsubscribe link are injected
             automatically at send time. Blog-authored <code>{"{name}"}</code>,{" "}
             <code>{"{score}"}</code>, <code>{"{score_comment}"}</code>, and{" "}
-            <code>{"{results_link}"}</code> merge tags are resolved before the
-            EmailJS request is sent.
+            <code>{"{results_link}"}</code>, and{" "}
+            <code>{"{limited_time_offer}"}</code> merge tags are resolved
+            before the EmailJS request is sent.
           </p>
         </div>
         <button
@@ -238,13 +239,19 @@ export default function EmailAssetsPanel({
               unsubscribe link automatically. Separately, blog-managed copy may
               include <code>{"{name}"}</code>, <code>{"{score}"}</code>, and{" "}
               <code>{"{score_comment}"}</code>, plus{" "}
-              <code>{"{results_link}"}</code>. Use{" "}
+              <code>{"{results_link}"}</code> and{" "}
+              <code>{"{limited_time_offer}"}</code>. Use{" "}
               <code>{"[label]({results_link})"}</code> when you want custom
-              clickable text, or bare <code>{"{results_link}"}</code> when you
-              want the raw URL. The app resolves those author tokens before
-              calling EmailJS. Public blog surfaces use fallback values like{" "}
+              clickable text, or <code>{"[label]({limited_time_offer})"}</code>{" "}
+              for the expiring offer link. Bare <code>{"{results_link}"}</code>{" "}
+              and <code>{"{limited_time_offer}"}</code> render the raw URL. The
+              app resolves those author tokens before calling EmailJS. Manual
+              admin test sends and newsletter broadcasts require offer-hours
+              input when <code>{"{limited_time_offer}"}</code> is used. Public
+              blog surfaces use fallback values like{" "}
               <code>there</code>, <code>your current rating</code>, the default
-              score comment, and the generic results URL. For score copy, write{" "}
+              score comment, the generic results URL, and the canonical
+              schedule-call URL. For score copy, write{" "}
               <code>{"It's {score} 😯"}</code> because the token already includes
               the percent sign.
             </p>
@@ -256,6 +263,9 @@ export default function EmailAssetsPanel({
               </code>
               <code className="rounded-full bg-white px-3 py-1">
                 {"{results_link}"}
+              </code>
+              <code className="rounded-full bg-white px-3 py-1">
+                {"{limited_time_offer}"}
               </code>
               <code className="rounded-full bg-white px-3 py-1">{"{{name}}"}</code>
               <code className="rounded-full bg-white px-3 py-1">{"{{subject}}"}</code>

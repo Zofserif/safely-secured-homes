@@ -16,6 +16,7 @@
     "verify:lead-day-0-cta": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-lead-day-0-cta.mts",
     "verify:lead-payload": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-lead-payload.mts",
     "verify:email-personalization": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-email-personalization.mts",
+    "verify:limited-offer-links": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-limited-offer-links.mts",
     "verify:email-footer": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-email-footer.mts",
     "verify:camera-scoring": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-results-scoring.mts",
     "verify:results-scoring": "node --experimental-strip-types --experimental-specifier-resolution=node scripts/verify-results-scoring.mts",

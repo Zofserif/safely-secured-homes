@@ -4,6 +4,7 @@ import {
   type FormEvent,
   useEffect,
   useEffectEvent,
+  useRef,
   useState,
 } from "react";
 import dynamic from "next/dynamic";
@@ -16,22 +17,48 @@ import {
   type BonusLinkStatus,
   isValidBonusLinkKey,
 } from "../../lib/bonusClaimLinks";
+import {
+  BONUS_DELIVERY_MAP_CENTER,
+  BONUS_DELIVERY_OUTSIDE_SERVICE_AREA_ERROR,
+  BONUS_DELIVERY_REQUIRED_ERROR,
+  BONUS_DELIVERY_UNVERIFIABLE_ERROR,
+  type BonusDeliveryCoordinates as Coordinates,
+  type BonusDeliveryCoverageCode,
+  type BonusDeliveryCoverageResult,
+  getBonusDeliveryCoverageFailureMessage,
+  getRoundedBonusDeliveryLocationKey,
+  isWithinBonusDeliveryBounds,
+} from "../../lib/bonusDeliveryCoverage";
 
 type BonusClaimPageClientProps = {
   token: string;
 };
 
-type FieldErrors = Partial<Record<"name" | "mobile" | "address", string>>;
-
-type Coordinates = {
-  lat: number;
-  lng: number;
-};
+type FieldErrors = Partial<Record<"name" | "mobile" | "address" | "location", string>>;
 
 type LocationFeedback = {
   tone: "info" | "error";
   text: string;
 };
+
+type LocationCoverageState =
+  | {
+      status: "idle";
+    }
+  | {
+      status: "checking";
+      locationKey: string;
+    }
+  | {
+      status: "valid";
+      locationKey: string;
+      areaLabel: string;
+    }
+  | {
+      status: "invalid";
+      locationKey: string;
+      code: BonusDeliveryCoverageCode;
+    };
 
 const initialFormData = {
   name: "",
@@ -39,10 +66,21 @@ const initialFormData = {
   address: "",
 };
 
-const DEFAULT_BONUS_MAP_CENTER: Coordinates = {
-  lat: 12.8797,
-  lng: 121.774,
-};
+const LOCATION_CHECKING_ERROR =
+  "Please wait while we confirm that pinned location.";
+
+const getLocationCoverageKey = (location: Coordinates): string =>
+  getRoundedBonusDeliveryLocationKey(location, 5);
+
+const isValidatedLocation = (
+  location: Coordinates | null,
+  locationCoverage: LocationCoverageState,
+): boolean =>
+  Boolean(
+    location &&
+      locationCoverage.status === "valid" &&
+      locationCoverage.locationKey === getLocationCoverageKey(location),
+  );
 
 const BonusLocationPicker = dynamic(() => import("./BonusLocationPicker"), {
   ssr: false,
@@ -79,13 +117,17 @@ export default function BonusClaimPageClient({
   const [claimedState, setClaimedState] = useState<BonusLinkClaimedStatus | null>(
     null,
   );
-  const [mapCenter, setMapCenter] = useState<Coordinates>(DEFAULT_BONUS_MAP_CENTER);
+  const [mapCenter, setMapCenter] = useState<Coordinates>(BONUS_DELIVERY_MAP_CENTER);
   const [pinnedLocation, setPinnedLocation] = useState<Coordinates | null>(null);
   const [locationFeedback, setLocationFeedback] = useState<LocationFeedback | null>(
     null,
   );
+  const [locationCoverage, setLocationCoverage] = useState<LocationCoverageState>({
+    status: "idle",
+  });
   const [isLocating, setIsLocating] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const locationValidationRequestIdRef = useRef(0);
 
   const activateLink = useEffectEvent(async () => {
     if (!isValidBonusLinkKey(token)) {
@@ -179,19 +221,131 @@ export default function BonusClaimPageClient({
     };
   })();
 
+  const clearFieldError = (field: keyof FieldErrors) => {
+    setFieldErrors((prev) => {
+      if (!prev[field]) {
+        return prev;
+      }
+
+      const nextErrors = { ...prev };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+  };
+
   const updateField = (field: keyof typeof initialFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (fieldErrors[field]) {
-      setFieldErrors((prev) => {
-        const nextErrors = { ...prev };
-        delete nextErrors[field];
-        return nextErrors;
+    clearFieldError(field);
+  };
+
+  const validatePinnedLocation = async (nextLocation: Coordinates) => {
+    const requestId = locationValidationRequestIdRef.current + 1;
+    const locationKey = getLocationCoverageKey(nextLocation);
+
+    locationValidationRequestIdRef.current = requestId;
+    setPinnedLocation(nextLocation);
+    clearFieldError("location");
+    setLocationCoverage({
+      status: "checking",
+      locationKey,
+    });
+    setLocationFeedback({
+      tone: "info",
+      text: "Checking whether this pin is inside our delivery area...",
+    });
+
+    try {
+      const response = await fetch("/api/bonus-links/coverage", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          location: nextLocation,
+        }),
       });
+
+      const responseBody = (await response.json().catch(() => null)) as
+        | BonusDeliveryCoverageResult
+        | { error?: string }
+        | null;
+
+      if (locationValidationRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      if (!response.ok && (!responseBody || !("ok" in responseBody))) {
+        throw new Error(
+          responseBody?.error || "We could not validate that pinned location.",
+        );
+      }
+
+      if (!responseBody || !("ok" in responseBody)) {
+        throw new Error("We could not validate that pinned location.");
+      }
+
+      if (responseBody.ok) {
+        setLocationCoverage({
+          status: "valid",
+          locationKey,
+          areaLabel: responseBody.areaLabel,
+        });
+        clearFieldError("location");
+        setLocationFeedback({
+          tone: "info",
+          text: `Delivery coverage confirmed for ${responseBody.areaLabel}. You can continue with your claim.`,
+        });
+        return;
+      }
+
+      const errorText = getBonusDeliveryCoverageFailureMessage(responseBody.code);
+      setLocationCoverage({
+        status: "invalid",
+        locationKey,
+        code: responseBody.code,
+      });
+      setFieldErrors((prev) => ({
+        ...prev,
+        location: errorText,
+      }));
+      setLocationFeedback(null);
+    } catch {
+      if (locationValidationRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      setLocationCoverage({
+        status: "invalid",
+        locationKey,
+        code: "unverifiable_location",
+      });
+      setFieldErrors((prev) => ({
+        ...prev,
+        location: BONUS_DELIVERY_UNVERIFIABLE_ERROR,
+      }));
+      setLocationFeedback(null);
     }
   };
 
   const updatePinnedLocation = (nextLocation: Coordinates) => {
-    setPinnedLocation(nextLocation);
+    void validatePinnedLocation(nextLocation);
+  };
+
+  const handleRejectedMapSelection = () => {
+    const hasValidLocation = isValidatedLocation(pinnedLocation, locationCoverage);
+
+    if (hasValidLocation) {
+      setLocationFeedback({
+        tone: "error",
+        text: BONUS_DELIVERY_OUTSIDE_SERVICE_AREA_ERROR,
+      });
+      return;
+    }
+
+    setFieldErrors((prev) => ({
+      ...prev,
+      location: BONUS_DELIVERY_OUTSIDE_SERVICE_AREA_ERROR,
+    }));
     setLocationFeedback(null);
   };
 
@@ -214,12 +368,31 @@ export default function BonusClaimPageClient({
           lng: position.coords.longitude,
         };
 
+        if (!isWithinBonusDeliveryBounds(nextLocation)) {
+          const hasValidLocation = isValidatedLocation(
+            pinnedLocation,
+            locationCoverage,
+          );
+
+          if (hasValidLocation) {
+            setLocationFeedback({
+              tone: "error",
+              text: BONUS_DELIVERY_OUTSIDE_SERVICE_AREA_ERROR,
+            });
+          } else {
+            setFieldErrors((prev) => ({
+              ...prev,
+              location: BONUS_DELIVERY_OUTSIDE_SERVICE_AREA_ERROR,
+            }));
+            setLocationFeedback(null);
+          }
+
+          setIsLocating(false);
+          return;
+        }
+
         setMapCenter(nextLocation);
-        setPinnedLocation(nextLocation);
-        setLocationFeedback({
-          tone: "info",
-          text: "Current location pinned. You can drag the pin or tap elsewhere to adjust it.",
-        });
+        void validatePinnedLocation(nextLocation);
         setIsLocating(false);
       },
       (error) => {
@@ -249,6 +422,10 @@ export default function BonusClaimPageClient({
     const normalizedName = formData.name.trim();
     const normalizedMobile = formData.mobile.trim();
     const normalizedAddress = formData.address.trim();
+    const hasValidPinnedLocation = isValidatedLocation(
+      pinnedLocation,
+      locationCoverage,
+    );
 
     if (!normalizedName) {
       nextErrors.name = "Please enter the recipient name.";
@@ -260,6 +437,17 @@ export default function BonusClaimPageClient({
 
     if (!normalizedAddress) {
       nextErrors.address = "Please enter the full shipping address.";
+    }
+
+    if (!pinnedLocation) {
+      nextErrors.location = BONUS_DELIVERY_REQUIRED_ERROR;
+    } else if (locationCoverage.status === "checking") {
+      nextErrors.location = LOCATION_CHECKING_ERROR;
+    } else if (!hasValidPinnedLocation) {
+      nextErrors.location =
+        locationCoverage.status === "invalid"
+          ? getBonusDeliveryCoverageFailureMessage(locationCoverage.code)
+          : BONUS_DELIVERY_REQUIRED_ERROR;
     }
 
     setFieldErrors(nextErrors);
@@ -285,6 +473,7 @@ export default function BonusClaimPageClient({
           name: formData.name.trim(),
           mobile: formData.mobile.trim(),
           address: formData.address.trim(),
+          location: pinnedLocation,
         }),
       });
 
@@ -599,11 +788,11 @@ export default function BonusClaimPageClient({
                 Pin your location
               </p>
               <h3 className="mt-2 text-lg font-semibold text-[#1F2937]">
-                Mark the delivery area on the map.
+                Pin your delivery location.
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                This pin helps show your location visually. You still need to type
-                the full shipping address below before submitting the claim.
+                Place a pin inside Metro Manila or CALABARZON. You still need to
+                type the full shipping address below before submitting the claim.
               </p>
             </div>
 
@@ -622,14 +811,16 @@ export default function BonusClaimPageClient({
               center={mapCenter}
               value={pinnedLocation}
               onChange={updatePinnedLocation}
+              onInvalidSelection={handleRejectedMapSelection}
             />
           </div>
 
           <div className="mt-4 space-y-2">
             <p className="text-xs leading-relaxed text-slate-500">
               Tap anywhere on the map to place a pin, then drag the pin to fine-tune
-              the spot. The pinned location only stays on this page and is not
-              submitted to the backend.
+              the spot. The pin is checked to confirm that the delivery location is
+              inside Metro Manila or CALABARZON. Only your typed shipping address
+              is stored with the claim.
             </p>
 
             {pinnedLocation && (
@@ -637,6 +828,10 @@ export default function BonusClaimPageClient({
                 Pinned coordinates: {pinnedLocation.lat.toFixed(5)},{" "}
                 {pinnedLocation.lng.toFixed(5)}
               </p>
+            )}
+
+            {fieldErrors.location && (
+              <p className="text-xs text-red-500">{fieldErrors.location}</p>
             )}
 
             {locationFeedback && (
@@ -682,11 +877,13 @@ export default function BonusClaimPageClient({
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || locationCoverage.status === "checking"}
           className="inline-flex w-full items-center justify-center rounded-full bg-[#0E79B2] px-10 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5 hover:bg-[#0b5e8b] disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none"
         >
           {isSubmitting
             ? "Submitting your shipping details..."
+            : locationCoverage.status === "checking"
+              ? "Checking your pinned location..."
             : "Claim My Free Bonus"}
         </button>
 

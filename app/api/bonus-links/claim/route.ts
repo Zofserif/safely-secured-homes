@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import {
-  BONUS_LINK_MOBILE_REGEX,
   isValidBonusLinkKey,
   normalizeBonusLinkKey,
-} from "../../../lib/bonusClaimLinks";
-import { claimBonusLink } from "../../../lib/bonusClaimLinksServer";
+} from "../../../lib/bonusClaimLinks.ts";
+import { claimBonusLink } from "../../../lib/bonusClaimLinksServer.ts";
+import { getBonusClaimFieldErrors } from "../../../lib/bonusClaimValidation.ts";
+import { validateBonusDeliveryLocation } from "../../../lib/bonusDeliveryCoverageServer.ts";
 
 const noStoreHeaders = {
   "Cache-Control": "no-store, max-age=0",
@@ -15,13 +16,25 @@ export const dynamic = "force-dynamic";
 const toRequiredText = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
 
-export async function POST(req: Request) {
+type BonusClaimRouteDependencies = {
+  claimBonusLink: typeof claimBonusLink;
+  validateBonusDeliveryLocation: typeof validateBonusDeliveryLocation;
+};
+
+const defaultDependencies: BonusClaimRouteDependencies = {
+  claimBonusLink,
+  validateBonusDeliveryLocation,
+};
+
+export async function handleBonusClaimRequest(
+  req: Request,
+  dependencies: BonusClaimRouteDependencies = defaultDependencies,
+) {
   const body = await req.json().catch(() => null);
   const key = normalizeBonusLinkKey(body?.key);
   const name = toRequiredText(body?.name);
   const mobile = toRequiredText(body?.mobile);
   const address = toRequiredText(body?.address);
-  const fieldErrors: Record<string, string> = {};
 
   if (!isValidBonusLinkKey(key)) {
     return NextResponse.json(
@@ -30,30 +43,26 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!name) {
-    fieldErrors.name = "Please enter the recipient name.";
-  }
-
-  if (!BONUS_LINK_MOBILE_REGEX.test(mobile)) {
-    fieldErrors.mobile = "Please enter a valid PH mobile number (09xxxxxxxxx).";
-  }
-
-  if (!address) {
-    fieldErrors.address = "Please enter the full shipping address.";
-  }
-
-  if (Object.keys(fieldErrors).length > 0) {
-    return NextResponse.json(
-      {
-        error: "Invalid claim payload",
-        fieldErrors,
-      },
-      { status: 400, headers: noStoreHeaders },
-    );
-  }
-
   try {
-    const status = await claimBonusLink({
+    const fieldErrors = await getBonusClaimFieldErrors({
+      name,
+      mobile,
+      address,
+      location: body?.location,
+      validateBonusDeliveryLocation: dependencies.validateBonusDeliveryLocation,
+    });
+
+    if (Object.keys(fieldErrors).length > 0) {
+      return NextResponse.json(
+        {
+          error: "Invalid claim payload",
+          fieldErrors,
+        },
+        { status: 400, headers: noStoreHeaders },
+      );
+    }
+
+    const status = await dependencies.claimBonusLink({
       key,
       shippingName: name,
       shippingMobile: mobile,
@@ -86,3 +95,6 @@ export async function POST(req: Request) {
   }
 }
 
+export async function POST(req: Request) {
+  return handleBonusClaimRequest(req);
+}

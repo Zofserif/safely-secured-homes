@@ -1,5 +1,3 @@
-import "server-only";
-
 import { randomBytes } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -9,9 +7,9 @@ import {
   isValidBonusLinkKey,
   normalizeBonusLinkKey,
   resolveBonusLinkStatus,
-} from "./bonusClaimLinks";
-import { normalizeEmail } from "./contactName";
-import { siteUrl } from "./site";
+} from "./bonusClaimLinks.ts";
+import { normalizeEmail } from "./contactName.ts";
+import { siteUrl } from "./site.ts";
 
 const BONUS_LINK_KEY_BYTES = 18;
 const BONUS_LINK_INSERT_RETRY_COUNT = 3;

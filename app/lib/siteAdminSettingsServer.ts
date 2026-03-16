@@ -14,6 +14,7 @@ type SiteAdminSettingsRow = {
   bonus_enabled: boolean | null;
   panatag_cycle_limit: number | null;
   results_review_cta_enabled: boolean | null;
+  email_sending_enabled: boolean | null;
   updated_at?: string | null;
 };
 
@@ -27,10 +28,11 @@ export type SaveSiteAdminSettingsInput = {
   bonusEnabled: boolean;
   panatagCycleLimit: number;
   resultsReviewCtaEnabled: boolean;
+  emailSendingEnabled: boolean;
 };
 
 const SITE_ADMIN_SETTINGS_SELECT =
-  "settings_key,bonus_enabled,panatag_cycle_limit,results_review_cta_enabled,updated_at";
+  "settings_key,bonus_enabled,panatag_cycle_limit,results_review_cta_enabled,email_sending_enabled,updated_at";
 
 const SITE_ADMIN_SETTINGS_MISSING_SCHEMA_ERROR =
   "Supabase site admin settings schema is missing. Run supabase/site_admin_settings.sql before using /admin/settings.";
@@ -73,6 +75,7 @@ const normalizeRow = (
     bonusEnabled: row?.bonus_enabled ?? undefined,
     panatagCycleLimit: row?.panatag_cycle_limit ?? undefined,
     resultsReviewCtaEnabled: row?.results_review_cta_enabled ?? undefined,
+    emailSendingEnabled: row?.email_sending_enabled ?? undefined,
   });
 
 const parseCycleLimitInput = (value: unknown): number => {
@@ -132,6 +135,7 @@ export async function saveSiteAdminSettings(
     bonus_enabled: input.bonusEnabled === true,
     panatag_cycle_limit: parseCycleLimitInput(input.panatagCycleLimit),
     results_review_cta_enabled: input.resultsReviewCtaEnabled === true,
+    email_sending_enabled: input.emailSendingEnabled !== false,
   };
 
   const { data, error } = await client

@@ -46,7 +46,7 @@ export default async function AdminSettingsPage({
               Launch Controls
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
-              Control the public launch experience for test clients without editing
+              Control launch behavior and outbound email delivery without editing
               code or changing environment variables.
             </p>
             <AdminSectionNav current="settings" />
@@ -78,12 +78,13 @@ export default async function AdminSettingsPage({
           <section className="rounded-[2rem] border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Public Site Settings
+                Site Settings
               </p>
               <h2 className="mt-2 text-2xl font-bold">Edit launch behavior</h2>
               <p className="mt-3 text-sm leading-relaxed text-slate-600">
                 These settings affect the homepage, form flow, results CTA, cycle
-                limit, and lead day-0 follow-up behavior immediately after save.
+                limit, outbound email behavior, and lead day-0 follow-up behavior
+                immediately after save.
               </p>
             </div>
 
@@ -145,6 +146,25 @@ export default async function AdminSettingsPage({
                 </span>
               </label>
 
+              <label className="flex items-start gap-4 rounded-3xl border border-slate-200 bg-slate-50 px-5 py-5">
+                <input
+                  type="checkbox"
+                  name="emailSendingEnabled"
+                  defaultChecked={siteSettings.emailSendingEnabled}
+                  className="mt-1 h-5 w-5 rounded border-slate-300 text-[#0E79B2] focus:ring-[#0E79B2]"
+                />
+                <span className="block">
+                  <span className="text-sm font-semibold text-slate-900">
+                    Email sending enabled
+                  </span>
+                  <span className="mt-1 block text-sm leading-relaxed text-slate-600">
+                    When off, admin test sends and newsletter broadcasts are blocked,
+                    public checklist signups still complete without delivery, and
+                    automated journeys skip their due email steps.
+                  </span>
+                </span>
+              </label>
+
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="submit"
@@ -153,7 +173,7 @@ export default async function AdminSettingsPage({
                   Save settings
                 </button>
                 <span className="text-sm text-slate-500">
-                  Changes apply to the public site immediately.
+                  Changes apply immediately.
                 </span>
               </div>
             </form>
@@ -185,6 +205,12 @@ export default async function AdminSettingsPage({
                       : "Default DIY / call / book CTA"}
                   </dd>
                 </div>
+                <div>
+                  <dt className="font-semibold text-slate-700">Email Sending</dt>
+                  <dd className="mt-1 text-slate-600">
+                    {siteSettings.emailSendingEnabled ? "Enabled" : "Disabled"}
+                  </dd>
+                </div>
               </dl>
             </div>
 
@@ -193,9 +219,10 @@ export default async function AdminSettingsPage({
                 Test Client Mode
               </p>
               <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                The seeded defaults are bonus off, cycle limit 15, and results
-                review CTA on so test clients review the lead magnet before you
-                promise other offers.
+                The seeded defaults are bonus off, cycle limit 15, results review
+                CTA on, and email sending on so test clients review the lead
+                magnet before you promise other offers while outbound delivery
+                still works.
               </p>
             </div>
           </aside>

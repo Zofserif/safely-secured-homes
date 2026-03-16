@@ -473,6 +473,9 @@ export async function assignSubscriberJourneyAction(formData: FormData) {
     const flash =
       immediateResult.action === "sent"
         ? "Journey assigned and day-0 email sent."
+        : immediateResult.action === "skipped" &&
+            immediateResult.reason === "email_disabled"
+          ? "Journey assigned. Day-0 email skipped because email sending is disabled."
         : "Journey assigned.";
 
     redirect(
@@ -549,6 +552,7 @@ export async function saveSiteSettingsAction(formData: FormData) {
       resultsReviewCtaEnabled: toBooleanField(
         formData.get("resultsReviewCtaEnabled"),
       ),
+      emailSendingEnabled: toBooleanField(formData.get("emailSendingEnabled")),
     });
 
     revalidatePath("/");

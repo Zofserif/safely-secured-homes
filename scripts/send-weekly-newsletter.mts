@@ -85,6 +85,12 @@ const { getBlogPostBySlug } = await import("../app/lib/blogPosts");
 const { listSubscribedNewsletterRecipients } = await import(
   "../app/lib/newsletterCampaigns"
 );
+const {
+  EMAIL_SENDING_DISABLED_ERROR,
+} = await import("../app/lib/siteAdminSettings");
+const { getPublicSiteSettings } = await import(
+  "../app/lib/siteAdminSettingsServer"
+);
 const { sendTrackedBroadcastNewsletterEmailByPostId } = await import(
   "../app/lib/newsletterCampaignEmail"
 );
@@ -92,6 +98,11 @@ const { sendTrackedBroadcastNewsletterEmailByPostId } = await import(
 const post = await getBlogPostBySlug(slug);
 if (!post) {
   throw new Error(`Blog post "${slug}" was not found.`);
+}
+
+const siteSettings = await getPublicSiteSettings();
+if (!siteSettings.emailSendingEnabled) {
+  throw new Error(EMAIL_SENDING_DISABLED_ERROR);
 }
 
 const recipients = await listSubscribedNewsletterRecipients({ limit: limit ?? undefined });

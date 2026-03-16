@@ -24,7 +24,10 @@ type NewsletterFormProps = {
   successTitle?: string;
   successEmailSentCopy?: string;
   successFallbackCopy?: string;
+  successEmailDisabledCopy?: string;
 };
+
+type ChecklistDeliveryState = "sent" | "disabled" | "fallback";
 
 export default function NewsletterForm({
   title = "Join the Newsletter",
@@ -40,20 +43,21 @@ export default function NewsletterForm({
   successTitle = "Thanks! You are on the list.",
   successEmailSentCopy = "Your Panatag Home Checklist is on its way to your inbox.",
   successFallbackCopy = "If email delivery is delayed, use the direct download on the thank-you page.",
+  successEmailDisabledCopy =
+    "Your signup is complete, but email delivery is currently turned off.",
 }: NewsletterFormProps) {
   const [status, setStatus] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [checklistEmailSent, setChecklistEmailSent] = useState<boolean | null>(
-    null
-  );
+  const [checklistDeliveryState, setChecklistDeliveryState] =
+    useState<ChecklistDeliveryState | null>(null);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (status === "submitting") return;
     setSubmitError(null);
-    setChecklistEmailSent(null);
+    setChecklistDeliveryState(null);
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -89,35 +93,45 @@ export default function NewsletterForm({
         return;
       }
 
-      let checklistSent = false;
+      let checklistDeliveryState: ChecklistDeliveryState = "fallback";
+      const emailSendingEnabled = responseData?.emailSendingEnabled !== false;
       const unsubscribeUrl =
         typeof responseData?.unsubscribeUrl === "string"
           ? responseData.unsubscribeUrl.trim()
           : "";
-      try {
-        if (!unsubscribeUrl) {
-          throw new Error("Newsletter signup response did not include an unsubscribe URL.");
-        }
+      if (!emailSendingEnabled) {
+        checklistDeliveryState = "disabled";
+      } else {
+        try {
+          if (!unsubscribeUrl) {
+            throw new Error(
+              "Newsletter signup response did not include an unsubscribe URL.",
+            );
+          }
 
-        await sendEmail("checklist", {
-          to_email: payload.email,
-          name,
-          checklist_name: "Panatag Home Checklist",
-          checklist_url: panatagChecklistUrl,
-          unsubscribe_url: unsubscribeUrl,
-        });
-        checklistSent = true;
-      } catch (emailError) {
-        console.error("Checklist email send failed:", emailError);
+          const sendResult = await sendEmail("checklist", {
+            to_email: payload.email,
+            name,
+            checklist_name: "Panatag Home Checklist",
+            checklist_url: panatagChecklistUrl,
+            unsubscribe_url: unsubscribeUrl,
+          });
+          checklistDeliveryState = sendResult ? "sent" : "fallback";
+        } catch (emailError) {
+          console.error("Checklist email send failed:", emailError);
+        }
       }
 
-      setChecklistEmailSent(checklistSent);
+      setChecklistDeliveryState(checklistDeliveryState);
       trackNewsletterLeadGenerated(
         trackingContext,
         {
           page: trackingPage,
           source: payload.source,
-          method: checklistSent ? "emailjs" : "fallback",
+          method:
+            checklistDeliveryState === "sent"
+              ? "emailjs"
+              : checklistDeliveryState,
           destination: trackingDestination,
         }
       );
@@ -181,9 +195,11 @@ export default function NewsletterForm({
             <CheckCircle2 className="w-4 h-4" />
             <span>{successTitle}</span>
             <span className="text-xs font-medium text-slate-600">
-              {checklistEmailSent
+              {checklistDeliveryState === "sent"
                 ? successEmailSentCopy
-                : successFallbackCopy}
+                : checklistDeliveryState === "disabled"
+                  ? successEmailDisabledCopy
+                  : successFallbackCopy}
             </span>
           </div>
         )}

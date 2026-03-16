@@ -12,15 +12,15 @@ import { writeNewsletterLead } from "../../lib/newsletterLead";
 import { panatagChecklistUrl } from "../../lib/site";
 
 type Status = "idle" | "submitting" | "success" | "error";
+type ChecklistDeliveryState = "sent" | "disabled" | "fallback";
 
 export default function NewsletterChecklistModal() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [checklistEmailSent, setChecklistEmailSent] = useState<boolean | null>(
-    null
-  );
+  const [checklistDeliveryState, setChecklistDeliveryState] =
+    useState<ChecklistDeliveryState | null>(null);
   const [email, setEmail] = useState("");
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function NewsletterChecklistModal() {
   const resetForm = () => {
     setStatus("idle");
     setError(null);
-    setChecklistEmailSent(null);
+    setChecklistDeliveryState(null);
     setEmail("");
   };
 
@@ -58,7 +58,7 @@ export default function NewsletterChecklistModal() {
     if (status === "submitting") return;
     setError(null);
     setStatus("submitting");
-    setChecklistEmailSent(null);
+    setChecklistDeliveryState(null);
 
     const normalizedEmail = normalizeEmail(email);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -92,38 +92,48 @@ export default function NewsletterChecklistModal() {
         return;
       }
 
-      let checklistSent = false;
+      let checklistDeliveryState: ChecklistDeliveryState = "fallback";
+      const emailSendingEnabled = responseData?.emailSendingEnabled !== false;
       const unsubscribeUrl =
         typeof responseData?.unsubscribeUrl === "string"
           ? responseData.unsubscribeUrl.trim()
           : "";
-      try {
-        if (!unsubscribeUrl) {
-          throw new Error("Newsletter signup response did not include an unsubscribe URL.");
-        }
+      if (!emailSendingEnabled) {
+        checklistDeliveryState = "disabled";
+      } else {
+        try {
+          if (!unsubscribeUrl) {
+            throw new Error(
+              "Newsletter signup response did not include an unsubscribe URL.",
+            );
+          }
 
-        await sendEmail("checklist", {
-          to_email: payload.email,
-          name,
-          checklist_name: "Panatag Home Checklist",
-          checklist_url: panatagChecklistUrl,
-          unsubscribe_url: unsubscribeUrl,
-        });
-        checklistSent = true;
-      } catch (emailError) {
-        console.error("Checklist email send failed:", emailError);
+          const sendResult = await sendEmail("checklist", {
+            to_email: payload.email,
+            name,
+            checklist_name: "Panatag Home Checklist",
+            checklist_url: panatagChecklistUrl,
+            unsubscribe_url: unsubscribeUrl,
+          });
+          checklistDeliveryState = sendResult ? "sent" : "fallback";
+        } catch (emailError) {
+          console.error("Checklist email send failed:", emailError);
+        }
       }
 
       writeNewsletterLead({
         name,
         email: payload.email,
       });
-      setChecklistEmailSent(checklistSent);
+      setChecklistDeliveryState(checklistDeliveryState);
       trackNewsletterLeadGenerated(
         { flow_source: "newsletter", flow_mode: "newsletter" },
         {
           source: "newsletter_modal",
-          method: checklistSent ? "emailjs" : "fallback",
+          method:
+            checklistDeliveryState === "sent"
+              ? "emailjs"
+              : checklistDeliveryState,
           destination: "newsletter_thank_you",
         }
       );
@@ -175,9 +185,11 @@ export default function NewsletterChecklistModal() {
                   You’re on the list!
                 </h4>
                 <p className="text-slate-600 mt-2">
-                  {checklistEmailSent
+                  {checklistDeliveryState === "sent"
                     ? "Check your email for the checklist and next steps."
-                    : "We couldn’t confirm email delivery right now, but your signup is complete. Continue to download instantly on the next page."}
+                    : checklistDeliveryState === "disabled"
+                      ? "Your signup is complete. Email delivery is currently turned off, so continue to the next page to download the checklist instantly."
+                      : "We couldn’t confirm email delivery right now, but your signup is complete. Continue to download instantly on the next page."}
                 </p>
                 <button
                   type="button"

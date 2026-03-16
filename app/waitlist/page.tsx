@@ -181,6 +181,7 @@ export default async function WaitlistPage({
                 successTitle="Thanks! You are on the waitlist."
                 successEmailSentCopy="You are queued for the next offer window, and your checklist is on its way."
                 successFallbackCopy="You are queued for the next offer window. If the checklist email is delayed, we will still keep you posted."
+                successEmailDisabledCopy="You are queued for the next offer window. Email delivery is currently turned off, so the checklist will not be emailed right now."
               />
             </div>
           </section>

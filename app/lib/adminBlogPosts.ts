@@ -29,6 +29,8 @@ import { sendTrackedBroadcastNewsletterEmailByPostId } from "./newsletterCampaig
 import { listSubscribedNewsletterRecipients } from "./newsletterCampaigns";
 import { resolvePersonalizedResultsLinkByEmail } from "./resultsLinksServer";
 import { siteUrl } from "./site";
+import { EMAIL_SENDING_DISABLED_ERROR } from "./siteAdminSettings";
+import { getPublicSiteSettings } from "./siteAdminSettingsServer";
 
 export type AdminNewsletterState =
   | "not_enabled"
@@ -122,6 +124,13 @@ const supabase =
   supabaseUrl && serviceRoleKey
     ? createClient(supabaseUrl, serviceRoleKey)
     : null;
+
+const assertEmailSendingEnabled = async () => {
+  const siteSettings = await getPublicSiteSettings();
+  if (!siteSettings.emailSendingEnabled) {
+    throw new Error(EMAIL_SENDING_DISABLED_ERROR);
+  }
+};
 
 const BLOG_TABLE = "blog_posts";
 const ADMIN_BLOG_SELECT =
@@ -609,6 +618,7 @@ export async function sendAdminBlogPostNewsletter(
   if (!post.newsletterEnabled) {
     throw new Error("Enable the newsletter toggle before sending this post.");
   }
+  await assertEmailSendingEnabled();
   assertValidLimitedOfferHours({
     post,
     offerHours,
@@ -696,6 +706,7 @@ export async function sendAdminBlogPostTestEmail({
   }
 
   assertSupportedNewsletterPersonalizationTokens(post);
+  await assertEmailSendingEnabled();
   assertValidLimitedOfferHours({
     post,
     offerHours,

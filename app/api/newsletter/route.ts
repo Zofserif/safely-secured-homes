@@ -7,6 +7,7 @@ import {
   isNewsletterCampaignsConfigured,
   syncNewsletterSubscriber,
 } from "../../lib/newsletterCampaigns";
+import { getPublicSiteSettings } from "../../lib/siteAdminSettingsServer";
 import { createNewsletterUnsubscribeUrl } from "../../lib/newsletterSubscribers";
 
 const toSafeString = (value: unknown): string =>
@@ -60,15 +61,18 @@ export async function POST(req: Request) {
   }
 
   try {
-    const result = await syncNewsletterSubscriber({
-      email: insertBody.email,
-      name: insertBody.name,
-      acquisitionSource: insertBody.source,
-      utmSource: insertBody.utm_source,
-      utmMedium: insertBody.utm_medium,
-      utmCampaign: insertBody.utm_campaign,
-      assignmentProfile: "newsletter_signup",
-    });
+    const [result, siteSettings] = await Promise.all([
+      syncNewsletterSubscriber({
+        email: insertBody.email,
+        name: insertBody.name,
+        acquisitionSource: insertBody.source,
+        utmSource: insertBody.utm_source,
+        utmMedium: insertBody.utm_medium,
+        utmCampaign: insertBody.utm_campaign,
+        assignmentProfile: "newsletter_signup",
+      }),
+      getPublicSiteSettings(),
+    ]);
 
     return NextResponse.json({
       ok: true,
@@ -78,6 +82,7 @@ export async function POST(req: Request) {
       journeys: result.journeyKeys,
       campaigns: result.campaignKeys,
       unsubscribeUrl: createNewsletterUnsubscribeUrl(result.unsubscribeToken),
+      emailSendingEnabled: siteSettings.emailSendingEnabled,
     });
   } catch (error) {
     console.error("Newsletter sync failed:", error);

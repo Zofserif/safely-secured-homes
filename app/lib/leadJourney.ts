@@ -14,6 +14,7 @@ import {
   type EmailJourneyStep,
 } from "./newsletterCampaigns";
 import { sendTrackedEnrollmentNewsletterCampaignEmailByPostId } from "./newsletterCampaignEmail";
+import { getPublicSiteSettings } from "./siteAdminSettingsServer";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const QUEUED_RETRY_WINDOW_MS = 10 * 60 * 1000;
@@ -24,6 +25,7 @@ type JourneyProcessSkipReason =
   | "enrollment_missing"
   | "not_due"
   | "no_steps"
+  | "email_disabled"
   | "queued_recently"
   | "subscriber_not_subscribed";
 
@@ -84,6 +86,25 @@ const findNextPendingStep = (
   }
 
   return null;
+};
+
+const advanceJourneyAfterProcessedStep = async (
+  enrollmentId: string,
+  steps: EmailJourneyStep[],
+  stepKey: string,
+) => {
+  const currentIndex = steps.findIndex((candidate) => candidate.stepKey === stepKey);
+  const nextStep = currentIndex === -1 ? null : steps[currentIndex + 1] ?? null;
+
+  if (nextStep) {
+    await setJourneyEnrollmentNextStep(enrollmentId, {
+      stepKey: nextStep.stepKey,
+      stepOrder: nextStep.stepOrder,
+    });
+    return;
+  }
+
+  await completeJourneyEnrollment(enrollmentId, "journey_finished");
 };
 
 export async function processJourneyEnrollment(
@@ -193,6 +214,22 @@ export async function processJourneyEnrollment(
     };
   }
 
+  const siteSettings = await getPublicSiteSettings();
+  if (!siteSettings.emailSendingEnabled) {
+    await advanceJourneyAfterProcessedStep(
+      enrollment.enrollmentId,
+      steps,
+      step.stepKey,
+    );
+    return {
+      action: "skipped",
+      enrollmentId: enrollment.enrollmentId,
+      stepKey: step.stepKey,
+      reason: "email_disabled",
+      dueAt: dueAtIso,
+    };
+  }
+
   try {
     const sendResult = await sendTrackedEnrollmentNewsletterCampaignEmailByPostId({
       journeyKey: enrollment.journeyKey,
@@ -205,19 +242,11 @@ export async function processJourneyEnrollment(
       ctaOverrideHtml: step.ctaOverrideHtml,
     });
 
-    const currentIndex = steps.findIndex(
-      (candidate) => candidate.stepKey === step.stepKey,
+    await advanceJourneyAfterProcessedStep(
+      enrollment.enrollmentId,
+      steps,
+      step.stepKey,
     );
-    const nextStep = currentIndex === -1 ? null : steps[currentIndex + 1] ?? null;
-
-    if (nextStep) {
-      await setJourneyEnrollmentNextStep(enrollment.enrollmentId, {
-        stepKey: nextStep.stepKey,
-        stepOrder: nextStep.stepOrder,
-      });
-    } else {
-      await completeJourneyEnrollment(enrollment.enrollmentId, "journey_finished");
-    }
 
     return {
       action: "sent",

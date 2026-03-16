@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AppShell from "../components/AppShell";
 import { parseHasBonusQueryValue } from "../lib/bonusFlag";
+import { getPublicSiteSettings } from "../lib/siteAdminSettingsServer";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 
 export const metadata: Metadata = {
@@ -39,6 +40,9 @@ export const metadata: Metadata = {
   },
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type SearchParams = Record<string, string | string[] | undefined>;
 
 export default async function FormPage({
@@ -46,12 +50,14 @@ export default async function FormPage({
 }: {
   searchParams?: Promise<SearchParams>;
 }) {
+  const publicSiteSettings = await getPublicSiteSettings();
   const resolvedSearchParams = (await searchParams) ?? {};
   const source =
     typeof resolvedSearchParams.source === "string"
       ? resolvedSearchParams.source
       : undefined;
   const hasBonus =
+    publicSiteSettings.bonusEnabled &&
     typeof resolvedSearchParams.has_bonus === "string"
       ? parseHasBonusQueryValue(resolvedSearchParams.has_bonus)
       : false;
@@ -62,6 +68,7 @@ export default async function FormPage({
       formMode={formMode}
       source={source}
       hasBonus={hasBonus}
+      publicSiteSettings={publicSiteSettings}
     />
   );
 }

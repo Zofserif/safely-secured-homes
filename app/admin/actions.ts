@@ -24,6 +24,7 @@ import {
   requireAdminSession,
 } from "../lib/adminAuth";
 import { processJourneyEnrollment } from "../lib/leadJourney";
+import { saveSiteAdminSettings } from "../lib/siteAdminSettingsServer";
 import {
   assignJourneyEnrollment,
   cancelJourneyEnrollment,
@@ -113,6 +114,25 @@ const buildAdminSubscriberRedirect = ({
 
   const queryString = params.toString();
   return queryString ? `/admin/subscribers?${queryString}` : "/admin/subscribers";
+};
+
+const buildAdminSettingsRedirect = ({
+  flash,
+  error,
+}: {
+  flash?: string;
+  error?: string;
+}) => {
+  const params = new URLSearchParams();
+  if (flash) {
+    params.set("flash", flash);
+  }
+  if (error) {
+    params.set("error", error);
+  }
+
+  const queryString = params.toString();
+  return queryString ? `/admin/settings?${queryString}` : "/admin/settings";
 };
 
 const toSafeString = (value: FormDataEntryValue | null) =>
@@ -513,6 +533,37 @@ export async function cancelSubscriberJourneyAction(formData: FormData) {
       buildAdminSubscriberRedirect({
         subscriberId: subscriberId || undefined,
         query,
+        error: resolveActionErrorMessage(error),
+      }),
+    );
+  }
+}
+
+export async function saveSiteSettingsAction(formData: FormData) {
+  await requireAdminSession();
+
+  try {
+    await saveSiteAdminSettings({
+      bonusEnabled: toBooleanField(formData.get("bonusEnabled")),
+      panatagCycleLimit: toIntegerField(formData.get("panatagCycleLimit"), 0),
+      resultsReviewCtaEnabled: toBooleanField(
+        formData.get("resultsReviewCtaEnabled"),
+      ),
+    });
+
+    revalidatePath("/");
+    revalidatePath("/form");
+    revalidatePath("/results");
+    revalidatePath("/admin/settings");
+
+    redirect(
+      buildAdminSettingsRedirect({
+        flash: "Settings updated.",
+      }),
+    );
+  } catch (error) {
+    redirect(
+      buildAdminSettingsRedirect({
         error: resolveActionErrorMessage(error),
       }),
     );

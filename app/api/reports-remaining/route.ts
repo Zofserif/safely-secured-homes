@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getPublicSiteSettings } from "../../lib/siteAdminSettingsServer";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const REPORT_LIMIT = 15;
 const CYCLE_MS = 3 * 24 * 60 * 60 * 1000;
 const DEFAULT_REPORT_CYCLE_ANCHOR_ISO = "2026-02-26T09:42:57Z";
 const DEFAULT_REPORT_CYCLE_ANCHOR_MS = Date.parse(
@@ -46,6 +46,8 @@ export async function GET() {
   const windowEndMs = windowStartMs + CYCLE_MS;
   const windowStartAtIso = new Date(windowStartMs).toISOString();
   const windowEndsAtIso = new Date(windowEndMs).toISOString();
+  const siteSettings = await getPublicSiteSettings();
+  const reportLimit = siteSettings.panatagCycleLimit;
 
   const { count, error } = await supabase
     .from("leads")
@@ -58,13 +60,13 @@ export async function GET() {
   }
 
   const used = count ?? 0;
-  const remaining = Math.max(0, REPORT_LIMIT - used);
+  const remaining = Math.max(0, reportLimit - used);
 
   return NextResponse.json(
     {
       remaining,
       used,
-      limit: REPORT_LIMIT,
+      limit: reportLimit,
       windowStartAt: windowStartAtIso,
       windowEndsAt: windowEndsAtIso,
     },

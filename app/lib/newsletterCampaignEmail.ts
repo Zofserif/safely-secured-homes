@@ -24,10 +24,12 @@ import {
   buildLeadDay0BonusCtaHtml,
   buildLeadDay0BonusLinkNote,
   buildLeadDay0BonusLinkSourceKey,
+  buildLeadDay0NonBonusCtaHtml,
   isLeadDay0JourneyEmail,
 } from "./leadJourneyDay0Cta";
 import { getOrCreateLimitedOfferLinkBySourceKey } from "./limitedOfferLinksServer";
 import { resolvePersonalizedResultsLinkByEmail } from "./resultsLinksServer";
+import { getPublicSiteSettings } from "./siteAdminSettingsServer";
 import { createNewsletterUnsubscribeUrl } from "./newsletterSubscribers";
 
 type SendTrackedEnrollmentNewsletterEmailInput = {
@@ -198,6 +200,10 @@ const resolveTrackedEnrollmentCtaHtml = async ({
 }) => {
   if (!isLeadDay0JourneyEmail(journeyKey, stepKey)) {
     return defaultCtaHtml;
+  }
+  const siteSettings = await getPublicSiteSettings();
+  if (!siteSettings.bonusEnabled) {
+    return buildLeadDay0NonBonusCtaHtml();
   }
 
   const hasBonus = await getLatestLeadHasBonusByEmail(recipientEmail);

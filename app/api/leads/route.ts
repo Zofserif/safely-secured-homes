@@ -18,6 +18,7 @@ import {
   getActiveJourneyEnrollmentForSubscriber,
   syncNewsletterSubscriber,
 } from "../../lib/newsletterCampaigns";
+import { getPublicSiteSettings } from "../../lib/siteAdminSettingsServer";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -176,6 +177,10 @@ export async function POST(req: Request) {
   const leadBody = sanitizeLeadCreateBody(body);
   if (!leadBody) {
     return NextResponse.json({ error: "Invalid lead payload" }, { status: 400 });
+  }
+  const siteSettings = await getPublicSiteSettings();
+  if (!siteSettings.bonusEnabled) {
+    leadBody.meta.has_bonus = false;
   }
 
   const location = resolveLeadLocation(req);

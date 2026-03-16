@@ -2,6 +2,11 @@ import Link from "next/link";
 
 const NAV_ITEMS = [
   {
+    key: "settings",
+    label: "Settings",
+    href: "/admin/settings",
+  },
+  {
     key: "blog",
     label: "Blog",
     href: "/admin/blog",

@@ -41,6 +41,10 @@ import {
 } from "../lib/bonusFlag";
 import { readMarketingAttribution } from "../lib/marketingAttribution";
 import { createShareableResultsPayload } from "../lib/resultsShare";
+import {
+  DEFAULT_PUBLIC_SITE_SETTINGS,
+  type PublicSiteSettings,
+} from "../lib/siteAdminSettings";
 import { useBonusEndsAt } from "./home/hooks/useBonusTimer";
 import { useHomeCtaAndScarcity } from "./home/hooks/useHomeCtaAndScarcity";
 import { useHomeDebugControls } from "./home/hooks/useHomeDebugControls";
@@ -229,12 +233,14 @@ export default function AppShell({
   source,
   resultsKey,
   hasBonus = false,
+  publicSiteSettings = DEFAULT_PUBLIC_SITE_SETTINGS,
 }: {
   initialView?: AppView;
   formMode?: "default" | "newsletter";
   source?: string;
   resultsKey?: string;
   hasBonus?: boolean;
+  publicSiteSettings?: PublicSiteSettings;
 }) {
   const router = useRouter();
   const [storedLead, setStoredLead] = useState<StoredLead | null>(null);
@@ -260,7 +266,9 @@ export default function AppShell({
   const [resolvedResultsKey, setResolvedResultsKey] = useState(
     () => resultsKey?.trim() ?? ""
   );
-  const [hasBonusParam, setHasBonusParam] = useState<boolean>(hasBonus);
+  const [hasBonusParam, setHasBonusParam] = useState<boolean>(
+    hasBonus && publicSiteSettings.bonusEnabled
+  );
   const nowMs = useSharedClockNowMs();
   const bonusEndsAt = useBonusEndsAt();
   const sourceForSubmission =
@@ -465,11 +473,11 @@ export default function AppShell({
     setSourceParam(sourceFromUrl || source?.trim() || "");
     setResolvedResultsKey(resultsKeyFromUrl || resultsKey?.trim() || "");
     setHasBonusParam(
-      hasBonusFromUrl
+      publicSiteSettings.bonusEnabled && hasBonusFromUrl
         ? parseHasBonusQueryValue(hasBonusFromUrl)
-        : hasBonus
+        : publicSiteSettings.bonusEnabled && hasBonus
     );
-  }, [hasBonus, resultsKey, source]);
+  }, [hasBonus, publicSiteSettings.bonusEnabled, resultsKey, source]);
 
   useEffect(() => {
     if (!shouldTrackView) return;
@@ -632,6 +640,7 @@ export default function AppShell({
     reportsError: effectiveReportsError,
     hasExistingPlan,
     nowMs,
+    bonusEnabled: publicSiteSettings.bonusEnabled,
     bonusEndsAt,
   });
   const homeCtaScarcityState = resolveHomeCtaScarcityState({
@@ -815,7 +824,10 @@ export default function AppShell({
     target: HomeCtaTarget,
     location: HomeCtaLocation
   ) => {
-    const hasBonus = target === "form" && !homeScarcity.bonusExpired;
+    const hasBonus =
+      publicSiteSettings.bonusEnabled &&
+      target === "form" &&
+      !homeScarcity.bonusExpired;
 
     trackFunnelCtaClicked(
       "home",
@@ -881,6 +893,7 @@ export default function AppShell({
           key={formData.email.trim().toLowerCase() || "unknown"}
           result={result}
           data={formData}
+          resultsReviewCtaEnabled={publicSiteSettings.resultsReviewCtaEnabled}
         />
       )}
 

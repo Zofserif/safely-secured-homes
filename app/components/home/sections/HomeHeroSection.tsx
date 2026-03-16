@@ -162,7 +162,11 @@ export default function HomeHeroSection({
     : scarcity.urgencyTier === "critical"
       ? "bg-[#DD6B20]"
       : "bg-[#0E79B2]";
-  const showBonusCard = !scarcity.bonusExpired && scarcity.show && !scarcity.soldOut;
+  const showBonusCard =
+    scarcity.bonusEnabled &&
+    !scarcity.bonusExpired &&
+    scarcity.show &&
+    !scarcity.soldOut;
   const soldOutSupportText =
     "Reports are sold out for this cycle. Join the newsletter to get notified when the Panatag Rating refreshes.";
   const prefersReducedMotion = useReducedMotion();
@@ -188,7 +192,7 @@ export default function HomeHeroSection({
             1-Hour Bonus Active
           </p>
           <p className="text-sm font-bold leading-snug text-[#2D3748] sm:text-base">
-            Free Bonus: A Panatag Home's Mug
+            Free Bonus: A Panatag Home&apos;s Mug
           </p>
           <p className="mt-1 text-xs font-semibold text-[#2D3748] sm:text-sm">
             {scarcity.bonusEndsAt === null

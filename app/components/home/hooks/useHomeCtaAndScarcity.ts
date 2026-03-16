@@ -8,6 +8,7 @@ type UseHomeCtaAndScarcityArgs = {
   reportsError: boolean;
   hasExistingPlan: boolean;
   nowMs: number;
+  bonusEnabled: boolean;
   bonusEndsAt: number | null;
 };
 
@@ -52,6 +53,7 @@ export const useHomeCtaAndScarcity = ({
   reportsError,
   hasExistingPlan,
   nowMs,
+  bonusEnabled,
   bonusEndsAt,
 }: UseHomeCtaAndScarcityArgs): { cta: HomeCtaState; scarcity: HomeScarcityState } => {
   const hasClock = nowMs > 0;
@@ -88,9 +90,16 @@ export const useHomeCtaAndScarcity = ({
       : "";
   const windowDeadlinePht =
     reportsWindowEndsAt !== null ? formatPhtDeadline(reportsWindowEndsAt) : "";
+  const resolvedBonusEndsAt = bonusEnabled ? bonusEndsAt : null;
   const bonusCountdown =
-    hasClock && bonusEndsAt !== null ? formatCountdown(bonusEndsAt, nowMs) : "";
-  const bonusExpired = hasClock && bonusEndsAt !== null && nowMs >= bonusEndsAt;
+    hasClock && resolvedBonusEndsAt !== null
+      ? formatCountdown(resolvedBonusEndsAt, nowMs)
+      : "";
+  const bonusExpired =
+    !bonusEnabled ||
+    (hasClock &&
+      resolvedBonusEndsAt !== null &&
+      nowMs >= resolvedBonusEndsAt);
 
   return {
     cta: {
@@ -110,7 +119,8 @@ export const useHomeCtaAndScarcity = ({
       windowEndsAt: reportsWindowEndsAt,
       windowCountdown,
       windowDeadlinePht,
-      bonusEndsAt,
+      bonusEnabled,
+      bonusEndsAt: resolvedBonusEndsAt,
       bonusCountdown,
       bonusExpired,
     },

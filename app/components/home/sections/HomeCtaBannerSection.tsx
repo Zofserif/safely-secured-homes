@@ -29,6 +29,9 @@ export default function HomeCtaBannerSection({
     : scarcity.show
       ? "In 60 seconds, get your personalized plan and practical next security steps."
       : "Your personalized plan is already ready. Open it now and take the next step.";
+  const heroSupportText = scarcity.bonusEnabled
+    ? "Get your personalized recommendation plus the Free Bonus: A Panatag Home's Mug with zero pressure."
+    : "Get your personalized recommendation with zero pressure before this cycle closes.";
 
   return (
     <section className="py-20 px-6">
@@ -44,8 +47,7 @@ export default function HomeCtaBannerSection({
                 Claim your free Panatag home plan before this cycle closes.
               </h2>
               <p className="text-slate-300 text-base sm:text-lg mb-5">
-                Get your personalized recommendation plus the Free Bonus: A
-                Panatag Home's Mug with zero pressure.
+                {heroSupportText}
               </p>
 
               {scarcity.show && (

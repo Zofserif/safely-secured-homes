@@ -34,6 +34,7 @@ export type HomeScarcityState = {
   windowEndsAt: number | null;
   windowCountdown: string;
   windowDeadlinePht: string;
+  bonusEnabled: boolean;
   bonusEndsAt: number | null;
   bonusCountdown: string;
   bonusExpired: boolean;

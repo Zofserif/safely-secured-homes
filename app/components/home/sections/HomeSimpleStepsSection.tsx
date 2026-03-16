@@ -31,6 +31,9 @@ export default function HomeSimpleStepsSection({
     : scarcity.show
       ? "In 60 seconds, get your personalized plan and practical next security steps."
       : "Your plan is ready. Open it now and continue your next security steps.";
+  const ctaLeadText = scarcity.bonusEnabled
+    ? "Get your personalized plan plus the Free Bonus: A Panatag Home's Mug before this cycle closes."
+    : "Get your personalized plan before this cycle closes.";
 
   return (
     <section className="py-32 bg-white">
@@ -81,8 +84,7 @@ export default function HomeSimpleStepsSection({
             Ready to see your plan?
           </p>
           <p className="text-slate-700 text-lg font-semibold mb-2">
-            Get your personalized plan plus the Free Bonus: A Panatag Home's
-            Mug before this cycle closes.
+            {ctaLeadText}
           </p>
           <p className="text-slate-600 mb-4">{ctaSupportText}</p>
 

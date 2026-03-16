@@ -2,10 +2,18 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getResultsSummary } from "../../lib/calculations";
 import { buildResultsScoringBreakdown } from "../../lib/resultsScoring";
-import { trackBookConsultClick } from "../../lib/analytics";
+import {
+  trackBookConsultClick,
+  trackFunnelCtaClicked,
+} from "../../lib/analytics";
 import { deriveFirstNameFromEmail } from "../../lib/contactName";
 import type { CalculationResult, FormData, SeverityLevel } from "../../lib/types";
-import { RESULTS_BOOK_VISIT_URL, RESULTS_CALL_HREF } from "./constants";
+import {
+  RESULTS_BOOK_VISIT_URL,
+  RESULTS_CALL_HREF,
+  RESULTS_REVIEW_CTA_LABEL,
+  RESULTS_REVIEW_PATH,
+} from "./constants";
 import { createBlueprintCards } from "./blueprints";
 import BlueprintCardsGrid from "./components/BlueprintCardsGrid";
 import BlueprintModal from "./components/BlueprintModal";
@@ -286,11 +294,14 @@ const buildPanatagHeroSlices = ({
 export default function ResultsPage({
   result,
   data,
+  resultsReviewCtaEnabled = false,
 }: {
   result: CalculationResult;
   data: FormData;
+  resultsReviewCtaEnabled?: boolean;
 }) {
   const [showDIY, setShowDIY] = useState(false);
+  const isResultsReviewMode = resultsReviewCtaEnabled === true;
   const step2CtaDecision = resolveStep2CtaDecision({
     leadTier: result.leadTier,
     solution: data.solution,
@@ -499,6 +510,15 @@ export default function ResultsPage({
     window.open(RESULTS_BOOK_VISIT_URL, "_blank", "noopener,noreferrer");
   };
 
+  const handleReviewCtaClick = () => {
+    trackFunnelCtaClicked("results", {
+      cta_id: "results_review_cta",
+      cta_location: "next_step_panel",
+      target_path: RESULTS_REVIEW_PATH,
+    });
+    window.location.assign(RESULTS_REVIEW_PATH);
+  };
+
   const handleToggleComplete = () => {
     if (!activeBlueprintId) return;
     const blueprintId = activeBlueprintId;
@@ -596,16 +616,38 @@ export default function ResultsPage({
               />
             </section>
 
-            <NextStepPanel cameraCount={result.cameraCount}>
-              <ResultActionButtons
-                decision={step2CtaDecision}
-                onShowDIY={() => {
-                  if (!isEligibleForDIYView) return;
-                  setShowDIY(true);
-                }}
-                onCallUs={handleCallUs}
-                onBookVisit={handleBookVisit}
-              />
+            <NextStepPanel
+              cameraCount={result.cameraCount}
+              badgeLabel={isResultsReviewMode ? "Feedback Request" : undefined}
+              title={
+                isResultsReviewMode
+                  ? "Help Us Review This Lead Magnet"
+                  : undefined
+              }
+              description={
+                isResultsReviewMode
+                  ? "Before we go live, please leave a quick review of the Panatag Rating experience."
+                  : undefined
+              }
+            >
+              {isResultsReviewMode ? (
+                <button
+                  onClick={handleReviewCtaClick}
+                  className="flex w-full max-w-[760px] items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#0E79B2] to-[#095F8E] px-4 py-4 font-extrabold text-white shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0B6C9F] hover:to-[#074E74] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40"
+                >
+                  {RESULTS_REVIEW_CTA_LABEL}
+                </button>
+              ) : (
+                <ResultActionButtons
+                  decision={step2CtaDecision}
+                  onShowDIY={() => {
+                    if (!isEligibleForDIYView) return;
+                    setShowDIY(true);
+                  }}
+                  onCallUs={handleCallUs}
+                  onBookVisit={handleBookVisit}
+                />
+              )}
             </NextStepPanel>
           </div>
         </motion.div>

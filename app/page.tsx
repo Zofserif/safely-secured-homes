@@ -27,6 +27,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: homeLandingOgImageUrl,
+        secureUrl: homeLandingOgImageUrl,
+        type: "image/jpeg",
         width: 1200,
         height: 630,
         alt: "How Panatag Is Your Home? Safely Secured Homes landing page preview",

@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Eye, ShieldCheck, Siren, X } from "lucide-react";
-import { RESULTS_CALL_HREF } from "../constants";
+import { RESULTS_CALL_HREF, RESULTS_REVIEW_PATH } from "../constants";
 import type { BlueprintCard } from "../types";
 import CallUsNowCta from "./CallUsNowCta";
+import LeaveReviewCta from "./LeaveReviewCta";
 
 type BlueprintModalProps = {
   activeBlueprint: BlueprintCard | null;
   onClose: () => void;
   isCompleted: boolean;
   onToggleComplete: () => void;
+  isResultsReviewMode?: boolean;
   onAwarenessCallNow: () => void;
+  onAwarenessReviewCtaClick: () => void;
 };
 
 const UNLOCK_PROGRESS_THRESHOLD = 0.98;
@@ -60,9 +63,13 @@ export default function BlueprintModal({
   onClose,
   isCompleted,
   onToggleComplete,
+  isResultsReviewMode = false,
   onAwarenessCallNow,
+  onAwarenessReviewCtaClick,
 }: BlueprintModalProps) {
   const isAwarenessBlueprint = activeBlueprint?.id === "awareness";
+  const showAwarenessReviewMode =
+    isAwarenessBlueprint && isResultsReviewMode;
   const contentRef = useRef<HTMLDivElement | null>(null);
   const [showFooterAction, setShowFooterAction] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -127,7 +134,9 @@ export default function BlueprintModal({
     ? 100
     : Math.min(99, Math.round(scrollProgress * 100));
   const lockedInstruction = isAwarenessBlueprint
-    ? "Review to the end to unlock calling."
+    ? showAwarenessReviewMode
+      ? "Review to the end to unlock the review page."
+      : "Review to the end to unlock calling."
     : "Review to the end to unlock completion.";
   const completionActionLabel = isCompleted
     ? "Mark as Incomplete"
@@ -205,16 +214,31 @@ export default function BlueprintModal({
           {showFooterAction ? (
             isAwarenessBlueprint ? (
               <div className="space-y-2">
-                <CallUsNowCta
-                  href={RESULTS_CALL_HREF}
-                  onClick={onAwarenessCallNow}
-                  className="px-5 py-4 md:text-lg"
-                />
-                <p className="text-center text-xs font-medium leading-relaxed text-slate-500">
-                  No pressure. No generic package.
-                  <br />
-                  Just a clearer recommendation for your home.
-                </p>
+                {showAwarenessReviewMode ? (
+                  <>
+                    <LeaveReviewCta
+                      href={RESULTS_REVIEW_PATH}
+                      onClick={onAwarenessReviewCtaClick}
+                      className="px-5 py-4 md:text-lg"
+                    />
+                    <p className="text-center text-xs font-medium leading-relaxed text-slate-500">
+                      Quick feedback helps us improve before launch.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <CallUsNowCta
+                      href={RESULTS_CALL_HREF}
+                      onClick={onAwarenessCallNow}
+                      className="px-5 py-4 md:text-lg"
+                    />
+                    <p className="text-center text-xs font-medium leading-relaxed text-slate-500">
+                      No pressure. No generic package.
+                      <br />
+                      Just a clearer recommendation for your home.
+                    </p>
+                  </>
+                )}
               </div>
             ) : (
               <button
@@ -248,9 +272,7 @@ export default function BlueprintModal({
                 </p>
               </div>
               {isAwarenessBlueprint ? (
-                <CallUsNowCta
-                  disabled
-                />
+                showAwarenessReviewMode ? <LeaveReviewCta disabled /> : <CallUsNowCta disabled />
               ) : (
                 <button
                   type="button"

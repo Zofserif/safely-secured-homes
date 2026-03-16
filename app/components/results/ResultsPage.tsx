@@ -537,6 +537,17 @@ export default function ResultsPage({
     setActiveBlueprintId(null);
   };
 
+  const handleAwarenessReviewCtaClick = () => {
+    setAwarenessPendingState(awarenessPendingStorageKey);
+    setActiveBlueprintId(null);
+    trackFunnelCtaClicked("results", {
+      cta_id: "results_awareness_review_cta",
+      cta_location: "blueprint_modal_footer",
+      target_path: RESULTS_REVIEW_PATH,
+    });
+    window.location.assign(RESULTS_REVIEW_PATH);
+  };
+
   const handleSelectBlueprint = (id: BlueprintCardId) => {
     if (id === "awareness") {
       setBlueprintCompletion((current) =>
@@ -612,7 +623,9 @@ export default function ResultsPage({
                 onClose={() => setActiveBlueprintId(null)}
                 isCompleted={isActiveBlueprintCompleted}
                 onToggleComplete={handleToggleComplete}
+                isResultsReviewMode={isResultsReviewMode}
                 onAwarenessCallNow={handleAwarenessCallNow}
+                onAwarenessReviewCtaClick={handleAwarenessReviewCtaClick}
               />
             </section>
 

@@ -68,7 +68,7 @@ export const HOUSEHOLD_STAGE_CARD_OPTIONS: readonly SingleSelectCardOption<House
     },
     {
       value: HOUSEHOLD_STAGE_OPTIONS[4],
-      title: "Adults and seniors at home",
+      title: "Adults or seniors at home",
       helper: "Prioritize emergency response and easy daily use.",
       Icon: Heart,
     },
@@ -118,19 +118,19 @@ export const GOAL_OBSTACLE_CARD_OPTIONS: readonly SingleSelectCardOption<GoalObs
   [
     {
       value: GOAL_OBSTACLE_OPTIONS[0],
-      title: "Not sure what fits",
+      title: "I don't know where to start",
       helper: "You need clear guidance for your specific home.",
       Icon: CircleHelp,
     },
     {
       value: GOAL_OBSTACLE_OPTIONS[1],
-      title: "Worried it's too complicated",
+      title: "Setup and use are too complex",
       helper: "You want setup and daily use to stay simple.",
       Icon: Wrench,
     },
     {
       value: GOAL_OBSTACLE_OPTIONS[2],
-      title: "Past solution didn't fit",
+      title: "Past solution didn't fit for me",
       helper: "You need a setup tailored to your actual situation.",
       Icon: TriangleAlert,
     },

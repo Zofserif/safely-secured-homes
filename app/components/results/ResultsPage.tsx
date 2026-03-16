@@ -634,7 +634,7 @@ export default function ResultsPage({
               badgeLabel={isResultsReviewMode ? "Feedback Request" : undefined}
               title={
                 isResultsReviewMode
-                  ? "Help Us Review This Lead Magnet"
+                  ? "Can You Review Your Panatag Rating Experience?"
                   : undefined
               }
               description={

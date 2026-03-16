@@ -1,0 +1,44 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="leftOverlay" x1="0" y1="315" x2="700" y2="315" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D1620" stop-opacity="0.92"/>
+      <stop offset="0.72" stop-color="#0D1620" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#0D1620" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="bottomOverlay" x1="600" y1="630" x2="600" y2="350" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#000000" stop-opacity="0.44"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="softShadow" x="44" y="482" width="412" height="104" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <image href="../Hero/pexels-vlada-karpovich-4609033.jpg" x="-10" y="-86" width="1220" height="814" preserveAspectRatio="xMidYMid slice"/>
+  <rect width="1200" height="630" fill="#000000" fill-opacity="0.18"/>
+  <rect width="700" height="630" fill="url(#leftOverlay)"/>
+  <rect y="350" width="1200" height="280" fill="url(#bottomOverlay)"/>
+
+  <image href="../Logo/navbar banner.png" x="72" y="78" width="360" height="48" preserveAspectRatio="xMinYMid meet"/>
+
+  <g filter="url(#softShadow)">
+    <rect x="72" y="156" width="310" height="40" rx="20" fill="#BEE9E8"/>
+  </g>
+  <text x="227" y="181" text-anchor="middle" fill="#0E546E" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="1.2">
+    FREE 60-SECOND HOME RATING
+  </text>
+
+  <text x="72" y="288" fill="white" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="74" font-weight="800">
+    <tspan x="72" dy="0">How Panatag</tspan>
+    <tspan x="72" dy="86">Is Your Home?</tspan>
+  </text>
+
+  <text x="72" y="476" fill="rgba(255,255,255,0.92)" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="30" font-weight="500">
+    <tspan x="72" dy="0">Get your free personalized Home</tspan>
+    <tspan x="72" dy="40">Panatag Rating in 60 seconds.</tspan>
+  </text>
+
+  <text x="72" y="564" fill="rgba(255,255,255,0.8)" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="600" letter-spacing="0.2">
+    Safely Secured Homes
+  </text>
+</svg>

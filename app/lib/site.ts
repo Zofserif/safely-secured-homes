@@ -33,6 +33,11 @@ export const siteUrl = envSiteUrl
     : DEFAULT_SITE_URL;
 export const ogImagePath = "/assets/img/Logo/Black Header.png";
 export const ogImageUrl = new URL(ogImagePath, siteUrl).toString();
+export const homeLandingOgImagePath = "/assets/img/og/home-panatag-rating.jpg";
+export const homeLandingOgImageUrl = new URL(
+  homeLandingOgImagePath,
+  siteUrl,
+).toString();
 export const panatagChecklistPath = "/assets/templates/ice/ice-card-template.pdf";
 export const panatagChecklistUrl = new URL(panatagChecklistPath, siteUrl).toString();
 export const siteCallHref = `tel:${sitePhoneDigits}`;

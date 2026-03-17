@@ -12,10 +12,11 @@ import {
 } from "../../lib/leadPayload";
 import { sendLeadNtfyNotification } from "../../lib/ntfy";
 import { clampSafetyScore } from "../../lib/safetyScale.js";
-import { processLeadJourneyEnrollment } from "../../lib/leadJourney";
+import { processJourneyEnrollment } from "../../lib/leadJourney";
+import { getJourneyAssignmentReadiness } from "../../lib/journeyAssignmentReadiness";
 import {
   EMAIL_JOURNEY_KEYS,
-  getActiveJourneyEnrollmentForSubscriber,
+  assignJourneyEnrollment,
   syncNewsletterSubscriber,
 } from "../../lib/newsletterCampaigns";
 import { getPublicSiteSettings } from "../../lib/siteAdminSettingsServer";
@@ -205,33 +206,50 @@ export async function POST(req: Request) {
       utmSource: leadBody.meta.utm_source,
       utmMedium: leadBody.meta.utm_medium,
       utmCampaign: leadBody.meta.utm_campaign,
-      assignmentProfile: "lead_capture",
+      assignmentProfile: "newsletter_signup",
     });
+    const desiredJourneyKey = siteSettings.testimonialJourneyEnabled
+      ? EMAIL_JOURNEY_KEYS.testimonialJourney
+      : EMAIL_JOURNEY_KEYS.leadFollowUpJourney;
+    const desiredJourneyReadiness =
+      await getJourneyAssignmentReadiness(desiredJourneyKey);
+    const leadCaptureSource = toSafeString(leadBody.meta.source) || "website";
+    const enrollmentResult = desiredJourneyReadiness.isAssignable
+      ? await assignJourneyEnrollment({
+          subscriberId: newsletterSyncResult.subscriberId,
+          journeyKey: desiredJourneyKey,
+          assignmentReason: `lead_capture:${leadCaptureSource}`,
+        })
+      : null;
 
     const allowExternalEmails =
       process.env.NODE_ENV === "production"
         ? true
         : leadBody.meta.allow_external_emails === true;
 
-    if (allowExternalEmails) {
-      const activeLeadEnrollment = await getActiveJourneyEnrollmentForSubscriber(
-        newsletterSyncResult.subscriberId,
-        EMAIL_JOURNEY_KEYS.leadFollowUpJourney,
+    if (!desiredJourneyReadiness.isAssignable) {
+      console.warn("Skipping automatic lead journey assignment:", {
+        email: payload.contact.email,
+        subscriberId: newsletterSyncResult.subscriberId,
+        journeyKey: desiredJourneyKey,
+        readinessReason: desiredJourneyReadiness.reason,
+        errorMessage: desiredJourneyReadiness.errorMessage,
+      });
+    }
+
+    if (allowExternalEmails && enrollmentResult?.enrollmentId) {
+      const journeyResult = await processJourneyEnrollment(
+        enrollmentResult.enrollmentId,
       );
 
-      if (activeLeadEnrollment) {
-        const journeyResult = await processLeadJourneyEnrollment(
-          activeLeadEnrollment.enrollmentId,
-        );
-
-        if (journeyResult.action === "failed") {
-          console.error("Immediate lead journey send failed:", {
-            email: payload.contact.email,
-            enrollmentId: activeLeadEnrollment.enrollmentId,
-            stepKey: journeyResult.stepKey,
-            reason: journeyResult.reason,
-          });
-        }
+      if (journeyResult.action === "failed") {
+        console.error("Immediate lead journey send failed:", {
+          email: payload.contact.email,
+          enrollmentId: enrollmentResult.enrollmentId,
+          journeyKey: desiredJourneyKey,
+          stepKey: journeyResult.stepKey,
+          reason: journeyResult.reason,
+        });
       }
     }
   } catch (newsletterSyncError) {

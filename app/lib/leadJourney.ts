@@ -259,7 +259,7 @@ export async function processJourneyEnrollment(
       action: "failed",
       enrollmentId: enrollment.enrollmentId,
       stepKey: step.stepKey,
-      reason: error instanceof Error ? error.message : "Lead journey send failed.",
+      reason: error instanceof Error ? error.message : "Journey send failed.",
     };
   }
 }

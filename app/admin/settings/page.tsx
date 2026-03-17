@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import AdminSectionNav from "../../components/admin/AdminSectionNav";
 import { requireAdminSession } from "../../lib/adminAuth";
+import { EMAIL_JOURNEY_KEYS } from "../../lib/emailJourneys";
+import { getJourneyAssignmentReadiness } from "../../lib/journeyAssignmentReadiness";
 import { getPublicSiteSettings } from "../../lib/siteAdminSettingsServer";
 import {
   TESTIMONIAL_JOURNEY_ADMIN_DESCRIPTION,
@@ -28,6 +30,29 @@ const readSearchParam = (value: string | string[] | undefined) => {
   return typeof value === "string" ? value.trim() : "";
 };
 
+const resolveTestimonialJourneyReadinessMessage = ({
+  journeyKey,
+  reason,
+  errorMessage,
+}: {
+  journeyKey: string;
+  reason: "missing" | "inactive" | "no_active_steps" | "lookup_failed" | null;
+  errorMessage: string;
+}) => {
+  switch (reason) {
+    case "missing":
+      return `The testimonial email journey "${journeyKey}" was not found. New website leads will stay newsletter subscribers only until it exists.`;
+    case "inactive":
+      return `The testimonial email journey "${journeyKey}" exists but is not active. New website leads will stay newsletter subscribers only until it is activated.`;
+    case "no_active_steps":
+      return `The testimonial email journey "${journeyKey}" has no active steps. New website leads will stay newsletter subscribers only until at least one step is active.`;
+    case "lookup_failed":
+      return `The testimonial email journey "${journeyKey}" could not be verified right now. New website leads will stay newsletter subscribers only until it can be loaded.${errorMessage ? ` ${errorMessage}` : ""}`;
+    default:
+      return "";
+  }
+};
+
 export default async function AdminSettingsPage({
   searchParams,
 }: {
@@ -38,7 +63,22 @@ export default async function AdminSettingsPage({
   const resolvedSearchParams = await searchParams;
   const flashMessage = readSearchParam(resolvedSearchParams.flash);
   const errorMessage = readSearchParam(resolvedSearchParams.error);
-  const siteSettings = await getPublicSiteSettings();
+  const [siteSettings, testimonialJourneyReadiness] = await Promise.all([
+    getPublicSiteSettings(),
+    getJourneyAssignmentReadiness(EMAIL_JOURNEY_KEYS.testimonialJourney),
+  ]);
+  const testimonialJourneyWarning =
+    siteSettings.testimonialJourneyEnabled &&
+    !testimonialJourneyReadiness.isAssignable
+      ? resolveTestimonialJourneyReadinessMessage(testimonialJourneyReadiness)
+      : "";
+  const testimonialJourneySummary =
+    siteSettings.testimonialJourneyEnabled &&
+    !testimonialJourneyReadiness.isAssignable
+      ? `${TESTIMONIAL_JOURNEY_ENABLED_SUMMARY} (journey not ready)`
+      : siteSettings.testimonialJourneyEnabled
+        ? TESTIMONIAL_JOURNEY_ENABLED_SUMMARY
+        : TESTIMONIAL_JOURNEY_DISABLED_SUMMARY;
 
   return (
     <main className="min-h-screen bg-[#F8F6F2] px-4 py-6 text-[#1F2937] sm:px-6 lg:px-8">
@@ -151,6 +191,12 @@ export default async function AdminSettingsPage({
                 </span>
               </label>
 
+              {testimonialJourneyWarning ? (
+                <div className="rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-relaxed text-amber-800">
+                  {testimonialJourneyWarning}
+                </div>
+              ) : null}
+
               <label className="flex items-start gap-4 rounded-3xl border border-slate-200 bg-slate-50 px-5 py-5">
                 <input
                   type="checkbox"
@@ -207,9 +253,7 @@ export default async function AdminSettingsPage({
                     Testimonial Journey
                   </dt>
                   <dd className="mt-1 text-slate-600">
-                    {siteSettings.testimonialJourneyEnabled
-                      ? TESTIMONIAL_JOURNEY_ENABLED_SUMMARY
-                      : TESTIMONIAL_JOURNEY_DISABLED_SUMMARY}
+                    {testimonialJourneySummary}
                   </dd>
                 </div>
                 <div>

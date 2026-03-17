@@ -1,6 +1,7 @@
 export const EMAIL_JOURNEY_KEYS = {
   leadFollowUpJourney: "lead_follow_up_journey",
   smartHomeJourney: "smart_home_journey",
+  testimonialJourney: "testimonial_copy",
 } as const;
 
 export type EmailJourneyKey = string;

@@ -9,7 +9,8 @@ export const TESTIMONIAL_JOURNEY_REVIEW_CTA_SUPPORT_TEXT =
 
 export const TESTIMONIAL_JOURNEY_ADMIN_LABEL = "Testimonial journey enabled";
 export const TESTIMONIAL_JOURNEY_ADMIN_DESCRIPTION =
-  "When on, Step 2 on the results page and the awareness blueprint modal send clients to /rate. After they submit a review, the form redirects them to /schedule-call?source=review.";
-export const TESTIMONIAL_JOURNEY_ENABLED_SUMMARY = "Review flow from results";
+  "When on, Step 2 on the results page and the awareness blueprint modal send clients to /rate. New website leads are also routed into the testimonial email journey (testimonial_copy) when it is active and has at least one active step. After they submit a review, the form redirects them to /schedule-call?source=review.";
+export const TESTIMONIAL_JOURNEY_ENABLED_SUMMARY =
+  "Review flow from results + testimonial lead routing";
 export const TESTIMONIAL_JOURNEY_DISABLED_SUMMARY =
-  "Default DIY / call / book CTA";
+  "Default DIY / call / book CTA + lead follow-up journey";

@@ -2,7 +2,8 @@ export const RESULTS_PHONE_NUMBER = "09959959229";
 export const RESULTS_CALL_HREF = `tel:${RESULTS_PHONE_NUMBER}`;
 export const RESULTS_BOOK_VISIT_URL = "https://calendly.com/vallarta-troy/30min";
 export const RESULTS_REVIEW_PATH = "/rate";
-export const RESULTS_REVIEW_CTA_LABEL = "Leave a Review";
+export const RESULTS_REVIEW_CTA_LABEL =
+  "Leave a review and get a home safety consultation";
 export const RESULTS_REVIEW_CTA_SUPPORT_TEXT =
   "Share quick feedback on the Panatag Rating experience.";
 export const RESULTS_CALL_CTA_LABEL = "Call Us Now";

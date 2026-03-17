@@ -646,7 +646,7 @@ export default function ResultsPage({
               {isResultsReviewMode ? (
                 <button
                   onClick={handleReviewCtaClick}
-                  className="flex w-full max-w-[760px] items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#0E79B2] to-[#095F8E] px-4 py-4 font-extrabold text-white shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0B6C9F] hover:to-[#074E74] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40"
+                  className="flex w-full max-w-[760px] items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#0E79B2] to-[#095F8E] px-4 py-4 text-center text-sm font-extrabold leading-tight text-white shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0B6C9F] hover:to-[#074E74] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40 sm:text-base"
                 >
                   {RESULTS_REVIEW_CTA_LABEL}
                 </button>

@@ -19,6 +19,13 @@ const readSearchParam = (value: string | string[] | undefined) => {
   return typeof value === "string" ? value.trim() : "";
 };
 
+type ScheduleCallCopy = {
+  eyebrow: string;
+  titleLine1: string;
+  titleLine2: string;
+  description: string;
+};
+
 const buildScheduleCallContext = (rawSource: string): FunnelContext => {
   const source = rawSource.trim();
   const lowered = source.toLowerCase();
@@ -37,10 +44,38 @@ const buildScheduleCallContext = (rawSource: string): FunnelContext => {
     };
   }
 
+  if (lowered === "review") {
+    return {
+      flow_source: "unknown",
+      flow_mode: "default",
+      source_raw: source,
+    };
+  }
+
   return {
     flow_source: "unknown",
     flow_mode: "newsletter",
     source_raw: source,
+  };
+};
+
+const buildScheduleCallCopy = (rawSource: string): ScheduleCallCopy => {
+  if (rawSource.trim().toLowerCase() === "review") {
+    return {
+      eyebrow: "Thanks for your review",
+      titleLine1: "Your feedback is in.",
+      titleLine2: "Book your home safety consultation.",
+      description:
+        "We’ll walk you through the practical next steps, ideal camera coverage, and the best security plan for your home.",
+    };
+  }
+
+  return {
+    eyebrow: "Thanks for your answers",
+    titleLine1: "You're pre-approved.",
+    titleLine2: "Book a quick call with a Home Security Consultant.",
+    description:
+      "We'll review your responses and walk you through the best security plan for your home.",
   };
 };
 
@@ -88,6 +123,7 @@ export default async function ScheduleCallPage({
   const resolvedSearchParams = await searchParams;
   const rawSource = readSearchParam(resolvedSearchParams.source) || "newsletter";
   const trackingContext = buildScheduleCallContext(rawSource);
+  const pageCopy = buildScheduleCallCopy(rawSource);
 
   return (
     <div className="min-h-screen bg-[#F7FAFC] text-[#2D3748]">
@@ -118,17 +154,16 @@ export default async function ScheduleCallPage({
       <main className="container mx-auto px-6 pb-16 lg:pb-24 pt-6">
         <div className="text-center max-w-3xl mx-auto">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
-            Thanks for your answers
+            {pageCopy.eyebrow}
           </p>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mt-4 text-[#2D3748] leading-tight">
-            <span className="block">You&apos;re pre-approved.</span>
+            <span className="block">{pageCopy.titleLine1}</span>
             <span className="block mt-2 text-[#0E79B2]">
-              Book a quick call with a Home Security Consultant.
+              {pageCopy.titleLine2}
             </span>
           </h1>
           <p className="text-slate-600 mt-4 text-base sm:text-lg">
-            We&apos;ll review your responses and walk you through the best security
-            plan for your home.
+            {pageCopy.description}
           </p>
           <div className="mt-5 inline-flex items-center gap-2 bg-[#BEE9E8]/70 text-[#0E79B2] px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide">
             15-30 minutes, personalized and practical

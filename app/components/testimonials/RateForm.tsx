@@ -1,11 +1,14 @@
 "use client";
 
-import { Star, CheckCircle2 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { CheckCircle2, Star } from "lucide-react";
+import { FormEvent, useEffect, useId, useMemo, useState } from "react";
 
-type FormStatus = "idle" | "submitting" | "success" | "error";
+type FormStatus = "idle" | "submitting" | "error";
 
 const DEFAULT_ERROR = "We could not submit your review right now. Please try again.";
+const REVIEW_SCHEDULE_CALL_PATH = "/schedule-call?source=review";
+const REVIEW_REDIRECT_DELAY_MS = 1800;
 
 const getErrorMessage = (code?: string) => {
   if (code === "honeypot_triggered") return "Spam detection triggered. Please retry.";
@@ -28,15 +31,29 @@ const getErrorMessage = (code?: string) => {
 };
 
 export default function RateForm() {
+  const router = useRouter();
   const [status, setStatus] = useState<FormStatus>("idle");
   const [rating, setRating] = useState(5);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const successTitleId = useId();
+  const successDescriptionId = useId();
 
   const ratingLabel = useMemo(() => {
     if (rating <= 0) return "Select a rating";
     if (rating === 1) return "1 star";
     return `${rating} stars`;
   }, [rating]);
+
+  useEffect(() => {
+    if (!isSuccessModalOpen) return;
+
+    const timeoutId = window.setTimeout(() => {
+      router.push(REVIEW_SCHEDULE_CALL_PATH);
+    }, REVIEW_REDIRECT_DELAY_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isSuccessModalOpen, router]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -94,7 +111,8 @@ export default function RateForm() {
 
       form.reset();
       setRating(5);
-      setStatus("success");
+      setStatus("idle");
+      setIsSuccessModalOpen(true);
     } catch {
       setStatus("error");
       setErrorMessage(DEFAULT_ERROR);
@@ -102,146 +120,171 @@ export default function RateForm() {
   };
 
   return (
-    <div className="rounded-3xl border border-[#DCE6F1] bg-white/95 p-6 shadow-[0_18px_40px_rgba(14,121,178,0.08)] sm:p-8">
-      <h2 className="text-2xl font-bold text-[#1F2937]">Share Your Feedback</h2>
-      <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
-        Tell us about your experience. Reviews are manually approved before they appear publicly.
-      </p>
-
-      <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="rate-first-name" className="mb-2 block text-sm font-semibold text-[#2D3748]">
-              First name
-            </label>
-            <input
-              id="rate-first-name"
-              name="first_name"
-              type="text"
-              required
-              autoComplete="given-name"
-              maxLength={80}
-              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
-              placeholder="Juan"
-            />
-          </div>
-          <div>
-            <label htmlFor="rate-last-name" className="mb-2 block text-sm font-semibold text-[#2D3748]">
-              Last name
-            </label>
-            <input
-              id="rate-last-name"
-              name="last_name"
-              type="text"
-              required
-              autoComplete="family-name"
-              maxLength={80}
-              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
-              placeholder="Dela Cruz"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="rate-email" className="mb-2 block text-sm font-semibold text-[#2D3748]">
-            Email address
-          </label>
-          <input
-            id="rate-email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
-            placeholder="you@email.com"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="rate-location" className="mb-2 block text-sm font-semibold text-[#2D3748]">
-            Location
-          </label>
-          <input
-            id="rate-location"
-            name="location"
-            type="text"
-            required
-            maxLength={120}
-            className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
-            placeholder="Quezon City"
-          />
-        </div>
-
-        <div>
-          <span className="mb-2 block text-sm font-semibold text-[#2D3748]">Rating</span>
-          <div className="flex items-center gap-1.5">
-            {Array.from({ length: 5 }, (_, index) => {
-              const value = index + 1;
-              const active = value <= rating;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setRating(value)}
-                  aria-label={`Rate ${value} out of 5`}
-                  className="rounded-full p-1.5 outline-none transition hover:scale-105 focus:ring-2 focus:ring-[#0E79B2]/25"
-                >
-                  <Star
-                    className="h-7 w-7"
-                    fill={active ? "#0E79B2" : "none"}
-                    stroke={active ? "#0E79B2" : "#CBD5E1"}
-                  />
-                </button>
-              );
-            })}
-            <span className="ml-2 text-sm text-slate-600">{ratingLabel}</span>
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="rate-review" className="mb-2 block text-sm font-semibold text-[#2D3748]">
-            Review
-          </label>
-          <textarea
-            id="rate-review"
-            name="review"
-            required
-            minLength={10}
-            maxLength={1200}
-            rows={5}
-            className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
-            placeholder="Share your experience with Safely Secured Homes."
-          />
-        </div>
-
-        <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
-          <label htmlFor="rate-website">Website</label>
-          <input id="rate-website" name="website" type="text" autoComplete="off" tabIndex={-1} />
-        </div>
-
-        <button
-          type="submit"
-          disabled={status === "submitting"}
-          className="inline-flex w-full items-center justify-center rounded-2xl bg-[#0E79B2] px-6 py-3 text-base font-bold text-white shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5 hover:bg-[#0b5e8b] disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {status === "submitting" ? "Submitting..." : "Submit Review"}
-        </button>
-
-        <p className="text-xs leading-relaxed text-slate-500">
-          We use your email only for verification and follow-up if needed. It will not be shown publicly.
+    <>
+      <div className="rounded-3xl border border-[#DCE6F1] bg-white/95 p-6 shadow-[0_18px_40px_rgba(14,121,178,0.08)] sm:p-8">
+        <h2 className="text-2xl font-bold text-[#1F2937]">Share Your Feedback</h2>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
+          Tell us about your experience. Reviews are manually approved before they appear publicly.
         </p>
 
-        {status === "success" && (
-          <div className="flex items-center gap-2 text-sm font-semibold text-[#2E8B57]">
-            <CheckCircle2 className="h-4 w-4" />
-            Review submitted. It is now pending approval.
+        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="rate-first-name" className="mb-2 block text-sm font-semibold text-[#2D3748]">
+                First name
+              </label>
+              <input
+                id="rate-first-name"
+                name="first_name"
+                type="text"
+                required
+                autoComplete="given-name"
+                maxLength={80}
+                className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
+                placeholder="Juan"
+              />
+            </div>
+            <div>
+              <label htmlFor="rate-last-name" className="mb-2 block text-sm font-semibold text-[#2D3748]">
+                Last name
+              </label>
+              <input
+                id="rate-last-name"
+                name="last_name"
+                type="text"
+                required
+                autoComplete="family-name"
+                maxLength={80}
+                className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
+                placeholder="Dela Cruz"
+              />
+            </div>
           </div>
-        )}
 
-        {status === "error" && errorMessage && (
-          <p className="text-sm font-semibold text-red-600">{errorMessage}</p>
-        )}
-      </form>
-    </div>
+          <div>
+            <label htmlFor="rate-email" className="mb-2 block text-sm font-semibold text-[#2D3748]">
+              Email address
+            </label>
+            <input
+              id="rate-email"
+              name="email"
+              type="email"
+              required
+              autoComplete="email"
+              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
+              placeholder="you@email.com"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="rate-location" className="mb-2 block text-sm font-semibold text-[#2D3748]">
+              Location
+            </label>
+            <input
+              id="rate-location"
+              name="location"
+              type="text"
+              required
+              maxLength={120}
+              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
+              placeholder="Quezon City"
+            />
+          </div>
+
+          <div>
+            <span className="mb-2 block text-sm font-semibold text-[#2D3748]">Rating</span>
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: 5 }, (_, index) => {
+                const value = index + 1;
+                const active = value <= rating;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setRating(value)}
+                    aria-label={`Rate ${value} out of 5`}
+                    className="rounded-full p-1.5 outline-none transition hover:scale-105 focus:ring-2 focus:ring-[#0E79B2]/25"
+                  >
+                    <Star
+                      className="h-7 w-7"
+                      fill={active ? "#0E79B2" : "none"}
+                      stroke={active ? "#0E79B2" : "#CBD5E1"}
+                    />
+                  </button>
+                );
+              })}
+              <span className="ml-2 text-sm text-slate-600">{ratingLabel}</span>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="rate-review" className="mb-2 block text-sm font-semibold text-[#2D3748]">
+              Review
+            </label>
+            <textarea
+              id="rate-review"
+              name="review"
+              required
+              minLength={10}
+              maxLength={1200}
+              rows={5}
+              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0E79B2] focus:ring-2 focus:ring-[#0E79B2]/20"
+              placeholder="Share your experience with Safely Secured Homes."
+            />
+          </div>
+
+          <div className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+            <label htmlFor="rate-website">Website</label>
+            <input id="rate-website" name="website" type="text" autoComplete="off" tabIndex={-1} />
+          </div>
+
+          <button
+            type="submit"
+            disabled={status === "submitting"}
+            className="inline-flex w-full items-center justify-center rounded-2xl bg-[#0E79B2] px-6 py-3 text-base font-bold text-white shadow-lg shadow-[#0E79B2]/25 transition-all hover:-translate-y-0.5 hover:bg-[#0b5e8b] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {status === "submitting" ? "Submitting..." : "Submit Review"}
+          </button>
+
+          <p className="text-xs leading-relaxed text-slate-500">
+            We use your email only for verification and follow-up if needed. It will not be shown publicly.
+          </p>
+
+          {status === "error" && errorMessage && (
+            <p className="text-sm font-semibold text-red-600">{errorMessage}</p>
+          )}
+        </form>
+      </div>
+
+      {isSuccessModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
+          <div className="absolute inset-0 bg-black/45" aria-hidden="true" />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={successTitleId}
+            aria-describedby={successDescriptionId}
+            className="relative w-full max-w-xl rounded-3xl border border-[#E2E8F0] bg-white p-6 shadow-2xl sm:p-8"
+          >
+            <div className="mt-4 text-center sm:mt-6">
+              <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#BEE9E8]/60 text-[#0E79B2]">
+                <CheckCircle2 className="h-7 w-7" />
+              </div>
+              <h3 id={successTitleId} className="mt-4 text-2xl font-bold text-[#1F2937]">
+                Thanks for your review
+              </h3>
+              <p id={successDescriptionId} className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+                Your review has been submitted and is pending approval. If you want a home safety
+                consultation next, you can book a quick call with our team now.
+              </p>
+
+              <p className="mt-6 text-sm font-semibold text-[#0E79B2]">
+                Redirecting you to schedule your home safety consultation...
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

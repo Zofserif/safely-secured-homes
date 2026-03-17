@@ -48,6 +48,7 @@ export const FORM_STEPS = [
   { id: "goal_obstacle", label: "Goal obstacle" },
   { id: "solution", label: "Solution" },
   { id: "goal_obstacle_other", label: "Anything else (optional)" },
+  { id: "squeeze", label: "Generating rating" },
   { id: "contact_details", label: "Contact details" },
 ] as const;
 

@@ -1,6 +1,10 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getResultsSummary } from "../../lib/calculations";
+import {
+  TESTIMONIAL_JOURNEY_ENTRY_PATH,
+  TESTIMONIAL_JOURNEY_REVIEW_CTA_LABEL,
+} from "../../lib/testimonialJourney";
 import { buildResultsScoringBreakdown } from "../../lib/resultsScoring";
 import {
   trackBookConsultClick,
@@ -11,8 +15,6 @@ import type { CalculationResult, FormData, SeverityLevel } from "../../lib/types
 import {
   RESULTS_BOOK_VISIT_URL,
   RESULTS_CALL_HREF,
-  RESULTS_REVIEW_CTA_LABEL,
-  RESULTS_REVIEW_PATH,
 } from "./constants";
 import { createBlueprintCards } from "./blueprints";
 import BlueprintCardsGrid from "./components/BlueprintCardsGrid";
@@ -294,14 +296,14 @@ const buildPanatagHeroSlices = ({
 export default function ResultsPage({
   result,
   data,
-  resultsReviewCtaEnabled = false,
+  testimonialJourneyEnabled = false,
 }: {
   result: CalculationResult;
   data: FormData;
-  resultsReviewCtaEnabled?: boolean;
+  testimonialJourneyEnabled?: boolean;
 }) {
   const [showDIY, setShowDIY] = useState(false);
-  const isResultsReviewMode = resultsReviewCtaEnabled === true;
+  const isTestimonialJourneyEnabled = testimonialJourneyEnabled === true;
   const step2CtaDecision = resolveStep2CtaDecision({
     leadTier: result.leadTier,
     solution: data.solution,
@@ -510,13 +512,19 @@ export default function ResultsPage({
     window.open(RESULTS_BOOK_VISIT_URL, "_blank", "noopener,noreferrer");
   };
 
-  const handleReviewCtaClick = () => {
+  const handleOpenTestimonialJourney = ({
+    ctaId,
+    ctaLocation,
+  }: {
+    ctaId: string;
+    ctaLocation: string;
+  }) => {
     trackFunnelCtaClicked("results", {
-      cta_id: "results_review_cta",
-      cta_location: "next_step_panel",
-      target_path: RESULTS_REVIEW_PATH,
+      cta_id: ctaId,
+      cta_location: ctaLocation,
+      target_path: TESTIMONIAL_JOURNEY_ENTRY_PATH,
     });
-    window.location.assign(RESULTS_REVIEW_PATH);
+    window.location.assign(TESTIMONIAL_JOURNEY_ENTRY_PATH);
   };
 
   const handleToggleComplete = () => {
@@ -540,12 +548,10 @@ export default function ResultsPage({
   const handleAwarenessReviewCtaClick = () => {
     setAwarenessPendingState(awarenessPendingStorageKey);
     setActiveBlueprintId(null);
-    trackFunnelCtaClicked("results", {
-      cta_id: "results_awareness_review_cta",
-      cta_location: "blueprint_modal_footer",
-      target_path: RESULTS_REVIEW_PATH,
+    handleOpenTestimonialJourney({
+      ctaId: "results_awareness_review_cta",
+      ctaLocation: "blueprint_modal_footer",
     });
-    window.location.assign(RESULTS_REVIEW_PATH);
   };
 
   const handleSelectBlueprint = (id: BlueprintCardId) => {
@@ -623,7 +629,7 @@ export default function ResultsPage({
                 onClose={() => setActiveBlueprintId(null)}
                 isCompleted={isActiveBlueprintCompleted}
                 onToggleComplete={handleToggleComplete}
-                isResultsReviewMode={isResultsReviewMode}
+                testimonialJourneyEnabled={isTestimonialJourneyEnabled}
                 onAwarenessCallNow={handleAwarenessCallNow}
                 onAwarenessReviewCtaClick={handleAwarenessReviewCtaClick}
               />
@@ -631,24 +637,31 @@ export default function ResultsPage({
 
             <NextStepPanel
               cameraCount={result.cameraCount}
-              badgeLabel={isResultsReviewMode ? "Feedback Request" : undefined}
+              badgeLabel={
+                isTestimonialJourneyEnabled ? "Feedback Request" : undefined
+              }
               title={
-                isResultsReviewMode
+                isTestimonialJourneyEnabled
                   ? "Can You Review Your Panatag Rating Experience?"
                   : undefined
               }
               description={
-                isResultsReviewMode
+                isTestimonialJourneyEnabled
                   ? "Before we go live, please leave a quick review of the Panatag Rating experience."
                   : undefined
               }
             >
-              {isResultsReviewMode ? (
+              {isTestimonialJourneyEnabled ? (
                 <button
-                  onClick={handleReviewCtaClick}
+                  onClick={() =>
+                    handleOpenTestimonialJourney({
+                      ctaId: "results_review_cta",
+                      ctaLocation: "next_step_panel",
+                    })
+                  }
                   className="flex w-full max-w-[760px] items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#0E79B2] to-[#095F8E] px-4 py-4 text-center text-sm font-extrabold leading-tight text-white shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0B6C9F] hover:to-[#074E74] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40 sm:text-base"
                 >
-                  {RESULTS_REVIEW_CTA_LABEL}
+                  {TESTIMONIAL_JOURNEY_REVIEW_CTA_LABEL}
                 </button>
               ) : (
                 <ResultActionButtons

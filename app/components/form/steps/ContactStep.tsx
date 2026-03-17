@@ -1,22 +1,31 @@
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
+import { normalizeFirstName } from "../../../lib/contactName";
 import type { ContactStepProps } from "../types";
 
 export default function ContactStep({
   formData,
   errors,
   isSubmitting,
-  isNewsletterFlow,
   submitLabel,
   submittingLabel,
   onSubmit,
   onUpdateField,
 }: ContactStepProps) {
+  const firstName = normalizeFirstName(formData.name);
+  const heading = firstName
+    ? `Your results are ready ${firstName}!`
+    : "Your results are ready!";
+
   return (
     <div className="space-y-5">
       <h3 className="text-center text-2xl font-black tracking-tight text-[#1F2937] sm:text-3xl">
-        Almost done!
+        {heading}
       </h3>
+
+      <p className="text-center text-sm font-medium text-slate-600 sm:text-base">
+        Where should we send your results link?
+      </p>
 
       <div className="mx-auto w-full space-y-4 md:max-w-xl">
         <div>
@@ -49,14 +58,10 @@ export default function ContactStep({
           {isSubmitting ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />{" "}
-              {submittingLabel ??
-                (isNewsletterFlow
-                  ? "Sending your answer..."
-                  : "Generating Plan...")}
+              {submittingLabel ?? "Sending your Panatag Rating..."}
             </>
           ) : (
-            submitLabel ??
-            (isNewsletterFlow ? "SEND MY ANSWER NOW" : "GENERATE MY RATING NOW")
+            submitLabel ?? "SEND MY PANATAG RATING NOW!"
           )}
         </button>
       </div>

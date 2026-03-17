@@ -549,8 +549,8 @@ export async function saveSiteSettingsAction(formData: FormData) {
     await saveSiteAdminSettings({
       bonusEnabled: toBooleanField(formData.get("bonusEnabled")),
       panatagCycleLimit: toIntegerField(formData.get("panatagCycleLimit"), 0),
-      resultsReviewCtaEnabled: toBooleanField(
-        formData.get("resultsReviewCtaEnabled"),
+      testimonialJourneyEnabled: toBooleanField(
+        formData.get("testimonialJourneyEnabled"),
       ),
       emailSendingEnabled: toBooleanField(formData.get("emailSendingEnabled")),
     });

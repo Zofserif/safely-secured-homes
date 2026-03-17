@@ -12,6 +12,7 @@ import ObstacleStep from "./steps/ObstacleStep";
 import PropertyTypeStep from "./steps/PropertyTypeStep";
 import SafetyCheckStep from "./steps/SafetyCheckStep";
 import SolutionStep from "./steps/SolutionStep";
+import SqueezeStep from "./steps/SqueezeStep";
 import YesNoQuestionStep from "./steps/YesNoQuestionStep";
 
 export default function WizardForm({
@@ -21,7 +22,11 @@ export default function WizardForm({
   submitLabel,
   submittingLabel,
 }: WizardFormProps) {
-  const isNewsletterFlow = mode === "newsletter";
+  const finalStageStepIds = new Set<string>([
+    "goal_obstacle_other",
+    "squeeze",
+    "contact_details",
+  ]);
 
   const {
     step,
@@ -198,19 +203,27 @@ export default function WizardForm({
         formData={formData}
         errors={errors}
         isSubmitting={isSubmitting}
-        isNewsletterFlow={isNewsletterFlow}
         submitLabel={submitLabel}
         submittingLabel={submittingLabel}
         onSubmit={submitFinal}
         onUpdateField={updateField}
       />
     ),
+    squeeze: <SqueezeStep formData={formData} onNext={nextStep} />,
   };
 
   const activeStepId = FORM_STEPS[step]?.id;
+  const isLastStepStage =
+    activeStepId !== undefined && finalStageStepIds.has(activeStepId);
 
   return (
-    <WizardFrame step={step} stepCount={FORM_STEPS.length} onBack={prevStep}>
+    <WizardFrame
+      step={step}
+      stepCount={FORM_STEPS.length}
+      onBack={prevStep}
+      progressLabelOverride={isLastStepStage ? "Last step" : undefined}
+      progressPercentOverride={isLastStepStage ? 100 : undefined}
+    >
       {activeStepId ? stepContentById[activeStepId] : null}
     </WizardFrame>
   );

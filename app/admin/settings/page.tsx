@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import AdminSectionNav from "../../components/admin/AdminSectionNav";
 import { requireAdminSession } from "../../lib/adminAuth";
 import { getPublicSiteSettings } from "../../lib/siteAdminSettingsServer";
+import {
+  TESTIMONIAL_JOURNEY_ADMIN_DESCRIPTION,
+  TESTIMONIAL_JOURNEY_ADMIN_LABEL,
+  TESTIMONIAL_JOURNEY_DISABLED_SUMMARY,
+  TESTIMONIAL_JOURNEY_ENABLED_SUMMARY,
+} from "../../lib/testimonialJourney";
 import { logoutAdminAction, saveSiteSettingsAction } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -82,9 +88,9 @@ export default async function AdminSettingsPage({
               </p>
               <h2 className="mt-2 text-2xl font-bold">Edit launch behavior</h2>
               <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                These settings affect the homepage, form flow, results CTA, cycle
-                limit, outbound email behavior, and lead day-0 follow-up behavior
-                immediately after save.
+                These settings affect the homepage, form flow, testimonial
+                journey routing, cycle limit, outbound email behavior, and lead
+                day-0 follow-up behavior immediately after save.
               </p>
             </div>
 
@@ -131,17 +137,16 @@ export default async function AdminSettingsPage({
               <label className="flex items-start gap-4 rounded-3xl border border-slate-200 bg-slate-50 px-5 py-5">
                 <input
                   type="checkbox"
-                  name="resultsReviewCtaEnabled"
-                  defaultChecked={siteSettings.resultsReviewCtaEnabled}
+                  name="testimonialJourneyEnabled"
+                  defaultChecked={siteSettings.testimonialJourneyEnabled}
                   className="mt-1 h-5 w-5 rounded border-slate-300 text-[#0E79B2] focus:ring-[#0E79B2]"
                 />
                 <span className="block">
                   <span className="text-sm font-semibold text-slate-900">
-                    Results review CTA enabled
+                    {TESTIMONIAL_JOURNEY_ADMIN_LABEL}
                   </span>
                   <span className="mt-1 block text-sm leading-relaxed text-slate-600">
-                    When on, Step 2 on the results page is replaced with a single{" "}
-                    <code>Leave a Review</code> CTA that opens <code>/rate</code>.
+                    {TESTIMONIAL_JOURNEY_ADMIN_DESCRIPTION}
                   </span>
                 </span>
               </label>
@@ -198,11 +203,13 @@ export default async function AdminSettingsPage({
                   </dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-slate-700">Results CTA</dt>
+                  <dt className="font-semibold text-slate-700">
+                    Testimonial Journey
+                  </dt>
                   <dd className="mt-1 text-slate-600">
-                    {siteSettings.resultsReviewCtaEnabled
-                      ? "Review page CTA"
-                      : "Default DIY / call / book CTA"}
+                    {siteSettings.testimonialJourneyEnabled
+                      ? TESTIMONIAL_JOURNEY_ENABLED_SUMMARY
+                      : TESTIMONIAL_JOURNEY_DISABLED_SUMMARY}
                   </dd>
                 </div>
                 <div>
@@ -219,10 +226,10 @@ export default async function AdminSettingsPage({
                 Test Client Mode
               </p>
               <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                The seeded defaults are bonus off, cycle limit 15, results review
-                CTA on, and email sending on so test clients review the lead
-                magnet before you promise other offers while outbound delivery
-                still works.
+                The seeded defaults are bonus off, cycle limit 15, testimonial
+                journey on, and email sending on so results visitors can leave
+                feedback before they are routed into the consultation step while
+                outbound delivery still works.
               </p>
             </div>
           </aside>

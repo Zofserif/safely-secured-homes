@@ -27,7 +27,7 @@ type SupabaseError = {
 export type SaveSiteAdminSettingsInput = {
   bonusEnabled: boolean;
   panatagCycleLimit: number;
-  resultsReviewCtaEnabled: boolean;
+  testimonialJourneyEnabled: boolean;
   emailSendingEnabled: boolean;
 };
 
@@ -74,7 +74,9 @@ const normalizeRow = (
   normalizePublicSiteSettings({
     bonusEnabled: row?.bonus_enabled ?? undefined,
     panatagCycleLimit: row?.panatag_cycle_limit ?? undefined,
-    resultsReviewCtaEnabled: row?.results_review_cta_enabled ?? undefined,
+    // Keep the DB column name for backward compatibility while the app uses
+    // testimonialJourneyEnabled everywhere else.
+    testimonialJourneyEnabled: row?.results_review_cta_enabled ?? undefined,
     emailSendingEnabled: row?.email_sending_enabled ?? undefined,
   });
 
@@ -134,7 +136,8 @@ export async function saveSiteAdminSettings(
     settings_key: SITE_ADMIN_SETTINGS_KEY,
     bonus_enabled: input.bonusEnabled === true,
     panatag_cycle_limit: parseCycleLimitInput(input.panatagCycleLimit),
-    results_review_cta_enabled: input.resultsReviewCtaEnabled === true,
+    // Persist to the legacy column name until a dedicated DB migration is needed.
+    results_review_cta_enabled: input.testimonialJourneyEnabled === true,
     email_sending_enabled: input.emailSendingEnabled !== false,
   };
 

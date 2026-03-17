@@ -23,6 +23,24 @@ export const metadata: Metadata = {
   },
 };
 
+const NEWSLETTER_BADGE_STYLE_BY_STATE = {
+  eligible: "bg-emerald-100 text-emerald-700",
+  suppressed_active_journey: "bg-amber-100 text-amber-700",
+  ineligible_status: "bg-slate-200 text-slate-700",
+} as const;
+
+const NEWSLETTER_BADGE_LABEL_BY_STATE = {
+  eligible: "newsletter",
+  suppressed_active_journey: "suppressed",
+  ineligible_status: "not eligible",
+} as const;
+
+const NEWSLETTER_STATUS_LABEL_BY_STATE = {
+  eligible: "Eligible",
+  suppressed_active_journey: "Suppressed by active journey",
+  ineligible_status: "Not eligible by status",
+} as const;
+
 const readSearchParam = (value: string | string[] | undefined) => {
   if (Array.isArray(value)) {
     return value[0]?.trim() || "";
@@ -83,8 +101,9 @@ export default async function AdminSubscribersPage({
               Subscriber Manager
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
-              Search subscribers, see who is currently suppressed from the weekly
-              newsletter, and manually assign or cancel journeys.
+              Search subscribers, see who is temporarily suppressed from the
+              weekly newsletter while a journey is active, and manually assign
+              or cancel journeys.
             </p>
             <AdminSectionNav current="subscribers" />
           </div>
@@ -155,14 +174,16 @@ export default async function AdminSubscribersPage({
                       <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${
-                            subscriber.canReceiveWeeklyNewsletter
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-amber-100 text-amber-700"
+                            NEWSLETTER_BADGE_STYLE_BY_STATE[
+                              subscriber.weeklyNewsletterEligibilityState
+                            ]
                           }`}
                         >
-                          {subscriber.canReceiveWeeklyNewsletter
-                            ? "newsletter"
-                            : "suppressed"}
+                          {
+                            NEWSLETTER_BADGE_LABEL_BY_STATE[
+                              subscriber.weeklyNewsletterEligibilityState
+                            ]
+                          }
                         </span>
                       </div>
                       <h3 className="mt-3 text-base font-bold leading-snug">
@@ -207,9 +228,11 @@ export default async function AdminSubscribersPage({
                     <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                       <div>
                         Weekly newsletter:{" "}
-                        {selectedSubscriber.canReceiveWeeklyNewsletter
-                          ? "Eligible"
-                          : "Suppressed"}
+                        {
+                          NEWSLETTER_STATUS_LABEL_BY_STATE[
+                            selectedSubscriber.weeklyNewsletterEligibilityState
+                          ]
+                        }
                       </div>
                       <div className="mt-1">Status: {selectedSubscriber.status}</div>
                       <div className="mt-1">
@@ -218,6 +241,12 @@ export default async function AdminSubscribersPage({
                       <div className="mt-1">
                         Source: {selectedSubscriber.acquisitionSource || "Not set"}
                       </div>
+                      {selectedSubscriber.weeklyNewsletterEligibilityState ===
+                      "suppressed_active_journey" ? (
+                        <div className="mt-1">
+                          Eligibility resumes automatically after the journey ends.
+                        </div>
+                      ) : null}
                     </div>
                   </div>
 
@@ -254,9 +283,12 @@ export default async function AdminSubscribersPage({
                     <div>
                       <h2 className="text-2xl font-bold">Journey Assignment</h2>
                       <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                        Assigning a journey immediately suppresses weekly newsletter
-                        sends. If the new journey has a day-0 step, the first email
-                        is sent right away.
+                        Assigning a journey immediately suppresses weekly
+                        newsletter sends while that journey remains active.
+                        Eligibility resumes automatically after the journey ends
+                        if the subscriber is still subscribed. If the new
+                        journey has a day-0 step, the first email is sent right
+                        away.
                       </p>
                     </div>
                   </div>

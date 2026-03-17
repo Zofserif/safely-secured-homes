@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { deriveNameFromEmail, normalizeEmail } from "./contactName";
 import { getEmailJourneyDefinition } from "./emailJourneyStore";
 import { EMAIL_JOURNEY_KEYS, type EmailJourneyKey } from "./emailJourneys";
+import { canReceiveWeeklyNewsletter } from "./weeklyNewsletterEligibility";
 export { EMAIL_JOURNEY_KEYS } from "./emailJourneys";
 export type { EmailJourneyKey } from "./emailJourneys";
 
@@ -1342,7 +1343,12 @@ export async function listSubscribedNewsletterRecipients(
   const eligibleRecipients = ((data as SubscriberRow[] | null) ?? [])
     .map((row) => normalizeSubscriber(row))
     .filter((row): row is NewsletterSubscriberRecord => Boolean(row))
-    .filter((row) => !suppressedSubscriberIds.has(row.subscriberId));
+    .filter((row) =>
+      canReceiveWeeklyNewsletter({
+        subscriberStatus: row.status,
+        hasActiveJourney: suppressedSubscriberIds.has(row.subscriberId),
+      }),
+    );
 
   if (typeof limit === "number" && Number.isFinite(limit) && limit > 0) {
     return eligibleRecipients.slice(0, Math.floor(limit));

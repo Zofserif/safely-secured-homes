@@ -3,11 +3,11 @@
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Star } from "lucide-react";
 import { FormEvent, useEffect, useId, useMemo, useState } from "react";
+import { TESTIMONIAL_JOURNEY_SUCCESS_REDIRECT_PATH } from "../../lib/testimonialJourney";
 
 type FormStatus = "idle" | "submitting" | "error";
 
 const DEFAULT_ERROR = "We could not submit your review right now. Please try again.";
-const REVIEW_SCHEDULE_CALL_PATH = "/schedule-call?source=review";
 const REVIEW_REDIRECT_DELAY_MS = 1800;
 
 const getErrorMessage = (code?: string) => {
@@ -49,7 +49,7 @@ export default function RateForm() {
     if (!isSuccessModalOpen) return;
 
     const timeoutId = window.setTimeout(() => {
-      router.push(REVIEW_SCHEDULE_CALL_PATH);
+      router.push(TESTIMONIAL_JOURNEY_SUCCESS_REDIRECT_PATH);
     }, REVIEW_REDIRECT_DELAY_MS);
 
     return () => window.clearTimeout(timeoutId);

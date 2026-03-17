@@ -57,6 +57,8 @@ export type WizardFrameProps = {
   step: number;
   stepCount: number;
   onBack: () => void;
+  progressLabelOverride?: string;
+  progressPercentOverride?: number;
   children: ReactNode;
 };
 
@@ -125,11 +127,15 @@ export type SolutionStepProps = {
   onUpdateField: UpdateField;
 };
 
+export type SqueezeStepProps = {
+  formData: FormData;
+  onNext: () => void;
+};
+
 export type ContactStepProps = {
   formData: FormData;
   errors: FieldErrors;
   isSubmitting: boolean;
-  isNewsletterFlow: boolean;
   submitLabel?: string;
   submittingLabel?: string;
   onSubmit: () => void;

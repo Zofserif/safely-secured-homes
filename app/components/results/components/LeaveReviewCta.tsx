@@ -1,8 +1,8 @@
 import { Star } from "lucide-react";
 import {
-  RESULTS_REVIEW_CTA_LABEL,
-  RESULTS_REVIEW_CTA_SUPPORT_TEXT,
-} from "../constants";
+  TESTIMONIAL_JOURNEY_REVIEW_CTA_LABEL,
+  TESTIMONIAL_JOURNEY_REVIEW_CTA_SUPPORT_TEXT,
+} from "../../../lib/testimonialJourney";
 
 type LeaveReviewCtaProps = {
   onClick?: () => void;
@@ -20,7 +20,7 @@ export default function LeaveReviewCta({
   href,
   disabled = false,
   className,
-  supportText = RESULTS_REVIEW_CTA_SUPPORT_TEXT,
+  supportText = TESTIMONIAL_JOURNEY_REVIEW_CTA_SUPPORT_TEXT,
 }: LeaveReviewCtaProps) {
   const interactiveClassName =
     "inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-[#0E79B2]/25 bg-linear-to-r from-[#0E79B2] to-[#146E9E] px-4 py-3 text-left text-white shadow-lg shadow-[#0E79B2]/30 transition-all hover:-translate-y-0.5 hover:from-[#0B6C9F] hover:to-[#0B6C9F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E79B2]/40";
@@ -55,7 +55,7 @@ export default function LeaveReviewCta({
               textClassName,
             )}
           >
-            {RESULTS_REVIEW_CTA_LABEL}
+            {TESTIMONIAL_JOURNEY_REVIEW_CTA_LABEL}
           </span>
           {supportText ? (
             <span

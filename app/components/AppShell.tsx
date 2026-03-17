@@ -893,7 +893,7 @@ export default function AppShell({
           key={formData.email.trim().toLowerCase() || "unknown"}
           result={result}
           data={formData}
-          resultsReviewCtaEnabled={publicSiteSettings.resultsReviewCtaEnabled}
+          testimonialJourneyEnabled={publicSiteSettings.testimonialJourneyEnabled}
         />
       )}
 

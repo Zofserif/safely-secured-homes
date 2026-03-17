@@ -70,7 +70,7 @@ This project uses a hybrid media strategy:
 7. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
    This table also stores `first_name`, `email`, and `mobile` for each generated link.
 8. Run `supabase/leads.sql` to align `leads` with canonical payload storage and remove legacy summary columns.
-9. Run `supabase/site_admin_settings.sql` to create the admin-managed launch controls for bonus visibility, Panatag cycle limits, and the results review CTA.
+9. Run `supabase/site_admin_settings.sql` to create the admin-managed launch controls for bonus visibility, Panatag cycle limits, and the testimonial journey toggle for results.
 10. Run `supabase/email_core.sql` to align `newsletter_subscribers`, create `email_journeys`, `email_journey_steps`, `email_journey_enrollments`, and `email_deliveries`, seed the lead and smart-home journeys, and backfill existing subscriber/journey/send data from the legacy campaign tables when present.
 11. After verifying the app is running on the reset model, run `supabase/email_cleanup_precheck.sql`, complete the manual smoke checks in `supabase/email_cleanup_runbook.md`, run `supabase/email_cleanup.sql`, then run `supabase/email_cleanup_postcheck.sql` to confirm the retired campaign and bucket tables are gone and the canonical counts are unchanged.
     Do not run `supabase/newsletter_campaign_tracking.sql` again in that cleaned project.
@@ -82,7 +82,7 @@ This project uses a hybrid media strategy:
 - Public blog badges are derived from DB-backed active journey usage plus past weekly broadcast sends.
 - Exact send history now lives in `email_deliveries`.
 - Weekly newsletter broadcasts are one-off sends keyed as `weekly_YYYYMMDD_<slug>`.
-- Weekly newsletter sends automatically skip subscribers who are currently in an active journey.
+- Weekly newsletter sends automatically skip subscribers while they are in an active journey. Once that journey is completed or cancelled, already-subscribed users become eligible again automatically.
 
 Send a weekly newsletter for a blog post:
 

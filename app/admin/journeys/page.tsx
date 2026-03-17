@@ -102,7 +102,8 @@ export default async function AdminJourneysPage({
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
               Manage journey schedules, connect steps to blog posts, and keep the
               weekly newsletter focused on subscribers who are not in an active
-              journey.
+              journey. Once a journey ends, subscribed users become eligible
+              again automatically.
             </p>
             <AdminSectionNav current="journeys" />
           </div>

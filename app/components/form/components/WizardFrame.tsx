@@ -6,11 +6,18 @@ export default function WizardFrame({
   step,
   stepCount,
   onBack,
+  progressLabelOverride,
+  progressPercentOverride,
   children,
 }: WizardFrameProps) {
   const hasBackButton = step > 0;
-  const progressPercent =
+  const defaultProgressPercent =
     stepCount <= 1 ? 0 : Math.min(100, Math.max(0, (step / (stepCount - 1)) * 100));
+  const progressPercent = Math.min(
+    100,
+    Math.max(0, progressPercentOverride ?? defaultProgressPercent),
+  );
+  const progressLabel = progressLabelOverride ?? `Step ${step + 1} of ${stepCount}`;
 
   return (
     <div className="relative w-full min-h-screen overflow-x-clip overflow-y-hidden bg-[#F4F0E3] py-6 sm:py-8">
@@ -44,9 +51,7 @@ export default function WizardFrame({
                 className={`flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 ${hasBackButton ? "pr-2 sm:pr-0" : ""}`}
               >
                 <span>Security Quiz</span>
-                <span>
-                  Step {step + 1} of {stepCount}
-                </span>
+                <span>{progressLabel}</span>
               </div>
               <div
                 className="h-2 overflow-hidden rounded-full bg-[#E7E1CF]"

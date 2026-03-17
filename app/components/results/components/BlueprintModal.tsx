@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Eye, ShieldCheck, Siren, X } from "lucide-react";
-import { RESULTS_CALL_HREF, RESULTS_REVIEW_PATH } from "../constants";
+import { TESTIMONIAL_JOURNEY_ENTRY_PATH } from "../../../lib/testimonialJourney";
+import { RESULTS_CALL_HREF } from "../constants";
 import type { BlueprintCard } from "../types";
 import CallUsNowCta from "./CallUsNowCta";
 import LeaveReviewCta from "./LeaveReviewCta";
@@ -10,7 +11,7 @@ type BlueprintModalProps = {
   onClose: () => void;
   isCompleted: boolean;
   onToggleComplete: () => void;
-  isResultsReviewMode?: boolean;
+  testimonialJourneyEnabled?: boolean;
   onAwarenessCallNow: () => void;
   onAwarenessReviewCtaClick: () => void;
 };
@@ -63,13 +64,13 @@ export default function BlueprintModal({
   onClose,
   isCompleted,
   onToggleComplete,
-  isResultsReviewMode = false,
+  testimonialJourneyEnabled = false,
   onAwarenessCallNow,
   onAwarenessReviewCtaClick,
 }: BlueprintModalProps) {
   const isAwarenessBlueprint = activeBlueprint?.id === "awareness";
   const showAwarenessReviewMode =
-    isAwarenessBlueprint && isResultsReviewMode;
+    isAwarenessBlueprint && testimonialJourneyEnabled;
   const contentRef = useRef<HTMLDivElement | null>(null);
   const [showFooterAction, setShowFooterAction] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -217,7 +218,7 @@ export default function BlueprintModal({
                 {showAwarenessReviewMode ? (
                   <>
                     <LeaveReviewCta
-                      href={RESULTS_REVIEW_PATH}
+                      href={TESTIMONIAL_JOURNEY_ENTRY_PATH}
                       onClick={onAwarenessReviewCtaClick}
                       className="px-5 py-4 md:text-lg"
                     />

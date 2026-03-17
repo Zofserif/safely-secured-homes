@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
+import { getWeeklyNewsletterEligibilityState } from "./weeklyNewsletterEligibility";
 import type {
   EmailJourneyEnrollmentStatus,
   NewsletterSubscriberStatus,
@@ -58,6 +59,9 @@ export type AdminSubscriberListItem = {
   subscribedAt: string | null;
   acquisitionSource: string;
   activeJourney: AdminSubscriberJourneySummary | null;
+  weeklyNewsletterEligibilityState: ReturnType<
+    typeof getWeeklyNewsletterEligibilityState
+  >;
   canReceiveWeeklyNewsletter: boolean;
 };
 
@@ -167,6 +171,11 @@ const normalizeSubscriberListItem = ({
     return null;
   }
 
+  const weeklyNewsletterEligibilityState = getWeeklyNewsletterEligibilityState({
+    subscriberStatus: status,
+    hasActiveJourney: Boolean(activeJourney),
+  });
+
   return {
     subscriberId,
     email,
@@ -175,7 +184,8 @@ const normalizeSubscriberListItem = ({
     subscribedAt: toSafeString(subscriber.subscribed_at) || null,
     acquisitionSource: toSafeString(subscriber.acquisition_source),
     activeJourney,
-    canReceiveWeeklyNewsletter: status === "subscribed" && !activeJourney,
+    weeklyNewsletterEligibilityState,
+    canReceiveWeeklyNewsletter: weeklyNewsletterEligibilityState === "eligible",
   };
 };
 

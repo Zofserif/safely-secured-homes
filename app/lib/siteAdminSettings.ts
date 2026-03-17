@@ -8,14 +8,14 @@ export const EMAIL_SENDING_DISABLED_ERROR =
 export type PublicSiteSettings = {
   bonusEnabled: boolean;
   panatagCycleLimit: number;
-  resultsReviewCtaEnabled: boolean;
+  testimonialJourneyEnabled: boolean;
   emailSendingEnabled: boolean;
 };
 
 export const DEFAULT_PUBLIC_SITE_SETTINGS: PublicSiteSettings = {
   bonusEnabled: false,
   panatagCycleLimit: DEFAULT_PANATAG_CYCLE_LIMIT,
-  resultsReviewCtaEnabled: true,
+  testimonialJourneyEnabled: true,
   emailSendingEnabled: DEFAULT_EMAIL_SENDING_ENABLED,
 };
 
@@ -53,10 +53,10 @@ export const normalizePublicSiteSettings = (
     value && "panatagCycleLimit" in value
       ? normalizePanatagCycleLimit(value.panatagCycleLimit)
       : DEFAULT_PUBLIC_SITE_SETTINGS.panatagCycleLimit,
-  resultsReviewCtaEnabled:
-    typeof value?.resultsReviewCtaEnabled === "boolean"
-      ? value.resultsReviewCtaEnabled
-      : DEFAULT_PUBLIC_SITE_SETTINGS.resultsReviewCtaEnabled,
+  testimonialJourneyEnabled:
+    typeof value?.testimonialJourneyEnabled === "boolean"
+      ? value.testimonialJourneyEnabled
+      : DEFAULT_PUBLIC_SITE_SETTINGS.testimonialJourneyEnabled,
   emailSendingEnabled:
     typeof value?.emailSendingEnabled === "boolean"
       ? value.emailSendingEnabled

@@ -20,6 +20,12 @@ import type {
   WizardControllerArgs,
 } from "../types";
 
+const clampStepIndex = (value: number) =>
+  Math.min(FORM_STEPS.length - 1, Math.max(0, value));
+
+const findStepIndex = (stepId: (typeof FORM_STEPS)[number]["id"]) =>
+  FORM_STEPS.findIndex((step) => step.id === stepId);
+
 export const useWizardController = ({
   mode,
   onComplete,
@@ -46,16 +52,25 @@ export const useWizardController = ({
 
   const nextStep = () => {
     trackFormStepCompleted(step, analyticsContext);
-    setStep((current) => current + 1);
+    setStep((current) => clampStepIndex(current + 1));
   };
 
-  const prevStep = () => setStep((current) => current - 1);
+  const prevStep = () =>
+    setStep((current) => {
+      const currentStepId = FORM_STEPS[current]?.id;
+      if (currentStepId === "squeeze" || currentStepId === "contact_details") {
+        const goalObstacleOtherStepIndex = findStepIndex("goal_obstacle_other");
+        if (goalObstacleOtherStepIndex !== -1) {
+          return goalObstacleOtherStepIndex;
+        }
+      }
+
+      return clampStepIndex(current - 1);
+    });
+
   const goToStep = (stepIndex: number) => {
     const roundedStep = Math.round(stepIndex);
-    const minStep = 0;
-    const maxStep = FORM_STEPS.length - 1;
-    const clampedStep = Math.min(maxStep, Math.max(minStep, roundedStep));
-    setStep(clampedStep);
+    setStep(clampStepIndex(roundedStep));
   };
 
   const validateContactInfo = () => {

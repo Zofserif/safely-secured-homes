@@ -1,5 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  PUBLIC_TESTIMONIAL_SELECT,
+  SOCIAL_PROOF_ENTRIES_TABLE,
+  SOCIAL_PROOF_KIND_TESTIMONIAL,
+} from "../../lib/socialProofEntries";
+import {
+  isMissingSupabaseTableError,
+  type SupabaseTableError,
+} from "../../lib/supabaseTableFallback";
 import { filterHighSignalTestimonials } from "../../lib/testimonialQuality";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,10 +29,28 @@ const IP_COOLDOWN_MS = 15_000;
 
 const ipCooldownByAddress = new Map<string, number>();
 
-type SupabaseError = {
-  code?: string | null;
-  message?: string;
+type PublicTestimonialRow = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  location: string | null;
+  rating: number | null;
+  review: string | null;
+  profile_image_url: string | null;
+  created_at: string | null;
 };
+
+const LEGACY_TESTIMONIALS_TABLE = "testimonials";
+const LEGACY_TESTIMONIAL_SELECT = [
+  "id",
+  "first_name",
+  "last_name",
+  "location",
+  "rating",
+  "review",
+  "profile_image_url",
+  "created_at",
+].join(",");
 
 const shuffle = <T,>(items: T[]) => {
   const copy = [...items];
@@ -37,11 +64,9 @@ const shuffle = <T,>(items: T[]) => {
 const normalizeText = (value: unknown) =>
   typeof value === "string" ? value.trim() : "";
 
-const isMissingPublishedColumnError = (
-  error: SupabaseError | null | undefined
-) =>
-  error?.code === "42703" &&
-  String(error?.message ?? "").includes("is_published");
+const isMissingSocialProofEntriesTableError = (
+  error: SupabaseTableError | null | undefined,
+) => isMissingSupabaseTableError(error, SOCIAL_PROOF_ENTRIES_TABLE);
 
 const getClientIp = (req: Request) => {
   const forwardedFor = req.headers.get("x-forwarded-for");
@@ -71,19 +96,17 @@ const enforceIpCooldown = (ip: string) => {
   return true;
 };
 
-const createPublicTestimonialsQuery = (limit: number, onlyPublished: boolean) => {
+const createPublicTestimonialsQuery = (limit: number) => {
   if (!supabase) return null;
 
-  const query = supabase
-    .from("testimonials")
-    .select(
-      "id,first_name,last_name,location,rating,review,profile_image_url,created_at"
-    )
+  return supabase
+    .from(SOCIAL_PROOF_ENTRIES_TABLE)
+    .select(PUBLIC_TESTIMONIAL_SELECT)
+    .eq("kind", SOCIAL_PROOF_KIND_TESTIMONIAL)
+    .eq("is_published", true)
     .order("rating", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
-
-  return onlyPublished ? query.eq("is_published", true) : query;
 };
 
 export async function GET(req: Request) {
@@ -97,13 +120,16 @@ export async function GET(req: Request) {
   const limit = Math.max(1, Math.min(12, Number(limitParam) || 3));
 
   const fetchLimit = Math.max(limit * 5, 15);
-  let { data, error } = await createPublicTestimonialsQuery(fetchLimit, true)!;
+  let { data, error } = await createPublicTestimonialsQuery(fetchLimit)!;
 
-  if (error && isMissingPublishedColumnError(error)) {
-    console.warn(
-      'Supabase column "testimonials.is_published" not found yet; falling back to legacy query.'
-    );
-    ({ data, error } = await createPublicTestimonialsQuery(fetchLimit, false)!);
+  if (error && isMissingSocialProofEntriesTableError(error)) {
+    ({ data, error } = await supabase!
+      .from(LEGACY_TESTIMONIALS_TABLE)
+      .select(LEGACY_TESTIMONIAL_SELECT)
+      .eq("is_published", true)
+      .order("rating", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(fetchLimit));
   }
 
   if (error) {
@@ -111,7 +137,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ testimonials: [] }, { status: 500 });
   }
 
-  const items = filterHighSignalTestimonials(data ?? []);
+  const items = filterHighSignalTestimonials(
+    ((data as unknown as PublicTestimonialRow[] | null) ?? []),
+  );
   if (!items.length) {
     return NextResponse.json({ testimonials: [] });
   }
@@ -237,13 +265,24 @@ export async function POST(req: Request) {
     Date.now() - SPAM_WINDOW_MINUTES * 60 * 1000
   ).toISOString();
 
-  const { data: duplicateRows, error: duplicateError } = await supabase
-    .from("testimonials")
+  let { data: duplicateRows, error: duplicateError } = await supabase
+    .from(SOCIAL_PROOF_ENTRIES_TABLE)
     .select("id")
+    .eq("kind", SOCIAL_PROOF_KIND_TESTIMONIAL)
     .eq("email", email)
-    .eq("review", review)
+    .eq("content", review)
     .gte("created_at", spamWindowStart)
     .limit(1);
+
+  if (duplicateError && isMissingSocialProofEntriesTableError(duplicateError)) {
+    ({ data: duplicateRows, error: duplicateError } = await supabase
+      .from(LEGACY_TESTIMONIALS_TABLE)
+      .select("id")
+      .eq("email", email)
+      .eq("review", review)
+      .gte("created_at", spamWindowStart)
+      .limit(1));
+  }
 
   if (duplicateError) {
     console.error("Failed duplicate testimonial check:", duplicateError);
@@ -263,15 +302,29 @@ export async function POST(req: Request) {
     );
   }
 
-  const { error } = await supabase.from("testimonials").insert({
+  let { error } = await supabase.from(SOCIAL_PROOF_ENTRIES_TABLE).insert({
+    kind: SOCIAL_PROOF_KIND_TESTIMONIAL,
+    name: `${firstName} ${lastName}`.trim(),
     first_name: firstName,
     last_name: lastName,
     email,
     location,
     rating: ratingValue,
-    review,
+    content: review,
     is_published: false,
   });
+
+  if (error && isMissingSocialProofEntriesTableError(error)) {
+    ({ error } = await supabase.from(LEGACY_TESTIMONIALS_TABLE).insert({
+      first_name: firstName,
+      last_name: lastName,
+      email,
+      location,
+      rating: ratingValue,
+      review,
+      is_published: false,
+    }));
+  }
 
   if (error) {
     console.error("Failed to insert testimonial:", error);

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AdminSectionNav from "../../components/admin/AdminSectionNav";
 import {
+  archiveJourneyAction,
+  deleteJourneyAction,
   deleteJourneyStepAction,
   logoutAdminAction,
   saveJourneyAction,
@@ -10,6 +12,7 @@ import {
 import { requireAdminSession } from "../../lib/adminAuth";
 import {
   getAdminJourneyByKey,
+  getAdminJourneyDeletionState,
   getAdminJourneySummaries,
   listPublishedBlogPostOptions,
   type AdminJourney,
@@ -31,6 +34,64 @@ const readSearchParam = (value: string | string[] | undefined) => {
   }
 
   return typeof value === "string" ? value.trim() : "";
+};
+
+const buildJourneyHref = ({
+  journeyKey,
+  isNew,
+  confirmDelete,
+}: {
+  journeyKey?: string;
+  isNew?: boolean;
+  confirmDelete?: string;
+}) => {
+  const params = new URLSearchParams();
+  if (journeyKey) {
+    params.set("journey", journeyKey);
+  } else if (isNew) {
+    params.set("new", "1");
+  }
+  if (confirmDelete) {
+    params.set("confirmDelete", confirmDelete);
+  }
+
+  const query = params.toString();
+  return query ? `/admin/journeys?${query}` : "/admin/journeys";
+};
+
+const formatCountLabel = (
+  count: number,
+  singular: string,
+  plural = `${singular}s`,
+) => `${count} ${count === 1 ? singular : plural}`;
+
+const getHardDeleteBlockers = ({
+  activeEnrollmentCount,
+  historicalEnrollmentCount,
+  deliveryCount,
+}: {
+  activeEnrollmentCount: number;
+  historicalEnrollmentCount: number;
+  deliveryCount: number;
+}) => {
+  const blockers: string[] = [];
+  if (activeEnrollmentCount > 0) {
+    blockers.push(
+      `${formatCountLabel(activeEnrollmentCount, "active enrollment")} must be cleared first.`,
+    );
+  }
+  if (historicalEnrollmentCount > 0) {
+    blockers.push(
+      `${formatCountLabel(historicalEnrollmentCount, "historical enrollment")} must be preserved.`,
+    );
+  }
+  if (deliveryCount > 0) {
+    blockers.push(
+      `${formatCountLabel(deliveryCount, "delivery", "deliveries")} already reference this journey.`,
+    );
+  }
+
+  return blockers;
 };
 
 const statusLabelMap = {
@@ -72,6 +133,7 @@ export default async function AdminJourneysPage({
   const isCreatingNew = readSearchParam(resolvedSearchParams.new) === "1";
   const flashMessage = readSearchParam(resolvedSearchParams.flash);
   const errorMessage = readSearchParam(resolvedSearchParams.error);
+  const confirmDeleteKey = readSearchParam(resolvedSearchParams.confirmDelete);
 
   const [journeys, blogPostOptions] = await Promise.all([
     getAdminJourneySummaries(),
@@ -86,7 +148,20 @@ export default async function AdminJourneysPage({
   const selectedJourney = resolvedSelectedJourneyKey
     ? await getAdminJourneyByKey(resolvedSelectedJourneyKey)
     : undefined;
+  const deletionState = selectedJourney
+    ? await getAdminJourneyDeletionState(selectedJourney.key)
+    : undefined;
   const editorValues = selectedJourney ?? emptyJourney;
+  const editorContextKey = isCreatingNew
+    ? "new"
+    : selectedJourney?.key || "empty";
+  const hardDeleteBlockers = deletionState
+    ? getHardDeleteBlockers(deletionState)
+    : [];
+  const isDeleteConfirmationVisible =
+    Boolean(selectedJourney) &&
+    deletionState?.canHardDelete &&
+    confirmDeleteKey === selectedJourney?.key;
 
   return (
     <main className="min-h-screen bg-[#F8F6F2] px-4 py-6 text-[#1F2937] sm:px-6 lg:px-8">
@@ -110,7 +185,7 @@ export default async function AdminJourneysPage({
 
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              href="/admin/journeys?new=1"
+              href={buildJourneyHref({ isNew: true })}
               className="rounded-full border border-[#0E79B2] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#0E79B2] transition hover:bg-[#0E79B2] hover:text-white"
             >
               New Journey
@@ -156,7 +231,7 @@ export default async function AdminJourneysPage({
                   return (
                     <Link
                       key={journey.key}
-                      href={`/admin/journeys?journey=${encodeURIComponent(journey.key)}`}
+                      href={buildJourneyHref({ journeyKey: journey.key })}
                       className={`block rounded-3xl border px-4 py-4 transition ${
                         isActive
                           ? "border-[#0E79B2] bg-[#E8F5FB]"
@@ -191,7 +266,7 @@ export default async function AdminJourneysPage({
             </div>
           </aside>
 
-          <section className="space-y-6">
+          <section key={editorContextKey} className="space-y-6">
             <div className="rounded-4xl border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -205,6 +280,14 @@ export default async function AdminJourneysPage({
                     Journey keys stay stable once created because enrollments and
                     delivery history reference them directly.
                   </p>
+                  {selectedJourney ? (
+                    <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Current key:{" "}
+                      <span className="font-mono normal-case tracking-normal text-slate-700">
+                        {selectedJourney.key}
+                      </span>
+                    </p>
+                  ) : null}
                 </div>
 
                 {selectedJourney ? (
@@ -307,6 +390,167 @@ export default async function AdminJourneysPage({
                   {selectedJourney ? "Save Journey" : "Create Journey"}
                 </button>
               </form>
+
+              {selectedJourney && deletionState ? (
+                <div className="mt-8 grid gap-4 xl:grid-cols-2">
+                  <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-bold text-slate-900">
+                        Archive Journey
+                      </h3>
+                      {deletionState.recommendedAction === "archive" ? (
+                        <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
+                          Recommended
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                      Archive keeps the journey and its step history intact while
+                      removing it from active assignment options.
+                    </p>
+                    <form action={archiveJourneyAction} className="mt-4">
+                      <input type="hidden" name="journeyKey" value={selectedJourney.key} />
+                      <button
+                        type="submit"
+                        disabled={selectedJourney.status === "archived"}
+                        className={`rounded-full px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] transition ${
+                          selectedJourney.status === "archived"
+                            ? "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                            : "border border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:text-slate-900"
+                        }`}
+                      >
+                        {selectedJourney.status === "archived"
+                          ? "Already Archived"
+                          : "Archive Journey"}
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className="rounded-[1.75rem] border border-rose-200 bg-rose-50/50 p-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-bold text-slate-900">
+                        Delete Journey
+                      </h3>
+                      {deletionState.recommendedAction === "delete" ? (
+                        <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white">
+                          Allowed
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                      Hard delete removes the journey record and all of its
+                      steps. Enrollment and delivery history are never deleted
+                      automatically.
+                    </p>
+
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-white/80 bg-white px-4 py-3 text-sm text-slate-600">
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Steps
+                        </div>
+                        <div className="mt-2 text-base font-bold text-slate-900">
+                          {formatCountLabel(deletionState.stepCount, "step")}
+                        </div>
+                      </div>
+                      <div className="rounded-2xl border border-white/80 bg-white px-4 py-3 text-sm text-slate-600">
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Active Enrollments
+                        </div>
+                        <div className="mt-2 text-base font-bold text-slate-900">
+                          {formatCountLabel(
+                            deletionState.activeEnrollmentCount,
+                            "enrollment",
+                          )}
+                        </div>
+                      </div>
+                      <div className="rounded-2xl border border-white/80 bg-white px-4 py-3 text-sm text-slate-600">
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Historical Enrollments
+                        </div>
+                        <div className="mt-2 text-base font-bold text-slate-900">
+                          {formatCountLabel(
+                            deletionState.historicalEnrollmentCount,
+                            "enrollment",
+                          )}
+                        </div>
+                      </div>
+                      <div className="rounded-2xl border border-white/80 bg-white px-4 py-3 text-sm text-slate-600">
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Deliveries
+                        </div>
+                        <div className="mt-2 text-base font-bold text-slate-900">
+                          {formatCountLabel(
+                            deletionState.deliveryCount,
+                            "delivery",
+                            "deliveries",
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {!deletionState.canHardDelete ? (
+                      <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+                        <p className="font-semibold">Hard delete is blocked.</p>
+                        <div className="mt-2 space-y-1">
+                          {hardDeleteBlockers.map((blocker) => (
+                            <p key={blocker}>{blocker}</p>
+                          ))}
+                        </div>
+                      </div>
+                    ) : isDeleteConfirmationVisible ? (
+                      <div className="mt-4 rounded-2xl border border-rose-200 bg-white px-4 py-4 text-sm text-rose-700">
+                        <p className="font-semibold">
+                          Confirm permanent deletion for{" "}
+                          <span className="font-mono">{selectedJourney.key}</span>.
+                        </p>
+                        <p className="mt-2 leading-relaxed">
+                          This removes the journey row and all of its steps. It
+                          does not remove historical subscriber or delivery
+                          records.
+                        </p>
+                        <div className="mt-4 flex flex-wrap items-center gap-3">
+                          <form action={deleteJourneyAction}>
+                            <input
+                              type="hidden"
+                              name="journeyKey"
+                              value={selectedJourney.key}
+                            />
+                            <button
+                              type="submit"
+                              className="rounded-full bg-rose-600 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-rose-700"
+                            >
+                              Confirm Delete Journey
+                            </button>
+                          </form>
+                          <Link
+                            href={buildJourneyHref({
+                              journeyKey: selectedJourney.key,
+                            })}
+                            className="rounded-full border border-slate-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+                          >
+                            Cancel
+                          </Link>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <Link
+                          href={buildJourneyHref({
+                            journeyKey: selectedJourney.key,
+                            confirmDelete: selectedJourney.key,
+                          })}
+                          className="rounded-full border border-rose-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-rose-700 transition hover:border-rose-400 hover:bg-rose-100"
+                        >
+                          Delete Journey
+                        </Link>
+                        <p className="text-xs leading-relaxed text-slate-500">
+                          Only unused journeys can be permanently deleted.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="rounded-4xl border border-[#BEE9E8]/70 bg-white/95 p-6 shadow-lg shadow-[#0E79B2]/10 sm:p-8">

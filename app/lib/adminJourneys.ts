@@ -65,6 +65,16 @@ export type AdminJourney = AdminJourneySummary & {
   steps: AdminJourneyStep[];
 };
 
+export type AdminJourneyDeletionState = {
+  journeyKey: string;
+  stepCount: number;
+  activeEnrollmentCount: number;
+  historicalEnrollmentCount: number;
+  deliveryCount: number;
+  canHardDelete: boolean;
+  recommendedAction: "archive" | "delete";
+};
+
 export type SaveAdminJourneyInput = {
   existingKey?: string;
   key: string;
@@ -199,6 +209,88 @@ const toSummary = (
 const sortJourneySummaries = (a: AdminJourneySummary, b: AdminJourneySummary) =>
   a.name.localeCompare(b.name) || a.key.localeCompare(b.key);
 
+const getJourneyStepCount = async (journeyKey: string) => {
+  const client = requireSupabase();
+  const { count, error } = await client
+    .from("email_journey_steps")
+    .select("step_key", { count: "exact", head: true })
+    .eq("journey_key", journeyKey);
+
+  if (error) throw error;
+  return count ?? 0;
+};
+
+const getJourneyActiveEnrollmentCount = async (journeyKey: string) => {
+  const client = requireSupabase();
+  const { count, error } = await client
+    .from("email_journey_enrollments")
+    .select("id", { count: "exact", head: true })
+    .eq("journey_key", journeyKey)
+    .eq("status", "active");
+
+  if (error) throw error;
+  return count ?? 0;
+};
+
+const getJourneyHistoricalEnrollmentCount = async (journeyKey: string) => {
+  const client = requireSupabase();
+  const { count, error } = await client
+    .from("email_journey_enrollments")
+    .select("id", { count: "exact", head: true })
+    .eq("journey_key", journeyKey)
+    .in("status", ["completed", "cancelled"]);
+
+  if (error) throw error;
+  return count ?? 0;
+};
+
+const getJourneyDeliveryCount = async (journeyKey: string) => {
+  const client = requireSupabase();
+  const { count, error } = await client
+    .from("email_deliveries")
+    .select("id", { count: "exact", head: true })
+    .eq("journey_key", journeyKey);
+
+  if (error) throw error;
+  return count ?? 0;
+};
+
+const assertJourneyExists = async (journeyKey: string) => {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("email_journeys")
+    .select("key")
+    .eq("key", journeyKey)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) {
+    throw new Error("Journey not found.");
+  }
+};
+
+const buildHardDeleteBlockedMessage = (
+  state: Pick<
+    AdminJourneyDeletionState,
+    "activeEnrollmentCount" | "historicalEnrollmentCount" | "deliveryCount"
+  >,
+) => {
+  const blockers: string[] = [];
+  if (state.activeEnrollmentCount > 0) {
+    blockers.push("it still has active enrollments");
+  }
+  if (state.historicalEnrollmentCount > 0) {
+    blockers.push("it has enrollment history");
+  }
+  if (state.deliveryCount > 0) {
+    blockers.push("it has delivery history");
+  }
+
+  return blockers.length > 0
+    ? `This journey cannot be deleted because ${blockers.join(" and ")}.`
+    : "";
+};
+
 export async function getAdminJourneySummaries(): Promise<AdminJourneySummary[]> {
   const journeys = await listEmailJourneyDefinitions({
     includeInactiveSteps: true,
@@ -269,6 +361,44 @@ export async function listAssignableJourneySummaries(): Promise<
   );
 }
 
+export async function getAdminJourneyDeletionState(
+  journeyKey: string,
+): Promise<AdminJourneyDeletionState> {
+  const normalizedJourneyKey = normalizeJourneyKey(journeyKey);
+  if (!normalizedJourneyKey) {
+    throw new Error("Journey key is required.");
+  }
+
+  await assertJourneyExists(normalizedJourneyKey);
+
+  const [
+    stepCount,
+    activeEnrollmentCount,
+    historicalEnrollmentCount,
+    deliveryCount,
+  ] = await Promise.all([
+    getJourneyStepCount(normalizedJourneyKey),
+    getJourneyActiveEnrollmentCount(normalizedJourneyKey),
+    getJourneyHistoricalEnrollmentCount(normalizedJourneyKey),
+    getJourneyDeliveryCount(normalizedJourneyKey),
+  ]);
+
+  const canHardDelete =
+    activeEnrollmentCount === 0 &&
+    historicalEnrollmentCount === 0 &&
+    deliveryCount === 0;
+
+  return {
+    journeyKey: normalizedJourneyKey,
+    stepCount,
+    activeEnrollmentCount,
+    historicalEnrollmentCount,
+    deliveryCount,
+    canHardDelete,
+    recommendedAction: canHardDelete ? "delete" : "archive",
+  };
+}
+
 const assertJourneyInput = ({
   key,
   name,
@@ -334,6 +464,46 @@ export async function saveAdminJourney(input: SaveAdminJourneyInput): Promise<{
       ...(currentJourney?.steps.map((step) => step.blogPostSlug) ?? []),
       ...savedJourney.steps.map((step) => step.blogPostSlug),
     ]),
+  };
+}
+
+export async function archiveAdminJourney(journeyKey: string): Promise<{
+  journey: AdminJourney;
+  affectedBlogSlugs: string[];
+}> {
+  const client = requireSupabase();
+  const normalizedJourneyKey = normalizeJourneyKey(journeyKey);
+  if (!normalizedJourneyKey) {
+    throw new Error("Journey key is required.");
+  }
+
+  const currentJourney = await getAdminJourneyByKey(normalizedJourneyKey);
+  if (!currentJourney) {
+    throw new Error("Journey not found.");
+  }
+
+  const { data, error } = await client
+    .from("email_journeys")
+    .update({ status: "archived" })
+    .eq("key", normalizedJourneyKey)
+    .select("key")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) {
+    throw new Error("Journey not found.");
+  }
+
+  const archivedJourney = await getAdminJourneyByKey(normalizedJourneyKey);
+  if (!archivedJourney) {
+    throw new Error("Archived journey could not be reloaded.");
+  }
+
+  return {
+    journey: archivedJourney,
+    affectedBlogSlugs: distinctValues(
+      currentJourney.steps.map((step) => step.blogPostSlug),
+    ),
   };
 }
 
@@ -525,5 +695,45 @@ export async function deleteAdminJourneyStep({
 
   return {
     affectedBlogSlugs: distinctValues([currentBlogPost?.slug ?? ""]),
+  };
+}
+
+export async function deleteAdminJourney(journeyKey: string): Promise<{
+  deletedJourneyKey: string;
+  affectedBlogSlugs: string[];
+}> {
+  const client = requireSupabase();
+  const normalizedJourneyKey = normalizeJourneyKey(journeyKey);
+  if (!normalizedJourneyKey) {
+    throw new Error("Journey key is required.");
+  }
+
+  const currentJourney = await getAdminJourneyByKey(normalizedJourneyKey);
+  if (!currentJourney) {
+    throw new Error("Journey not found.");
+  }
+
+  const deletionState = await getAdminJourneyDeletionState(normalizedJourneyKey);
+  if (!deletionState.canHardDelete) {
+    throw new Error(buildHardDeleteBlockedMessage(deletionState));
+  }
+
+  const { data, error } = await client
+    .from("email_journeys")
+    .delete()
+    .eq("key", normalizedJourneyKey)
+    .select("key")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) {
+    throw new Error("Journey not found.");
+  }
+
+  return {
+    deletedJourneyKey: normalizedJourneyKey,
+    affectedBlogSlugs: distinctValues(
+      currentJourney.steps.map((step) => step.blogPostSlug),
+    ),
   };
 }

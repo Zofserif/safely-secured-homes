@@ -11,12 +11,34 @@ import {
   type LimitedOfferLinkStatus,
 } from "./limitedOfferLinks";
 import { normalizeEmail } from "./contactName";
+import {
+  ENGAGEMENT_LINKS_TABLE,
+  ENGAGEMENT_LINK_KIND_LIMITED_OFFER,
+} from "./engagementLinksSchema";
 import { siteUrl } from "./site";
+import {
+  isMissingSupabaseTableError,
+  type SupabaseTableError,
+} from "./supabaseTableFallback";
 
 const LIMITED_OFFER_LINK_KEY_BYTES = 18;
 const LIMITED_OFFER_LINK_INSERT_RETRY_COUNT = 3;
+const LEGACY_LIMITED_OFFER_LINKS_TABLE = "limited_offer_links";
 
 export const LIMITED_OFFER_LINK_SELECT = [
+  "link_key",
+  "source_key",
+  "recipient_name:contact_name",
+  "recipient_email:contact_email",
+  "blog_post_id",
+  "created_at",
+  "expires_at",
+  "first_opened_at",
+  "last_opened_at",
+  "revoked_at",
+].join(",");
+
+const LEGACY_LIMITED_OFFER_LINK_SELECT = [
   "link_key",
   "source_key",
   "recipient_name",
@@ -42,6 +64,10 @@ const toOptionalText = (value: unknown): string | null => {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
 };
+
+const isMissingLimitedOfferLinksTableError = (
+  error: SupabaseTableError | null | undefined,
+) => isMissingSupabaseTableError(error, ENGAGEMENT_LINKS_TABLE);
 
 const toRow = (value: unknown): LimitedOfferLinkRow | null =>
   value ? (value as LimitedOfferLinkRow) : null;
@@ -77,11 +103,20 @@ const fetchLimitedOfferLinkRow = async (
   key: string,
 ): Promise<LimitedOfferLinkRow | null> => {
   const client = getLimitedOfferLinksClient();
-  const { data, error } = await client
-    .from("limited_offer_links")
+  let { data, error } = await client
+    .from(ENGAGEMENT_LINKS_TABLE)
     .select(LIMITED_OFFER_LINK_SELECT)
+    .eq("kind", ENGAGEMENT_LINK_KIND_LIMITED_OFFER)
     .eq("link_key", key)
     .maybeSingle();
+
+  if (error && isMissingLimitedOfferLinksTableError(error)) {
+    ({ data, error } = await client
+      .from(LEGACY_LIMITED_OFFER_LINKS_TABLE)
+      .select(LEGACY_LIMITED_OFFER_LINK_SELECT)
+      .eq("link_key", key)
+      .maybeSingle());
+  }
 
   if (error) {
     throw new Error(error.message);
@@ -94,11 +129,20 @@ const fetchLimitedOfferLinkRowBySourceKey = async (
   sourceKey: string,
 ): Promise<LimitedOfferLinkRow | null> => {
   const client = getLimitedOfferLinksClient();
-  const { data, error } = await client
-    .from("limited_offer_links")
+  let { data, error } = await client
+    .from(ENGAGEMENT_LINKS_TABLE)
     .select(LIMITED_OFFER_LINK_SELECT)
+    .eq("kind", ENGAGEMENT_LINK_KIND_LIMITED_OFFER)
     .eq("source_key", sourceKey)
     .maybeSingle();
+
+  if (error && isMissingLimitedOfferLinksTableError(error)) {
+    ({ data, error } = await client
+      .from(LEGACY_LIMITED_OFFER_LINKS_TABLE)
+      .select(LEGACY_LIMITED_OFFER_LINK_SELECT)
+      .eq("source_key", sourceKey)
+      .maybeSingle());
+  }
 
   if (error) {
     throw new Error(error.message);
@@ -153,13 +197,14 @@ export async function getOrCreateLimitedOfferLinkBySourceKey({
     attempt += 1
   ) {
     const linkKey = generateLimitedOfferLinkKey();
-    const { data, error } = await client
-      .from("limited_offer_links")
+    let { data, error } = await client
+      .from(ENGAGEMENT_LINKS_TABLE)
       .insert({
+        kind: ENGAGEMENT_LINK_KIND_LIMITED_OFFER,
         link_key: linkKey,
         source_key: safeSourceKey,
-        recipient_name: safeRecipientName,
-        recipient_email: safeRecipientEmail
+        contact_name: safeRecipientName,
+        contact_email: safeRecipientEmail
           ? normalizeEmail(safeRecipientEmail)
           : null,
         blog_post_id: safeBlogPostId,
@@ -167,6 +212,23 @@ export async function getOrCreateLimitedOfferLinkBySourceKey({
       })
       .select("link_key,source_key,created_at,expires_at")
       .maybeSingle();
+
+    if (error && isMissingLimitedOfferLinksTableError(error)) {
+      ({ data, error } = await client
+        .from(LEGACY_LIMITED_OFFER_LINKS_TABLE)
+        .insert({
+          link_key: linkKey,
+          source_key: safeSourceKey,
+          recipient_name: safeRecipientName,
+          recipient_email: safeRecipientEmail
+            ? normalizeEmail(safeRecipientEmail)
+            : null,
+          blog_post_id: safeBlogPostId,
+          expires_at: safeExpiresAt,
+        })
+        .select("link_key,source_key,created_at,expires_at")
+        .maybeSingle());
+    }
 
     if (!error && data) {
       return toCreatedLinkResult(data as CreatedLimitedOfferLinkRow, baseUrl);
@@ -217,15 +279,28 @@ export async function openLimitedOfferLink(
   const client = getLimitedOfferLinksClient();
   const openedAt = new Date(nowMs).toISOString();
 
-  const { data, error } = await client
-    .from("limited_offer_links")
+  let { data, error } = await client
+    .from(ENGAGEMENT_LINKS_TABLE)
     .update({
       first_opened_at: existingRow.first_opened_at || openedAt,
       last_opened_at: openedAt,
     })
+    .eq("kind", ENGAGEMENT_LINK_KIND_LIMITED_OFFER)
     .eq("link_key", normalizedKey)
     .select(LIMITED_OFFER_LINK_SELECT)
     .maybeSingle();
+
+  if (error && isMissingLimitedOfferLinksTableError(error)) {
+    ({ data, error } = await client
+      .from(LEGACY_LIMITED_OFFER_LINKS_TABLE)
+      .update({
+        first_opened_at: existingRow.first_opened_at || openedAt,
+        last_opened_at: openedAt,
+      })
+      .eq("link_key", normalizedKey)
+      .select(LEGACY_LIMITED_OFFER_LINK_SELECT)
+      .maybeSingle());
+  }
 
   if (error) {
     throw new Error(error.message);

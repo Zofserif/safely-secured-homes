@@ -65,16 +65,16 @@ This project uses a hybrid media strategy:
 2. Run `npm run backfill:blog-admin-fields` once to populate `content_markdown` and `cta_markdown` from the existing rendered HTML rows.
 3. Run `npm run backfill:blog-content-html -- --dry-run` to preview stored `content` rows that should be regenerated from `content_markdown`, then rerun without `--dry-run` to apply the fix.
 4. Run `supabase/storage_assets.sql` to create storage buckets + policies.
-5. Run `supabase/testimonials.sql` to create/update testimonial moderation schema for `/rate` and public testimonial feeds.
+5. Run `supabase/social_proof_entries.sql` to create/update the consolidated testimonial and success-story schema for `/rate`, public testimonial feeds, and the success stories page.
 6. Optional: run `supabase/blog_posts_seed.sql` for sample content.
-7. Run `supabase/results_links.sql` to enable DB-backed `/results?r=...` share links.
-   This table also stores `first_name`, `email`, and `mobile` for each generated link.
+7. Run `supabase/engagement_links.sql` to create/update the consolidated link schema for DB-backed `/results?r=...`, bonus claim links, and limited-time offer links.
 8. Run `supabase/leads.sql` to align `leads` with canonical payload storage and remove legacy summary columns.
 9. Run `supabase/site_admin_settings.sql` to create the admin-managed launch controls for bonus visibility, Panatag cycle limits, and the testimonial journey toggle for results.
 10. Run `supabase/email_core.sql` to align `newsletter_subscribers`, create `email_journeys`, `email_journey_steps`, `email_journey_enrollments`, and `email_deliveries`, seed the lead and smart-home journeys, and backfill existing subscriber/journey/send data from the legacy campaign tables when present.
 11. After verifying the app is running on the reset model, run `supabase/email_cleanup_precheck.sql`, complete the manual smoke checks in `supabase/email_cleanup_runbook.md`, run `supabase/email_cleanup.sql`, then run `supabase/email_cleanup_postcheck.sql` to confirm the retired campaign and bucket tables are gone and the canonical counts are unchanged.
     Do not run `supabase/newsletter_campaign_tracking.sql` again in that cleaned project.
-12. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/email-journeys` once daily at `01:00 UTC` for Hobby-safe journey sends.
+12. After the app is reading from the consolidated link and social-proof tables, run `supabase/table_consolidation_precheck.sql`, then `supabase/table_consolidation_cleanup.sql`, then `supabase/table_consolidation_postcheck.sql` to remove the retired legacy tables.
+13. Optional: deploy `vercel.json` so Vercel runs `GET /api/cron/email-journeys` once daily at `01:00 UTC` for Hobby-safe journey sends.
    On Vercel Hobby, steps 2-4 are delivered on the first daily batch after they become due rather than at exact hour precision.
 
 ### Blog Email Organization

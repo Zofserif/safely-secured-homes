@@ -1,4 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
+import {
+  PUBLIC_TESTIMONIAL_SELECT,
+  SOCIAL_PROOF_ENTRIES_TABLE,
+  SOCIAL_PROOF_KIND_TESTIMONIAL,
+} from "./socialProofEntries";
+import {
+  isMissingSupabaseTableError,
+  type SupabaseTableError,
+} from "./supabaseTableFallback";
 import { filterHighSignalTestimonials } from "./testimonialQuality";
 
 export type ApplyTestimonial = {
@@ -20,10 +29,17 @@ const supabase =
     ? createClient(supabaseUrl, serviceRoleKey)
     : null;
 
-type SupabaseError = {
-  code?: string | null;
-  message?: string;
-};
+const LEGACY_TESTIMONIALS_TABLE = "testimonials";
+const LEGACY_TESTIMONIAL_SELECT = [
+  "id",
+  "first_name",
+  "last_name",
+  "location",
+  "rating",
+  "review",
+  "profile_image_url",
+  "created_at",
+].join(",");
 
 const shuffle = <T,>(items: T[]) => {
   const copy = [...items];
@@ -34,11 +50,9 @@ const shuffle = <T,>(items: T[]) => {
   return copy;
 };
 
-const isMissingPublishedColumnError = (
-  error: SupabaseError | null | undefined
-) =>
-  error?.code === "42703" &&
-  String(error?.message ?? "").includes("is_published");
+const isMissingSocialProofEntriesTableError = (
+  error: SupabaseTableError | null | undefined,
+) => isMissingSupabaseTableError(error, SOCIAL_PROOF_ENTRIES_TABLE);
 
 export async function getApplyTestimonials(limit = 3): Promise<ApplyTestimonial[]> {
   if (!supabase) {
@@ -48,24 +62,19 @@ export async function getApplyTestimonials(limit = 3): Promise<ApplyTestimonial[
 
   const fetchLimit = Math.max(limit * 5, 15);
   let { data, error } = await supabase
-    .from("testimonials")
-    .select(
-      "id,first_name,last_name,location,rating,review,profile_image_url,created_at"
-    )
+    .from(SOCIAL_PROOF_ENTRIES_TABLE)
+    .select(PUBLIC_TESTIMONIAL_SELECT)
+    .eq("kind", SOCIAL_PROOF_KIND_TESTIMONIAL)
     .eq("is_published", true)
     .order("rating", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(fetchLimit);
 
-  if (error && isMissingPublishedColumnError(error)) {
-    console.warn(
-      'Supabase column "testimonials.is_published" not found yet; falling back to legacy query.'
-    );
+  if (error && isMissingSocialProofEntriesTableError(error)) {
     ({ data, error } = await supabase
-      .from("testimonials")
-      .select(
-        "id,first_name,last_name,location,rating,review,profile_image_url,created_at"
-      )
+      .from(LEGACY_TESTIMONIALS_TABLE)
+      .select(LEGACY_TESTIMONIAL_SELECT)
+      .eq("is_published", true)
       .order("rating", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(fetchLimit));
@@ -76,7 +85,9 @@ export async function getApplyTestimonials(limit = 3): Promise<ApplyTestimonial[
     return [];
   }
 
-  const items = filterHighSignalTestimonials(data ?? []);
+  const items = filterHighSignalTestimonials(
+    ((data as unknown as ApplyTestimonial[] | null) ?? []),
+  );
   if (!items.length) {
     return [];
   }

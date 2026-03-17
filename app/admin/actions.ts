@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  archiveAdminJourney,
+  deleteAdminJourney,
   deleteAdminJourneyStep,
   saveAdminJourney,
   saveAdminJourneyStep,
@@ -420,6 +422,53 @@ export async function deleteJourneyStepAction(formData: FormData) {
       buildAdminJourneyRedirect({
         journeyKey: journeyKey || undefined,
         flash: "Journey step deleted.",
+      }),
+    );
+  } catch (error) {
+    redirect(
+      buildAdminJourneyRedirect({
+        journeyKey: journeyKey || undefined,
+        error: resolveActionErrorMessage(error),
+      }),
+    );
+  }
+}
+
+export async function archiveJourneyAction(formData: FormData) {
+  await requireAdminSession();
+
+  const journeyKey = toSafeString(formData.get("journeyKey"));
+
+  try {
+    const result = await archiveAdminJourney(journeyKey);
+    revalidateJourneyRelatedPaths(result.affectedBlogSlugs);
+    redirect(
+      buildAdminJourneyRedirect({
+        journeyKey: result.journey.key,
+        flash: "Journey archived.",
+      }),
+    );
+  } catch (error) {
+    redirect(
+      buildAdminJourneyRedirect({
+        journeyKey: journeyKey || undefined,
+        error: resolveActionErrorMessage(error),
+      }),
+    );
+  }
+}
+
+export async function deleteJourneyAction(formData: FormData) {
+  await requireAdminSession();
+
+  const journeyKey = toSafeString(formData.get("journeyKey"));
+
+  try {
+    const result = await deleteAdminJourney(journeyKey);
+    revalidateJourneyRelatedPaths(result.affectedBlogSlugs);
+    redirect(
+      buildAdminJourneyRedirect({
+        flash: "Journey deleted.",
       }),
     );
   } catch (error) {

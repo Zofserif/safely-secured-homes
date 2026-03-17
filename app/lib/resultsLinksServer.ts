@@ -3,6 +3,10 @@ import "server-only";
 import { randomBytes } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { normalizeEmail } from "./contactName";
+import {
+  ENGAGEMENT_LINKS_TABLE,
+  ENGAGEMENT_LINK_KIND_RESULTS,
+} from "./engagementLinksSchema";
 import { getLatestLeadPayloadByEmail } from "./leadPayloadStore";
 import {
   buildResultsLinkUrl,
@@ -11,6 +15,10 @@ import {
   selectReusableResultsLink,
 } from "./resultsLinks";
 import { createShareableResultsPayload, parseShareableResultsPayload } from "./resultsShare";
+import {
+  isMissingSupabaseTableError,
+  type SupabaseTableError,
+} from "./supabaseTableFallback";
 import type { FormData } from "./types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,6 +28,7 @@ const LINK_KEY_BYTES = 18;
 const LINK_EXPIRY_DAYS = 90;
 const INSERT_RETRY_COUNT = 3;
 const REUSABLE_LINK_LOOKUP_LIMIT = 20;
+const LEGACY_RESULTS_LINKS_TABLE = "results_links";
 
 const supabase =
   supabaseUrl && serviceRoleKey
@@ -51,6 +60,28 @@ type ReusableResultsLinkRow = {
   expires_at: string | null;
   revoked_at: string | null;
 };
+
+const RESULTS_LINK_SELECT = [
+  "link_key",
+  "payload",
+  "expires_at",
+  "revoked_at",
+  "name:contact_name",
+  "email:contact_email",
+  "mobile:contact_mobile",
+  "created_at",
+].join(",");
+
+const LEGACY_RESULTS_LINK_SELECT = [
+  "link_key",
+  "payload",
+  "expires_at",
+  "revoked_at",
+  "name",
+  "email",
+  "mobile",
+  "created_at",
+].join(",");
 
 export type CreatedResultsLink = {
   key: string;
@@ -89,6 +120,10 @@ const normalizeText = (value: unknown): string | null => {
   return safeValue || null;
 };
 
+const isMissingResultsLinksTableError = (
+  error: SupabaseTableError | null | undefined,
+) => isMissingSupabaseTableError(error, ENGAGEMENT_LINKS_TABLE);
+
 const normalizeContact = (contact: ResultsLinkContact) => ({
   name: normalizeText(contact.name),
   email: normalizeText(contact.email)?.toLowerCase() ?? null,
@@ -114,14 +149,26 @@ export async function createResultsLinkFromFormData(
 
   for (let attempt = 0; attempt < INSERT_RETRY_COUNT; attempt += 1) {
     const linkKey = generateLinkKey();
-    const { error } = await client.from("results_links").insert({
+    let { error } = await client.from(ENGAGEMENT_LINKS_TABLE).insert({
+      kind: ENGAGEMENT_LINK_KIND_RESULTS,
       link_key: linkKey,
-      name: normalizedContact.name,
-      email: normalizedContact.email,
-      mobile: normalizedContact.mobile,
+      contact_name: normalizedContact.name,
+      contact_email: normalizedContact.email,
+      contact_mobile: normalizedContact.mobile,
       payload,
       expires_at: expiresAt,
     });
+
+    if (error && isMissingResultsLinksTableError(error)) {
+      ({ error } = await client.from(LEGACY_RESULTS_LINKS_TABLE).insert({
+        link_key: linkKey,
+        name: normalizedContact.name,
+        email: normalizedContact.email,
+        mobile: normalizedContact.mobile,
+        payload,
+        expires_at: expiresAt,
+      }));
+    }
 
     if (!error) {
       return {
@@ -148,11 +195,20 @@ export async function getResultsLinkByKey(
   }
 
   const client = requireSupabase();
-  const { data, error } = await client
-    .from("results_links")
-    .select("link_key,payload,expires_at,revoked_at,name,email,mobile,created_at")
+  let { data, error } = await client
+    .from(ENGAGEMENT_LINKS_TABLE)
+    .select(RESULTS_LINK_SELECT)
+    .eq("kind", ENGAGEMENT_LINK_KIND_RESULTS)
     .eq("link_key", normalizedKey)
     .maybeSingle();
+
+  if (error && isMissingResultsLinksTableError(error)) {
+    ({ data, error } = await client
+      .from(LEGACY_RESULTS_LINKS_TABLE)
+      .select(LEGACY_RESULTS_LINK_SELECT)
+      .eq("link_key", normalizedKey)
+      .maybeSingle());
+  }
 
   if (error) {
     throw new Error(error.message);
@@ -198,12 +254,22 @@ const getLatestReusableResultsLinkByEmail = async (
   leadCreatedAt: string | null,
 ): Promise<CreatedResultsLink | null> => {
   const client = requireSupabase();
-  const { data, error } = await client
-    .from("results_links")
+  let { data, error } = await client
+    .from(ENGAGEMENT_LINKS_TABLE)
     .select("link_key,created_at,expires_at,revoked_at")
-    .eq("email", email)
+    .eq("kind", ENGAGEMENT_LINK_KIND_RESULTS)
+    .eq("contact_email", email)
     .order("created_at", { ascending: false, nullsFirst: false })
     .limit(REUSABLE_LINK_LOOKUP_LIMIT);
+
+  if (error && isMissingResultsLinksTableError(error)) {
+    ({ data, error } = await client
+      .from(LEGACY_RESULTS_LINKS_TABLE)
+      .select("link_key,created_at,expires_at,revoked_at")
+      .eq("email", email)
+      .order("created_at", { ascending: false, nullsFirst: false })
+      .limit(REUSABLE_LINK_LOOKUP_LIMIT));
+  }
 
   if (error) {
     throw new Error(error.message);

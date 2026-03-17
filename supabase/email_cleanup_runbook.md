@@ -24,12 +24,11 @@ Keep the canonical runtime schema and domain tables:
 - `email_journey_steps`
 - `email_journey_enrollments`
 - `email_deliveries`
-- `bonus_claim_links`
+- `engagement_links`
 - `blog_posts`
 - `leads`
-- `results_links`
-- `success_stories`
-- `testimonials`
+- `site_admin_settings`
+- `social_proof_entries`
 
 ## Preconditions
 

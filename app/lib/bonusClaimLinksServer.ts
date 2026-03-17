@@ -9,12 +9,37 @@ import {
   resolveBonusLinkStatus,
 } from "./bonusClaimLinks.ts";
 import { normalizeEmail } from "./contactName.ts";
+import {
+  ENGAGEMENT_LINKS_TABLE,
+  ENGAGEMENT_LINK_KIND_BONUS_CLAIM,
+} from "./engagementLinksSchema";
 import { siteUrl } from "./site.ts";
+import {
+  isMissingSupabaseTableError,
+  type SupabaseTableError,
+} from "./supabaseTableFallback";
 
 const BONUS_LINK_KEY_BYTES = 18;
 const BONUS_LINK_INSERT_RETRY_COUNT = 3;
+const LEGACY_BONUS_CLAIM_LINKS_TABLE = "bonus_claim_links";
 
 export const BONUS_CLAIM_LINK_SELECT = [
+  "link_key",
+  "source_key",
+  "recipient_name:contact_name",
+  "recipient_email:contact_email",
+  "note",
+  "created_at",
+  "opened_at:first_opened_at",
+  "claim_expires_at",
+  "claimed_at",
+  "revoked_at",
+  "shipping_name",
+  "shipping_mobile",
+  "shipping_address",
+].join(",");
+
+const LEGACY_BONUS_CLAIM_LINK_SELECT = [
   "link_key",
   "source_key",
   "recipient_name",
@@ -43,6 +68,10 @@ const toOptionalText = (value: unknown): string | null => {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
 };
+
+const isMissingBonusLinksTableError = (
+  error: SupabaseTableError | null | undefined,
+) => isMissingSupabaseTableError(error, ENGAGEMENT_LINKS_TABLE);
 
 export const getBonusLinksAdminSecret = (): string =>
   process.env.BONUS_LINKS_ADMIN_SECRET?.trim() ?? "";
@@ -81,11 +110,20 @@ const fetchBonusLinkRow = async (
   key: string,
 ): Promise<BonusClaimLinkRow | null> => {
   const client = getBonusLinksClient();
-  const { data, error } = await client
-    .from("bonus_claim_links")
+  let { data, error } = await client
+    .from(ENGAGEMENT_LINKS_TABLE)
     .select(BONUS_CLAIM_LINK_SELECT)
+    .eq("kind", ENGAGEMENT_LINK_KIND_BONUS_CLAIM)
     .eq("link_key", key)
     .maybeSingle();
+
+  if (error && isMissingBonusLinksTableError(error)) {
+    ({ data, error } = await client
+      .from(LEGACY_BONUS_CLAIM_LINKS_TABLE)
+      .select(LEGACY_BONUS_CLAIM_LINK_SELECT)
+      .eq("link_key", key)
+      .maybeSingle());
+  }
 
   if (error) {
     throw new Error(error.message);
@@ -98,11 +136,20 @@ const fetchBonusLinkRowBySourceKey = async (
   sourceKey: string,
 ): Promise<BonusClaimLinkRow | null> => {
   const client = getBonusLinksClient();
-  const { data, error } = await client
-    .from("bonus_claim_links")
+  let { data, error } = await client
+    .from(ENGAGEMENT_LINKS_TABLE)
     .select(BONUS_CLAIM_LINK_SELECT)
+    .eq("kind", ENGAGEMENT_LINK_KIND_BONUS_CLAIM)
     .eq("source_key", sourceKey)
     .maybeSingle();
+
+  if (error && isMissingBonusLinksTableError(error)) {
+    ({ data, error } = await client
+      .from(LEGACY_BONUS_CLAIM_LINKS_TABLE)
+      .select(LEGACY_BONUS_CLAIM_LINK_SELECT)
+      .eq("source_key", sourceKey)
+      .maybeSingle());
+  }
 
   if (error) {
     throw new Error(error.message);
@@ -132,18 +179,34 @@ export async function createBonusLink({
 
   for (let attempt = 0; attempt < BONUS_LINK_INSERT_RETRY_COUNT; attempt += 1) {
     const linkKey = generateBonusLinkKey();
-    const { data, error } = await client
-      .from("bonus_claim_links")
+    let { data, error } = await client
+      .from(ENGAGEMENT_LINKS_TABLE)
       .insert({
+        kind: ENGAGEMENT_LINK_KIND_BONUS_CLAIM,
         link_key: linkKey,
-        recipient_name: safeRecipientName,
-        recipient_email: safeRecipientEmail
+        contact_name: safeRecipientName,
+        contact_email: safeRecipientEmail
           ? normalizeEmail(safeRecipientEmail)
           : null,
         note: safeNote,
       })
       .select("link_key,source_key,created_at")
       .maybeSingle();
+
+    if (error && isMissingBonusLinksTableError(error)) {
+      ({ data, error } = await client
+        .from(LEGACY_BONUS_CLAIM_LINKS_TABLE)
+        .insert({
+          link_key: linkKey,
+          recipient_name: safeRecipientName,
+          recipient_email: safeRecipientEmail
+            ? normalizeEmail(safeRecipientEmail)
+            : null,
+          note: safeNote,
+        })
+        .select("link_key,source_key,created_at")
+        .maybeSingle());
+    }
 
     if (!error && data) {
       return toCreatedBonusLinkResult(data as CreatedBonusLinkRow, baseUrl);
@@ -187,19 +250,36 @@ export async function getOrCreateBonusLinkBySourceKey({
 
   for (let attempt = 0; attempt < BONUS_LINK_INSERT_RETRY_COUNT; attempt += 1) {
     const linkKey = generateBonusLinkKey();
-    const { data, error } = await client
-      .from("bonus_claim_links")
+    let { data, error } = await client
+      .from(ENGAGEMENT_LINKS_TABLE)
       .insert({
+        kind: ENGAGEMENT_LINK_KIND_BONUS_CLAIM,
         link_key: linkKey,
         source_key: safeSourceKey,
-        recipient_name: safeRecipientName,
-        recipient_email: safeRecipientEmail
+        contact_name: safeRecipientName,
+        contact_email: safeRecipientEmail
           ? normalizeEmail(safeRecipientEmail)
           : null,
         note: safeNote,
       })
       .select("link_key,source_key,created_at")
       .maybeSingle();
+
+    if (error && isMissingBonusLinksTableError(error)) {
+      ({ data, error } = await client
+        .from(LEGACY_BONUS_CLAIM_LINKS_TABLE)
+        .insert({
+          link_key: linkKey,
+          source_key: safeSourceKey,
+          recipient_name: safeRecipientName,
+          recipient_email: safeRecipientEmail
+            ? normalizeEmail(safeRecipientEmail)
+            : null,
+          note: safeNote,
+        })
+        .select("link_key,source_key,created_at")
+        .maybeSingle());
+    }
 
     if (!error && data) {
       return toCreatedBonusLinkResult(data as CreatedBonusLinkRow, baseUrl);
@@ -243,18 +323,35 @@ export async function openBonusLink(key: string): Promise<BonusLinkStatus> {
     openedAt.getTime() + BONUS_LINK_WINDOW_MS,
   ).toISOString();
 
-  const { data, error } = await client
-    .from("bonus_claim_links")
+  let { data, error } = await client
+    .from(ENGAGEMENT_LINKS_TABLE)
     .update({
-      opened_at: openedAt.toISOString(),
+      first_opened_at: openedAt.toISOString(),
+      last_opened_at: openedAt.toISOString(),
       claim_expires_at: claimExpiresAt,
     })
+    .eq("kind", ENGAGEMENT_LINK_KIND_BONUS_CLAIM)
     .eq("link_key", normalizedKey)
-    .is("opened_at", null)
+    .is("first_opened_at", null)
     .is("claimed_at", null)
     .is("revoked_at", null)
     .select(BONUS_CLAIM_LINK_SELECT)
     .maybeSingle();
+
+  if (error && isMissingBonusLinksTableError(error)) {
+    ({ data, error } = await client
+      .from(LEGACY_BONUS_CLAIM_LINKS_TABLE)
+      .update({
+        opened_at: openedAt.toISOString(),
+        claim_expires_at: claimExpiresAt,
+      })
+      .eq("link_key", normalizedKey)
+      .is("opened_at", null)
+      .is("claimed_at", null)
+      .is("revoked_at", null)
+      .select(LEGACY_BONUS_CLAIM_LINK_SELECT)
+      .maybeSingle());
+  }
 
   if (error) {
     throw new Error(error.message);
@@ -289,22 +386,42 @@ export async function claimBonusLink({
   const client = getBonusLinksClient();
   const claimedAt = new Date().toISOString();
 
-  const { data, error } = await client
-    .from("bonus_claim_links")
+  let { data, error } = await client
+    .from(ENGAGEMENT_LINKS_TABLE)
     .update({
       shipping_name: shippingName,
       shipping_mobile: shippingMobile,
       shipping_address: shippingAddress,
       claimed_at: claimedAt,
     })
+    .eq("kind", ENGAGEMENT_LINK_KIND_BONUS_CLAIM)
     .eq("link_key", normalizedKey)
     .is("claimed_at", null)
     .is("revoked_at", null)
-    .not("opened_at", "is", null)
+    .not("first_opened_at", "is", null)
     .not("claim_expires_at", "is", null)
     .gt("claim_expires_at", claimedAt)
     .select(BONUS_CLAIM_LINK_SELECT)
     .maybeSingle();
+
+  if (error && isMissingBonusLinksTableError(error)) {
+    ({ data, error } = await client
+      .from(LEGACY_BONUS_CLAIM_LINKS_TABLE)
+      .update({
+        shipping_name: shippingName,
+        shipping_mobile: shippingMobile,
+        shipping_address: shippingAddress,
+        claimed_at: claimedAt,
+      })
+      .eq("link_key", normalizedKey)
+      .is("claimed_at", null)
+      .is("revoked_at", null)
+      .not("opened_at", "is", null)
+      .not("claim_expires_at", "is", null)
+      .gt("claim_expires_at", claimedAt)
+      .select(LEGACY_BONUS_CLAIM_LINK_SELECT)
+      .maybeSingle());
+  }
 
   if (error) {
     throw new Error(error.message);

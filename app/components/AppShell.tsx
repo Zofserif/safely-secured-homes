@@ -81,6 +81,7 @@ const HOME_CTA_TARGET_PATH: Record<HomeCtaTarget, string> = {
   form: "/form",
   results: "/results",
   newsletter: "/newsletter",
+  waitlist: "/waitlist",
 };
 const HOME_CTA_ID_BY_LOCATION: Record<HomeCtaLocation, string> = {
   hero_primary: "home_hero_primary_cta",
@@ -149,6 +150,25 @@ const buildHomeFormPath = (hasBonus: boolean) => {
 
   params.set(HAS_BONUS_QUERY_PARAM, formatHasBonusQueryValue(hasBonus));
   return `/form?${params.toString()}`;
+};
+
+const buildHomeWaitlistPath = () => {
+  const params = new URLSearchParams();
+
+  if (typeof window !== "undefined") {
+    const attribution = readMarketingAttribution(
+      new URLSearchParams(window.location.search)
+    );
+
+    if (attribution.utm_source) params.set("utm_source", attribution.utm_source);
+    if (attribution.utm_medium) params.set("utm_medium", attribution.utm_medium);
+    if (attribution.utm_campaign) {
+      params.set("utm_campaign", attribution.utm_campaign);
+    }
+  }
+
+  params.set("source", "reports_sold_out");
+  return `/waitlist?${params.toString()}`;
 };
 
 const readStoredLead = () => {
@@ -798,6 +818,11 @@ export default function AppShell({
       return;
     }
 
+    if (page === "waitlist") {
+      router.push("/waitlist");
+      return;
+    }
+
     if (page === "blog") {
       router.push("/blog");
       return;
@@ -849,6 +874,11 @@ export default function AppShell({
       return;
     }
 
+    if (target === "waitlist") {
+      router.push(buildHomeWaitlistPath());
+      return;
+    }
+
     handleNavigation(target);
   };
 
@@ -858,8 +888,10 @@ export default function AppShell({
         <Navbar
           onNavigate={handleNavigation}
           onPrimaryCtaClick={handleHomePrimaryCtaClick}
-          hideCta={view === "results" || (homeScarcity.soldOut && !hasExistingPlan)}
+          hideCta={view === "results"}
           hasExistingPlan={hasExistingPlan}
+          primaryCtaTarget={homeCta.target}
+          primaryCtaLabel={homeCta.label}
           centerLogo={view === "results"}
           visibilityMode={view === "home" ? "home_hero_reveal" : "default"}
           heroSectionId="home-hero"

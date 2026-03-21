@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  getNewsletterUnsubscribeLookup,
-  normalizeNewsletterUnsubscribeToken,
-  submitNewsletterUnsubscribe,
-  type NewsletterUnsubscribeSubmitStatus,
-} from "../../lib/newsletterSubscribers";
+  getSubscriptionUnsubscribeLookup,
+  normalizeSubscriptionUnsubscribeToken,
+  submitSubscriptionUnsubscribe,
+  type SubscriptionAudience,
+  type SubscriptionUnsubscribeSubmitStatus,
+} from "../../lib/subscriptionUnsubscribe";
 import { ogImageUrl, siteName, siteUrl } from "../../lib/site";
 import UnsubscribeShell from "../UnsubscribeShell";
 
@@ -31,12 +32,12 @@ const toFlashStatus = (value: string): FlashStatus => {
 
 const buildTokenPath = (rawToken: string) =>
   `/unsubscribe/${encodeURIComponent(
-    normalizeNewsletterUnsubscribeToken(rawToken),
+    normalizeSubscriptionUnsubscribeToken(rawToken),
   )}`;
 
 const redirectByUnsubscribeStatus = (
   rawToken: string,
-  status: NewsletterUnsubscribeSubmitStatus,
+  status: SubscriptionUnsubscribeSubmitStatus,
 ) => {
   const path = buildTokenPath(rawToken);
   if (status === "success") {
@@ -52,28 +53,26 @@ const handleUnsubscribeSubmit = async (formData: FormData) => {
   "use server";
 
   const rawToken = String(formData.get("token") ?? "");
-  const result = await submitNewsletterUnsubscribe(rawToken);
+  const result = await submitSubscriptionUnsubscribe(rawToken);
   redirectByUnsubscribeStatus(rawToken, result.status);
 };
 
 const resolveUiStatus = ({
   lookupStatus,
-  subscriberStatus,
+  isActive,
   flashStatus,
 }: {
   lookupStatus: Awaited<
-    ReturnType<typeof getNewsletterUnsubscribeLookup>
+    ReturnType<typeof getSubscriptionUnsubscribeLookup>
   >["status"];
-  subscriberStatus?: Awaited<
-    ReturnType<typeof getNewsletterUnsubscribeLookup>
-  >["subscriberStatus"];
+  isActive?: boolean;
   flashStatus: FlashStatus;
 }): UiStatus => {
   if (lookupStatus === "invalid_token") return "invalid";
   if (lookupStatus === "not_configured" || lookupStatus === "error") {
     return "error";
   }
-  if (subscriberStatus && subscriberStatus !== "subscribed") {
+  if (isActive === false) {
     return "success";
   }
   if (flashStatus === "success") return "success";
@@ -91,12 +90,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { token } = await params;
   const normalizedToken = encodeURIComponent(
-    normalizeNewsletterUnsubscribeToken(token),
+    normalizeSubscriptionUnsubscribeToken(token),
   );
 
   return {
     title: "Unsubscribe",
-    description: "Manage your Safely Secured Homes newsletter subscription.",
+    description: "Manage your Safely Secured Homes email subscription.",
     alternates: {
       canonical: `/unsubscribe/${normalizedToken}`,
     },
@@ -106,7 +105,7 @@ export async function generateMetadata({
     },
     openGraph: {
       title: `Unsubscribe | ${siteName}`,
-      description: "Manage your Safely Secured Homes newsletter subscription.",
+      description: "Manage your Safely Secured Homes email subscription.",
       url: new URL(`/unsubscribe/${normalizedToken}`, siteUrl),
       siteName,
       type: "website",
@@ -122,11 +121,31 @@ export async function generateMetadata({
     twitter: {
       card: "summary_large_image",
       title: `Unsubscribe | ${siteName}`,
-      description: "Manage your Safely Secured Homes newsletter subscription.",
+      description: "Manage your Safely Secured Homes email subscription.",
       images: [ogImageUrl],
     },
   };
 }
+
+const getSubscriptionCopy = (audience?: SubscriptionAudience) => {
+  if (audience === "waitlist") {
+    return {
+      confirm:
+        "Confirm that you want to unsubscribe from Safely Secured Homes waitlist emails.",
+      success: "You have been unsubscribed from waitlist emails.",
+      invalid:
+        "Use the latest unsubscribe link from one of your waitlist emails.",
+    };
+  }
+
+  return {
+    confirm:
+      "Confirm that you want to unsubscribe from Safely Secured Homes newsletter emails.",
+    success: "You have been unsubscribed from newsletter emails.",
+    invalid:
+      "Use the latest unsubscribe link from one of our newsletter emails.",
+  };
+};
 
 export default async function UnsubscribeTokenPage({
   params,
@@ -136,23 +155,23 @@ export default async function UnsubscribeTokenPage({
   searchParams?: Promise<SearchParams>;
 }) {
   const { token: rawToken } = await params;
-  const normalizedToken = normalizeNewsletterUnsubscribeToken(rawToken);
+  const normalizedToken = normalizeSubscriptionUnsubscribeToken(rawToken);
   const resolvedSearchParams = (await searchParams) ?? {};
-  const lookup = await getNewsletterUnsubscribeLookup(normalizedToken);
+  const lookup = await getSubscriptionUnsubscribeLookup(normalizedToken);
   const flashStatus = toFlashStatus(readSearchParam(resolvedSearchParams, "status"));
   const uiStatus = resolveUiStatus({
     lookupStatus: lookup.status,
-    subscriberStatus: lookup.subscriberStatus,
+    isActive: lookup.isActive,
     flashStatus,
   });
+  const subscriptionCopy = getSubscriptionCopy(lookup.audience);
 
   return (
     <UnsubscribeShell title="Unsubscribe">
       {uiStatus === "confirm" && (
         <>
           <p className="text-base leading-relaxed text-slate-700">
-            Confirm that you want to unsubscribe from Safely Secured Homes
-            newsletter emails.
+            {subscriptionCopy.confirm}
           </p>
           <form action={handleUnsubscribeSubmit}>
             <input type="hidden" name="token" value={normalizedToken} />
@@ -169,7 +188,7 @@ export default async function UnsubscribeTokenPage({
       {uiStatus === "success" && (
         <>
           <p className="text-base leading-relaxed text-slate-700">
-            You have been unsubscribed from newsletter emails.
+            {subscriptionCopy.success}
           </p>
           <div>
             <Link
@@ -188,7 +207,7 @@ export default async function UnsubscribeTokenPage({
             This unsubscribe link is invalid or no longer available.
           </p>
           <p className="text-sm leading-relaxed text-slate-600">
-            Use the latest unsubscribe link from one of our newsletter emails.
+            {subscriptionCopy.invalid}
           </p>
         </>
       )}

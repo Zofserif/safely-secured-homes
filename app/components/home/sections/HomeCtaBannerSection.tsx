@@ -25,13 +25,15 @@ export default function HomeCtaBannerSection({
     Math.min(100, (scarcity.reportsClaimed / reportsLimit) * 100),
   );
   const ctaSupportText = scarcity.soldOut
-    ? "Reports are sold out for this cycle. Join the newsletter to get notified when the Panatag Rating refreshes."
+    ? "Reports are sold out for this cycle. Join the waitlist to get notified when the Panatag Rating refreshes."
     : scarcity.show
       ? "In 60 seconds, get your personalized plan and practical next security steps."
       : "Your personalized plan is already ready. Open it now and take the next step.";
-  const heroSupportText = scarcity.bonusEnabled
-    ? "Get your personalized recommendation plus the Free Bonus: A Panatag Home's Mug with zero pressure."
-    : "Get your personalized recommendation with zero pressure before this cycle closes.";
+  const heroSupportText = scarcity.soldOut
+    ? "This cycle is full, but the waitlist is open. Join now and we’ll let you know as soon as the next Panatag Rating opening becomes available."
+    : scarcity.bonusEnabled
+      ? "Get your personalized recommendation plus the Free Bonus: A Panatag Home's Mug with zero pressure."
+      : "Get your personalized recommendation with zero pressure before this cycle closes.";
 
   return (
     <section className="py-20 px-6">
@@ -41,10 +43,12 @@ export default function HomeCtaBannerSection({
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1.2fr_1fr] lg:items-center">
             <div>
               <p className="text-xs uppercase tracking-[0.16em] font-bold text-[#63B3ED] mb-3">
-                Final chance this cycle
+                {scarcity.soldOut ? "Cycle Full, Waitlist Open" : "Final chance this cycle"}
               </p>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-4">
-                Claim your free Panatag home plan before this cycle closes.
+                {scarcity.soldOut
+                  ? "This cycle is full. Join the waitlist for the next Panatag home plan opening."
+                  : "Claim your free Panatag home plan before this cycle closes."}
               </h2>
               <p className="text-slate-300 text-base sm:text-lg mb-5">
                 {heroSupportText}

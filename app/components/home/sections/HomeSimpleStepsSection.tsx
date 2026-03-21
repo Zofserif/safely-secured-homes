@@ -27,13 +27,15 @@ export default function HomeSimpleStepsSection({
     Math.min(100, (scarcity.reportsClaimed / reportsLimit) * 100),
   );
   const ctaSupportText = scarcity.soldOut
-    ? "Reports are sold out for this cycle. Join the newsletter to get notified when the Panatag Rating refreshes."
+    ? "Reports are sold out for this cycle. Join the waitlist to get notified when the Panatag Rating refreshes."
     : scarcity.show
       ? "In 60 seconds, get your personalized plan and practical next security steps."
       : "Your plan is ready. Open it now and continue your next security steps.";
-  const ctaLeadText = scarcity.bonusEnabled
-    ? "Get your personalized plan plus the Free Bonus: A Panatag Home's Mug before this cycle closes."
-    : "Get your personalized plan before this cycle closes.";
+  const ctaLeadText = scarcity.soldOut
+    ? "Join the waitlist now and we’ll alert you as soon as the next Panatag Rating opening is available."
+    : scarcity.bonusEnabled
+      ? "Get your personalized plan plus the Free Bonus: A Panatag Home's Mug before this cycle closes."
+      : "Get your personalized plan before this cycle closes.";
 
   return (
     <section className="py-32 bg-white">

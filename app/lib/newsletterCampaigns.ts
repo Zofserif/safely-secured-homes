@@ -84,6 +84,7 @@ type JourneyAssignment = {
 };
 
 type InsertJourneyEnrollmentPayload = {
+  audience: "newsletter";
   subscriber_id: string;
   journey_key: string;
   status: EmailJourneyEnrollmentStatus;
@@ -94,6 +95,7 @@ type InsertJourneyEnrollmentPayload = {
 };
 
 type InsertEmailDeliveryPayload = {
+  audience: "newsletter";
   subscriber_id: string;
   enrollment_id: string | null;
   delivery_kind: EmailDeliveryKind;
@@ -238,6 +240,7 @@ const ENROLLMENT_WITH_SUBSCRIBER_SELECT = `${ENROLLMENT_SELECT},subscriber:newsl
 const EMAIL_DELIVERY_SELECT =
   "id,subscriber_id,enrollment_id,delivery_kind,send_key,journey_key,step_key,blog_post_id,provider_message_id,status,queued_at,processed_at,error_message,created_at";
 const NEWSLETTER_UNSUBSCRIBE_TOKEN_BYTES = 18;
+const NEWSLETTER_AUDIENCE = "newsletter" as const;
 
 const toSafeString = (value: unknown): string =>
   typeof value === "string" ? value.trim() : "";
@@ -438,6 +441,7 @@ const fetchJourneyEnrollmentRows = async ({
   let query = client
     .from("email_journey_enrollments")
     .select(ENROLLMENT_SELECT)
+    .eq("audience", NEWSLETTER_AUDIENCE)
     .eq("subscriber_id", subscriberId)
     .eq("status", status)
     .order("entered_at", { ascending: false, nullsFirst: false });
@@ -519,6 +523,7 @@ const fetchJourneyEnrollmentById = async (enrollmentId: string) => {
   const { data, error } = await client
     .from("email_journey_enrollments")
     .select(ENROLLMENT_WITH_SUBSCRIBER_SELECT)
+    .eq("audience", NEWSLETTER_AUDIENCE)
     .eq("id", enrollmentId)
     .maybeSingle();
 
@@ -534,6 +539,7 @@ const fetchEmailDeliveryByEnrollmentStep = async (
   const { data, error } = await client
     .from("email_deliveries")
     .select(EMAIL_DELIVERY_SELECT)
+    .eq("audience", NEWSLETTER_AUDIENCE)
     .eq("enrollment_id", enrollmentId)
     .eq("step_key", stepKey)
     .maybeSingle();
@@ -550,6 +556,7 @@ const fetchEmailDeliveryBySendKey = async (
   const { data, error } = await client
     .from("email_deliveries")
     .select(EMAIL_DELIVERY_SELECT)
+    .eq("audience", NEWSLETTER_AUDIENCE)
     .eq("send_key", sendKey)
     .eq("subscriber_id", subscriberId)
     .maybeSingle();
@@ -689,6 +696,7 @@ export async function listActiveJourneyEnrollments(
   let query = client
     .from("email_journey_enrollments")
     .select(ENROLLMENT_WITH_SUBSCRIBER_SELECT)
+    .eq("audience", NEWSLETTER_AUDIENCE)
     .eq("status", "active")
     .order("entered_at", { ascending: true, nullsFirst: false });
 
@@ -720,6 +728,7 @@ export async function getEmailDeliveriesByEnrollmentId(
   const { data, error } = await client
     .from("email_deliveries")
     .select(EMAIL_DELIVERY_SELECT)
+    .eq("audience", NEWSLETTER_AUDIENCE)
     .eq("enrollment_id", enrollmentId)
     .order("queued_at", { ascending: true, nullsFirst: false });
 
@@ -845,6 +854,7 @@ export async function assignJourneyEnrollment({
 
   try {
     const insertedEnrollment = await insertJourneyEnrollment({
+      audience: NEWSLETTER_AUDIENCE,
       subscriber_id: normalizedSubscriberId,
       journey_key: normalizedJourneyKey,
       status: "active",
@@ -1132,6 +1142,7 @@ const unsubscribeNewsletterSubscriberById = async (subscriberId: string) => {
       current_step_key: "",
       current_step_order: null,
     })
+    .eq("audience", NEWSLETTER_AUDIENCE)
     .eq("subscriber_id", subscriberId)
     .eq("status", "active");
 
@@ -1180,6 +1191,7 @@ export async function ensureEmailDelivery({
 
   try {
     const insertedDelivery = await insertEmailDelivery({
+      audience: NEWSLETTER_AUDIENCE,
       subscriber_id: subscriberId,
       enrollment_id: safeEnrollmentId,
       delivery_kind: deliveryKind,
@@ -1321,6 +1333,7 @@ export async function listSubscribedNewsletterRecipients(
   const { data: activeEnrollmentData, error: activeEnrollmentError } = await client
     .from("email_journey_enrollments")
     .select("subscriber_id")
+    .eq("audience", NEWSLETTER_AUDIENCE)
     .eq("status", "active");
 
   if (activeEnrollmentError) throw activeEnrollmentError;

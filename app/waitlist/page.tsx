@@ -4,14 +4,14 @@ import Link from "next/link";
 import { Clock3, Mail, ShieldCheck } from "lucide-react";
 import type { FunnelContext } from "../lib/analytics";
 import { FunnelPageMountTracker } from "../components/analytics/FunnelTrackingClient";
-import NewsletterForm from "../components/newsletter/NewsletterForm";
 import Footer from "../components/layout/Footer";
+import WaitlistForm from "../components/waitlist/WaitlistForm";
 import { ogImageUrl, siteName, siteUrl } from "../lib/site";
 
 export const metadata: Metadata = {
   title: "Waitlist",
   description:
-    "Join the Safely Secured Homes waitlist and get notified when the next limited-time offer opens.",
+    "Join the Safely Secured Homes waitlist and get notified when the next Panatag Rating opening becomes available.",
   alternates: {
     canonical: "/waitlist",
   },
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: `Waitlist | ${siteName}`,
     description:
-      "Join the Safely Secured Homes waitlist and get notified when the next limited-time offer opens.",
+      "Join the Safely Secured Homes waitlist and get notified when the next Panatag Rating opening becomes available.",
     url: new URL("/waitlist", siteUrl),
     siteName,
     type: "website",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `Waitlist | ${siteName}`,
     description:
-      "Join the Safely Secured Homes waitlist and get notified when the next limited-time offer opens.",
+      "Join the Safely Secured Homes waitlist and get notified when the next Panatag Rating opening becomes available.",
     images: [ogImageUrl],
   },
 };
@@ -56,24 +56,17 @@ const buildWaitlistContext = (rawSource: string): FunnelContext => {
   const source = rawSource.trim();
   const lowered = source.toLowerCase();
 
-  if (lowered === "apply") {
+  if (lowered === "reports_sold_out") {
     return {
-      flow_source: "apply",
-      flow_mode: "newsletter",
-    };
-  }
-
-  if (lowered === "newsletter") {
-    return {
-      flow_source: "newsletter",
-      flow_mode: "newsletter",
+      flow_source: "direct",
+      flow_mode: "default",
     };
   }
 
   return {
     flow_source: "unknown",
-    flow_mode: "newsletter",
-    source_raw: source || "limited_time_offer_expired",
+    flow_mode: "default",
+    source_raw: source || "waitlist",
   };
 };
 
@@ -83,8 +76,8 @@ export default async function WaitlistPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const resolvedSearchParams = await searchParams;
-  const rawSource =
-    readSearchParam(resolvedSearchParams.source) || "limited_time_offer_expired";
+  const rawSource = readSearchParam(resolvedSearchParams.source) || "reports_sold_out";
+  const isLimitedOfferExpired = rawSource.toLowerCase() === "limited_time_offer_expired";
   const trackingContext = buildWaitlistContext(rawSource);
 
   return (
@@ -127,61 +120,64 @@ export default async function WaitlistPage({
           <section className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <div className="max-w-2xl">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#0E79B2]">
-                Limited-Time Offer Expired
+                {isLimitedOfferExpired
+                  ? "Offer Expired, Waitlist Open"
+                  : "Reports Are Currently Sold Out"}
               </p>
               <h1 className="mt-4 text-4xl font-bold leading-tight text-[#1F2937] sm:text-5xl lg:text-6xl">
-                Join the waitlist for the next opening.
+                Join the waitlist for the next Panatag Rating opening.
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-                That special link is no longer active, but you can still join
-                the list for the next offer window and get practical home
-                security updates in the meantime.
+                The current Panatag Rating cycle is full, but you can still
+                join the waitlist now and get notified as soon as the next
+                opening becomes available.
+              </p>
+              <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-500 sm:text-base">
+                {isLimitedOfferExpired
+                  ? "Your earlier limited-time link already expired, but this waitlist keeps you in line for the next opening."
+                  : "You do not need to keep checking the site manually. We will email you when the next opening is ready."}
               </p>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-3">
                 <div className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-lg shadow-[#0E79B2]/10">
                   <Clock3 className="h-5 w-5 text-[#0E79B2]" />
                   <p className="mt-3 text-sm font-semibold text-[#1F2937]">
-                    Next offer alert
+                    Next cycle alert
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                    Be first to hear when a new limited-time slot opens.
+                    Be first to hear when the next Panatag Rating opening starts.
                   </p>
                 </div>
                 <div className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-lg shadow-[#0E79B2]/10">
                   <Mail className="h-5 w-5 text-[#0E79B2]" />
                   <p className="mt-3 text-sm font-semibold text-[#1F2937]">
-                    Short weekly emails
+                    Priority notification
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                    Get practical security tips without a heavy inbox.
+                    Get the first email when new report capacity becomes available.
                   </p>
                 </div>
                 <div className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-lg shadow-[#0E79B2]/10">
                   <ShieldCheck className="h-5 w-5 text-[#0E79B2]" />
                   <p className="mt-3 text-sm font-semibold text-[#1F2937]">
-                    Calm next steps
+                    Privacy-first follow-up
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                    Stay ready for the next offer without starting over.
+                    Share your details once so you do not need to restart later.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="lg:justify-self-end">
-              <NewsletterForm
+              <WaitlistForm
                 title="Join the Waitlist"
-                description="Enter your email to get notified when the next limited-time offer opens."
+                description="Enter your name and email to get notified when the next Panatag Rating opening becomes available."
                 submitLabel="JOIN THE WAITLIST"
                 defaultSource={rawSource}
-                trackingPage="waitlist"
                 trackingContext={trackingContext}
-                trackingDestination="waitlist"
-                successTitle="Thanks! You are on the waitlist."
-                successEmailSentCopy="You are queued for the next offer window, and your checklist is on its way."
-                successFallbackCopy="You are queued for the next offer window. If the checklist email is delayed, we will still keep you posted."
-                successEmailDisabledCopy="You are queued for the next offer window. Email delivery is currently turned off, so the checklist will not be emailed right now."
+                successTitle="Thanks. You’re on the waitlist."
+                successCopy="We’ll email you when the next Panatag Rating opening becomes available."
               />
             </div>
           </section>

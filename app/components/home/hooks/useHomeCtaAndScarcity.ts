@@ -70,13 +70,13 @@ export const useHomeCtaAndScarcity = ({
 
   const ctaTarget =
     reportsSoldOut && !hasExistingPlan
-      ? "newsletter"
+      ? "waitlist"
       : hasExistingPlan
         ? "results"
         : "form";
   const ctaLabel =
     reportsSoldOut && !hasExistingPlan
-      ? "JOIN THE NEWSLETTER"
+      ? "JOIN THE WAITLIST"
       : hasExistingPlan
         ? "SEE MY PLAN"
         : urgencyTier === "critical"

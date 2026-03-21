@@ -8,7 +8,7 @@ export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Unsubscribe",
-  description: "Manage your Safely Secured Homes newsletter subscription.",
+  description: "Manage your Safely Secured Homes email subscription.",
   alternates: {
     canonical: "/unsubscribe",
   },
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: `Unsubscribe | ${siteName}`,
-    description: "Manage your Safely Secured Homes newsletter subscription.",
+    description: "Manage your Safely Secured Homes email subscription.",
     url: new URL("/unsubscribe", siteUrl),
     siteName,
     type: "website",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: `Unsubscribe | ${siteName}`,
-    description: "Manage your Safely Secured Homes newsletter subscription.",
+    description: "Manage your Safely Secured Homes email subscription.",
     images: [ogImageUrl],
   },
 };
@@ -46,8 +46,8 @@ export default function UnsubscribePage() {
         This unsubscribe link is invalid or no longer supported.
       </p>
       <p className="text-sm leading-relaxed text-slate-600">
-        Use the unsubscribe link from one of our newsletter emails to manage your
-        subscription.
+        Use the unsubscribe link from one of our emails to manage your
+        subscription preferences.
       </p>
       <div>
         <Link

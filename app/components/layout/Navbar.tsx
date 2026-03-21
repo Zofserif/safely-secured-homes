@@ -11,6 +11,8 @@ export default function Navbar({
   onPrimaryCtaClick,
   hideCta = false,
   hasExistingPlan = false,
+  primaryCtaTarget,
+  primaryCtaLabel,
   centerLogo = false,
   visibilityMode = "default",
   heroSectionId = "home-hero",
@@ -22,13 +24,17 @@ export default function Navbar({
   ) => void;
   hideCta?: boolean;
   hasExistingPlan?: boolean;
+  primaryCtaTarget?: HomeCtaTarget;
+  primaryCtaLabel?: string;
   centerLogo?: boolean;
   visibilityMode?: NavbarVisibilityMode;
   heroSectionId?: string;
 }){
-  const ctaTarget: HomeCtaTarget = hasExistingPlan ? "results" : "form";
-  const ctaLabel = hasExistingPlan ? "SEE MY PLAN" : "GET MY PANATAG RATING NOW";
-  const ctaMobileLabel = hasExistingPlan ? "SEE MY PLAN" : "GET MY PANATAG RATING NOW";
+  const ctaTarget: HomeCtaTarget =
+    primaryCtaTarget ?? (hasExistingPlan ? "results" : "form");
+  const ctaLabel =
+    primaryCtaLabel ?? (hasExistingPlan ? "SEE MY PLAN" : "GET MY PANATAG RATING NOW");
+  const ctaMobileLabel = ctaLabel;
   const [isOpen, setIsOpen] = useState(false);
   const hasMobileMenuContent = !hideCta;
   const isMobileMenuOpen = isOpen && hasMobileMenuContent;

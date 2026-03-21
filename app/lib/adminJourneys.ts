@@ -6,7 +6,7 @@ import {
   getEmailJourneyDefinition,
   listEmailJourneyDefinitions,
 } from "./emailJourneyStore";
-import type { EmailJourneyKey, EmailJourneyStatus } from "./emailJourneys";
+import { EMAIL_JOURNEY_KEYS, type EmailJourneyKey, type EmailJourneyStatus } from "./emailJourneys";
 
 type JourneyStepRow = {
   journey_key: string | null;
@@ -220,11 +220,17 @@ const getJourneyStepCount = async (journeyKey: string) => {
   return count ?? 0;
 };
 
-const getJourneyActiveEnrollmentCount = async (journeyKey: string) => {
+type JourneyRuntimeAudience = "newsletter" | "waitlist";
+
+const getJourneyActiveEnrollmentCount = async (
+  journeyKey: string,
+  audience: JourneyRuntimeAudience,
+) => {
   const client = requireSupabase();
   const { count, error } = await client
     .from("email_journey_enrollments")
     .select("id", { count: "exact", head: true })
+    .eq("audience", audience)
     .eq("journey_key", journeyKey)
     .eq("status", "active");
 
@@ -232,11 +238,15 @@ const getJourneyActiveEnrollmentCount = async (journeyKey: string) => {
   return count ?? 0;
 };
 
-const getJourneyHistoricalEnrollmentCount = async (journeyKey: string) => {
+const getJourneyHistoricalEnrollmentCount = async (
+  journeyKey: string,
+  audience: JourneyRuntimeAudience,
+) => {
   const client = requireSupabase();
   const { count, error } = await client
     .from("email_journey_enrollments")
     .select("id", { count: "exact", head: true })
+    .eq("audience", audience)
     .eq("journey_key", journeyKey)
     .in("status", ["completed", "cancelled"]);
 
@@ -244,11 +254,15 @@ const getJourneyHistoricalEnrollmentCount = async (journeyKey: string) => {
   return count ?? 0;
 };
 
-const getJourneyDeliveryCount = async (journeyKey: string) => {
+const getJourneyDeliveryCount = async (
+  journeyKey: string,
+  audience: JourneyRuntimeAudience,
+) => {
   const client = requireSupabase();
   const { count, error } = await client
     .from("email_deliveries")
     .select("id", { count: "exact", head: true })
+    .eq("audience", audience)
     .eq("journey_key", journeyKey);
 
   if (error) throw error;
@@ -357,7 +371,10 @@ export async function listAssignableJourneySummaries(): Promise<
 > {
   const journeys = await getAdminJourneySummaries();
   return journeys.filter(
-    (journey) => journey.status === "active" && journey.activeStepCount > 0,
+    (journey) =>
+      journey.status === "active" &&
+      journey.activeStepCount > 0 &&
+      journey.key !== EMAIL_JOURNEY_KEYS.reportsWaitlistJourney,
   );
 }
 
@@ -371,6 +388,11 @@ export async function getAdminJourneyDeletionState(
 
   await assertJourneyExists(normalizedJourneyKey);
 
+  const runtimeAudience: JourneyRuntimeAudience =
+    normalizedJourneyKey === EMAIL_JOURNEY_KEYS.reportsWaitlistJourney
+      ? "waitlist"
+      : "newsletter";
+
   const [
     stepCount,
     activeEnrollmentCount,
@@ -378,9 +400,9 @@ export async function getAdminJourneyDeletionState(
     deliveryCount,
   ] = await Promise.all([
     getJourneyStepCount(normalizedJourneyKey),
-    getJourneyActiveEnrollmentCount(normalizedJourneyKey),
-    getJourneyHistoricalEnrollmentCount(normalizedJourneyKey),
-    getJourneyDeliveryCount(normalizedJourneyKey),
+    getJourneyActiveEnrollmentCount(normalizedJourneyKey, runtimeAudience),
+    getJourneyHistoricalEnrollmentCount(normalizedJourneyKey, runtimeAudience),
+    getJourneyDeliveryCount(normalizedJourneyKey, runtimeAudience),
   ]);
 
   const canHardDelete =

@@ -200,6 +200,7 @@ const fetchActiveJourneyRowsBySubscriberIds = async (subscriberIds: string[]) =>
     .from("email_journey_enrollments")
     .select(ENROLLMENT_SELECT)
     .in("subscriber_id", normalizedSubscriberIds)
+    .eq("audience", "newsletter")
     .eq("status", "active")
     .order("entered_at", { ascending: false, nullsFirst: false });
 
@@ -292,6 +293,7 @@ export async function getAdminSubscriberDetail(
     .from("email_journey_enrollments")
     .select(ENROLLMENT_SELECT)
     .eq("subscriber_id", normalizedSubscriberId)
+    .eq("audience", "newsletter")
     .order("entered_at", { ascending: false, nullsFirst: false });
 
   if (enrollmentError) throw enrollmentError;

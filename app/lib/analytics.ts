@@ -499,3 +499,32 @@ export const trackNewsletterLeadGenerated = (
     ...eventProps,
   });
 };
+
+export const trackWaitlistLeadGenerated = (
+  context?: FunnelContext,
+  props?: {
+    source?: string;
+    method?: string;
+    destination?: string;
+    page?: FunnelPage;
+  },
+) => {
+  const resolvedContext: FunnelContext = context ?? {
+    flow_source: "direct",
+    flow_mode: "default",
+  };
+  const page = props?.page ?? "waitlist";
+  const eventPropsInput = { ...(props ?? {}) };
+  delete (eventPropsInput as { page?: FunnelPage }).page;
+  const eventProps = {
+    lead_source: resolvedContext.flow_source,
+    lead_channel: "waitlist",
+    ...eventPropsInput,
+  };
+
+  trackV2("funnel_submission_completed", page, resolvedContext, eventProps);
+  captureGa4("generate_lead", {
+    ...funnelBaseProps(page, resolvedContext),
+    ...eventProps,
+  });
+};

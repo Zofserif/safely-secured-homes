@@ -7,7 +7,7 @@ export type HomePageProps = {
   scarcity: HomeScarcityState;
 };
 
-export type HomeCtaTarget = "newsletter" | "results" | "form";
+export type HomeCtaTarget = "newsletter" | "results" | "form" | "waitlist";
 export type HomeCtaLocation =
   | "hero_primary"
   | "midpage_primary"

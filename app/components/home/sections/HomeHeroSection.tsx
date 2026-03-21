@@ -168,7 +168,7 @@ export default function HomeHeroSection({
     scarcity.show &&
     !scarcity.soldOut;
   const soldOutSupportText =
-    "Reports are sold out for this cycle. Join the newsletter to get notified when the Panatag Rating refreshes.";
+    "Reports are sold out for this cycle. Join the waitlist to get notified when the Panatag Rating refreshes.";
   const prefersReducedMotion = useReducedMotion();
   const hasMounted = useSyncExternalStore(EMPTY_SUBSCRIBE, () => true, () => false);
   const headlineSegments = parseHeadlineSegments(HOME_HERO_COPY.headline);

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { processDueJourneySteps } from "../../../lib/leadJourney";
 import { isNewsletterCampaignsConfigured } from "../../../lib/newsletterCampaigns";
+import {
+  processDueWaitlistJourneySteps,
+  processPendingWaitlistJourneyEnrollments,
+} from "../../../lib/waitlistJourney";
 
 const cronSecret = process.env.CRON_SECRET?.trim() || "";
 
@@ -34,8 +38,18 @@ export async function GET(req: Request) {
   const limit = toPositiveInteger(requestUrl.searchParams.get("limit"), 200);
 
   try {
-    const result = await processDueJourneySteps({ limit });
-    return NextResponse.json({ ok: true, ...result });
+    const [result, waitlistPending, waitlistJourneys] = await Promise.all([
+      processDueJourneySteps({ limit }),
+      processPendingWaitlistJourneyEnrollments({ limit }),
+      processDueWaitlistJourneySteps({ limit }),
+    ]);
+
+    return NextResponse.json({
+      ok: true,
+      ...result,
+      waitlistPending,
+      waitlistJourneys,
+    });
   } catch (error) {
     console.error("Email journey cron failed:", error);
     return NextResponse.json(
